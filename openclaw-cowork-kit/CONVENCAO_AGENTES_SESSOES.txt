@@ -1,0 +1,61 @@
+CONVENCAO DE AGENTES E SESSOES
+
+OBJETIVO
+- Separar responsabilidades para evitar contexto confuso e conflito de edicao.
+
+AGENTS RECOMENDADOS
+- claude-office
+  Responsabilidade: implementacao principal no host do escritorio.
+  Escopo: codigo de producao e mudancas grandes.
+
+- architect
+  Responsabilidade: arquitetura, desenho de fluxo, prompts, skills e runbooks.
+  Escopo: docs, decisoes tecnicas, contratos entre modulos.
+
+- integration
+  Responsabilidade: OpenClaw, Evolution, n8n, webhooks, CRM e automacoes.
+  Escopo: integracoes e operacao.
+
+- qa
+  Responsabilidade: validacao funcional, regressao, cenarios de falha.
+  Escopo: testes, checklists, reproducao de bugs.
+
+SESSOES PADRAO
+- agent:claude-office:main
+  Sessao principal de implementacao.
+
+- agent:architect:roadmap
+  Sessao para arquitetura e decisoes.
+
+- agent:integration:bridge
+  Sessao para conectores, canais e automacoes.
+
+- agent:qa:regression
+  Sessao para testes e verificacao.
+
+SESSOES POR FEATURE
+- agent:claude-office:feat-whatsapp-routing
+- agent:architect:feat-openclaw-migration
+- agent:integration:feat-crm-sync
+- agent:qa:feat-guardrails-v2
+
+REGRA DE NOME
+- Formato: agent:<agentName>:<contexto>
+- Use `main` para linha principal e `feat-*` para tarefas isoladas.
+- Nao reutilize a mesma sessao para assuntos nao relacionados.
+
+REGRAS DE USO
+- Codigo de producao entra primeiro por `claude-office`.
+- Desenho e decisao tecnica entram primeiro por `architect`.
+- Qualquer alteracao de canal, webhook, credencial ou operacao entra por `integration`.
+- Validacao final e reproducao de bugs entram por `qa`.
+
+EXEMPLOS
+- Abrir implementacao principal:
+  openclaw acp --session agent:claude-office:main
+
+- Abrir sessao de arquitetura:
+  openclaw acp --session agent:architect:roadmap
+
+- Abrir sessao isolada de feature:
+  openclaw acp --session agent:integration:feat-crm-sync

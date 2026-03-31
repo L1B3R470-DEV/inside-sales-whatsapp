@@ -1,0 +1,152 @@
+﻿DOSSIER CLAUDE HANDOFF - V2 (PROMPT OPERACIONAL)
+Projeto: Atendimento WhatsApp Inside Sales
+Data: 26/03/2026
+
+OBJETIVO DESTA VERSAO
+Fornecer um protocolo operacional para o Claude trabalhar no projeto sem causar regressao em producao.
+
+====================================================================
+1) PLANO DE LEITURA POR PRIORIDADE (ORDENACAO OBRIGATORIA)
+====================================================================
+Prioridade 0 (entender arquitetura e operacao)
+1. README.md
+2. ARQUITETURA_SDR_IA_B2B_PRATICA.md
+3. docker-compose.yml
+4. .env.example
+
+Prioridade 1 (nucleo da logica conversacional)
+5. guardrails.js
+6. extract-reply.js
+7. build-fallback-reply.js
+8. normalize-payload.js
+
+Prioridade 2 (roteador e decisao tecnica)
+9. router_service.py
+10. router-decision.js
+11. router-learn.js
+
+Prioridade 3 (aplicacao de mudancas no workflow)
+12. patch_workflow_intelligence_v1.py
+13. patch_workflow_router_v1.py
+14. patch_workflow_quality_v3.py (se existir)
+
+Prioridade 4 (aprendizado, CRM e base de conhecimento)
+15. crm_cycle_engine.py
+16. crm_sheet_sync.py
+17. sync_product_media_catalog.py
+18. sync_sales_book_asset.py
+19. sync_vitrine_assets.py
+20. CHATGPT_MACHINE_LEARNING\REQUESTS.txt
+
+====================================================================
+2) REGRAS DE OURO PARA ALTERACAO
+====================================================================
+1. Nao alterar diretamente o workflow no editor do n8n sem script de patch versionado.
+2. Nao remover gates de negocio (CNPJ, loja fisica, elegibilidade de book/vitrine/B2B).
+3. Nao quebrar resolve de destinatario (LID -> numero real).
+4. Nao introduzir dependencia critica nova sem fallback operacional.
+5. Nao publicar alteracao sem checklist de regressao.
+
+====================================================================
+3) CHECKLIST POS-MUDANCA (EXECUCAO OBRIGATORIA)
+====================================================================
+3.1 Sanidade de servicos
+- docker ps: n8n/evolution/redis/postgres/minio up
+- n8n health: /healthz
+- evolution health: / e /manager
+- router health: /health
+
+3.2 Sanidade de workflow
+- workflow principal ativo
+- conexoes corretas entre:
+  Normalize Payload -> Resolve Recipient API -> Router Decision -> Guardrails
+  AI Allowed? -> OpenAI Responses / Build Fallback Reply
+  Extract Reply + Fallback -> Router Learn -> Can Send? -> Evolution Send Text
+
+3.3 Regressao de negocio
+- caso 1: saudacao simples (sem travar)
+- caso 2: triagem completa de revenda
+- caso 3: bloqueio por ineligibilidade (CNPJ/loja fisica)
+- caso 4: liberacao book apos elegibilidade
+- caso 5: vitrine sob anuencia expressa
+- caso 6: B2B sob anuencia expressa com credenciais corretas
+- caso 7: pedido de categoria com imagens variadas (sem repeticao rigida)
+- caso 8: mensagem marcada (reply-to) com resposta contextual
+
+3.4 Regressao de qualidade de texto
+- sem emojis
+- resposta curta e coerente com a pergunta
+- sem nome inventado
+- sem repetir saudacao em toda mensagem
+
+3.5 Logs e rastreabilidade
+- registrar o que foi alterado
+- registrar motivo
+- registrar impacto esperado
+- registrar como reverter
+
+====================================================================
+4) TEMPLATE OBRIGATORIO - PATCH + ROLLBACK
+====================================================================
+Use este formato em toda alteracao:
+
+[TITULO]
+- Objetivo:
+- Escopo:
+- Arquivos alterados:
+- Risco:
+
+[PATCH]
+- Script/arquivo de patch:
+- Como aplicar:
+- Como validar:
+
+[ROLLBACK]
+- Script/arquivo de rollback:
+- Como executar rollback:
+- Indicador de sucesso do rollback:
+
+[PROVA]
+- Evidencias de execucao:
+- Evidencias de validacao:
+
+====================================================================
+5) PROMPT PRONTO PARA INICIAR COM O CLAUDE
+====================================================================
+Use exatamente este prompt:
+
+"Voce vai atuar neste projeto em producao local (n8n + Evolution + Router Python + OpenAI).
+Antes de sugerir qualquer mudanca:
+1) Leia os arquivos na ordem de prioridade do DOSSIER_CLAUDE_HANDOFF_V2_PROMPT_OPERACIONAL.txt.
+2) Mapeie o fluxo atual ponta a ponta.
+3) Liste riscos de regressao por area (roteamento, triagem, envio, CRM, RAG).
+4) Proponha alteracao somente com patch reproduzivel e rollback.
+5) Nao edite o workflow manualmente sem patch.
+6) Entregue validacao com checklist completo e evidencias.
+Objetivo: evoluir sem quebrar operacao." 
+
+====================================================================
+6) MATRIZ RAPIDA DE DECISAO (QUANDO USAR CADA CAMADA)
+====================================================================
+- Regra/cache: respostas deterministicas, gates de negocio, politicas fixas.
+- RAG: perguntas sobre produtos/processos/documentos internos.
+- LLM: adaptacao de linguagem, esclarecimento e condução consultiva.
+
+Politica:
+1) Cache/regra primeiro
+2) RAG depois
+3) LLM por ultimo
+
+====================================================================
+7) CRITERIOS DE QUALIDADE PARA APROVAR ALTERACAO
+====================================================================
+A alteracao so pode ser considerada aprovada se:
+- nao houver regressao em triagem
+- nao houver queda de resposta por falha de roteamento
+- nao houver duplicidade indevida
+- nao houver perda de integridade dos dados no CRM
+- houver rollback funcional testado
+
+====================================================================
+FIM - V2 OPERACIONAL
+====================================================================

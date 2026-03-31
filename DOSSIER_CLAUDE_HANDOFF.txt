@@ -1,0 +1,253 @@
+﻿DOSSIER TECNICO UNICO - CLAUDE HANDOFF
+Projeto: Atendimento WhatsApp Inside Sales (Classe Couro)
+Data de geracao: 26/03/2026 (America/Bahia)
+Status: Operacao ativa em producao local
+
+============================================================
+1) OBJETIVO DO PROJETO
+============================================================
+Construir e operar um SDR digital B2B via WhatsApp para:
+- captar leads
+- qualificar revendedores
+- conduzir triagem obrigatoria
+- liberar materiais (book, vitrine) sob regras comerciais
+- direcionar para B2B com credenciais derivadas do CNPJ
+- manter baixo custo e alta confiabilidade
+
+Princpio operacional adotado:
+- priorizar regras, cache e roteamento
+- usar IA com controle (sem deixar a conversa engessada)
+- registrar historico e aprendizado continuo
+
+============================================================
+2) ARQUITETURA ATUAL (ALTO NIVEL)
+============================================================
+Canal:
+WhatsApp -> Evolution API -> n8n workflow -> Router local + Guardrails -> OpenAI Responses -> Evolution send
+
+Servicos Docker ativos:
+- n8n (porta 5678)
+- evolution (porta 8080)
+- evolution-postgres
+- evolution-redis
+- evolution-minio (portas 9000/9001)
+
+Workflow principal n8n:
+- ID: zN3heKJVLO8w4dG6
+- Nome: WhatsApp AI Auto Reply (Evolution + OpenAI) - Low Cost
+- Estado: active=1, isArchived=0
+
+Nos principais:
+- Webhook Evolution
+- Normalize Payload
+- Resolve Recipient API
+- Router Decision
+- Guardrails
+- AI Allowed?
+- OpenAI Responses
+- Extract Reply
+- Build Fallback Reply
+- Router Learn
+- Can Send?
+- Evolution Send Text
+- Webhook Manual Send
+- Normalize Manual Send
+
+============================================================
+3) DIRETORIOS E ARQUIVOS CRITICOS
+============================================================
+Raiz do projeto:
+C:\Users\User\Desktop\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES
+
+Base de conhecimento:
+C:\Users\User\Desktop\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\CHATGPT_MACHINE_LEARNING
+
+Runtime operacional:
+C:\AUTOMACAO\
+- rag\
+- cache\
+- logs\
+- dados\
+- scripts\
+
+Arquivos centrais de logica:
+- guardrails.js
+- extract-reply.js
+- build-fallback-reply.js
+- normalize-payload.js
+- router_service.py
+- router-decision.js
+- router-learn.js
+
+Arquivos de patch/sync relevantes:
+- patch_workflow_intelligence_v1.py
+- patch_workflow_router_v1.py
+- sync_product_media_catalog.py
+- sync_sales_book_asset.py
+- sync_vitrine_assets.py
+- crm_cycle_engine.py
+- crm_sheet_sync.py
+
+Dados locais:
+- crm_operacional.sqlite
+- router_runtime.sqlite
+- LEADS_INSIDE_SALES_AUTO.xlsx
+- LISTA_DE_CONTATOS_IGNORADOS.xlsx
+
+============================================================
+4) COMPORTAMENTO DE NEGOCIO IMPLEMENTADO
+============================================================
+4.1 Triagem de revenda
+Fluxo mandatorio com gates comerciais (ordem operacional vigente no guardrails):
+- CNPJ ativo
+- Loja fisica
+- Cidade
+- Nome
+- Telefone
+- Instagram
+- CNPJ para consulta
+
+4.2 Gating de materiais
+- Book de vendas so apos triagem elegivel
+- Vitrine sob anuencia expressa
+- Link B2B sob anuencia expressa
+
+4.3 Consulta CNPJ
+- validacao estrutural
+- consulta prioritaria ReceitaWS, fallback BrasilAPI
+- captura razao social + situacao cadastral
+- regra de inelegibilidade para status nao ativo
+
+4.4 Direcionamento PF
+- quando cliente e PF / uso proprio: orientacao para e-commerce
+
+4.5 Contatos ignorados
+- lista alimentada de planilha + banco
+- bloqueio dinamico no guardrails
+
+============================================================
+5) RAG / CATALOGO / MIDIA
+============================================================
+5.1 Base RAG
+- conteudo em CHATGPT_MACHINE_LEARNING
+- ciclo CRM indexa e atualiza contexto dinamico
+
+5.2 Catalogo de imagens
+- produto_catalog_snapshot em JSON
+- selecao por categoria com rotacao para reduzir repeticao
+
+5.3 Vitrine
+- sincronizacao prevista por sync_vitrine_assets.py
+- envio condicionado a consentimento do lead
+
+============================================================
+6) OPERACAO E AUTOMACOES
+============================================================
+Tarefas agendadas observadas:
+- CRM_CYCLE_N8N
+- WA_Router_Service
+- WA_Router_Watchdog
+- WA_Human_Alert_Monitor
+
+Finalidade:
+- manter router ativo
+- monitorar saude
+- ciclar aprendizado
+- acionar humano quando necessario
+
+============================================================
+7) RISCOS OPERACIONAIS MAPEADOS
+============================================================
+1. Dependencia de API externa (OpenAI, ReceitaWS, BrasilAPI)
+2. Possiveis 429/rate limits em picos
+3. Divergencia entre estado visual do WhatsApp e estado interno do sistema
+4. Possivel conflito se alteracoes diretas no n8n nao forem versionadas por patch
+5. Risco de regressao de triagem se prompts/rules forem editados sem teste de regressao
+
+Mitigacoes praticas:
+- watcher e alerta humano
+- fallback controlado
+- patch scripts reproduziveis
+- reset de lead para testes limpos
+
+============================================================
+8) PROTOCOLO DE TRABALHO CODEx + CLAUDE
+============================================================
+Objetivo:
+- trabalhar em paralelo sem conflito de arquitetura
+
+Padrao recomendado:
+1. Nao editar manualmente o workflow de producao sem script de patch
+2. Toda mudanca deve ter:
+   - objetivo
+   - diff
+   - impacto
+   - rollback
+3. Usar branch/worktree dedicada para experimentos
+4. Reaplicar no n8n somente via patch python versionado
+5. Registrar decisao no backlog tecnico (arquivo .txt ou markdown)
+
+============================================================
+9) CHECKLIST DE HANDOFF PARA O CLAUDE
+============================================================
+Entregar ao Claude, nesta ordem:
+1. README.md
+2. ARQUITETURA_SDR_IA_B2B_PRATICA.md
+3. guardrails.js
+4. extract-reply.js
+5. build-fallback-reply.js
+6. router_service.py
+7. patch_workflow_intelligence_v1.py
+8. patch_workflow_router_v1.py
+9. crm_cycle_engine.py
+10. REQUESTS.txt (base de conhecimento faltante)
+
+Prompt de abertura sugerido ao Claude:
+"Este projeto esta em producao local com n8n + Evolution + Router Python + OpenAI. Antes de propor mudancas, leia os arquivos listados no dossie, mapeie fluxo atual, identifique riscos de regressao e entregue plano de alteracao com patch reproduzivel e rollback."
+
+============================================================
+10) COMANDOS UTEIS (REFERENCIA RAPIDA)
+============================================================
+Subir stack:
+docker compose up -d
+
+Ver containers:
+docker ps
+
+Health n8n:
+http://localhost:5678/healthz
+
+Health evolution:
+http://localhost:8080
+http://localhost:8080/manager
+
+Health router:
+http://localhost:8091/health
+
+Reset de lead (menu):
+C:\AUTOMACAO\scripts\reset-lead-state-menu.ps1
+
+============================================================
+11) ESTADO DE DADOS NO MOMENTO DA LEITURA
+============================================================
+Banco crm_operacional.sqlite (contagens observadas):
+- leads: 9
+- interactions: 150
+- learning_backlog: 59
+- ignored_contacts_registry: 28
+
+Observacao:
+- esses numeros variam com a operacao em tempo real.
+
+============================================================
+12) PROXIMA EVOLUCAO SUGERIDA
+============================================================
+Fase recomendada:
+- integrar Claude como provedor complementar (multi-LLM routing) sem substituir GPT
+- decidir por tarefa: GPT rapido para operacao, Claude para analise profunda/revisao
+- manter metricas por provedor (latencia, custo, qualidade)
+- validar com suite de conversas de regressao (triagem, book, vitrine, B2B, objecoes)
+
+============================================================
+FIM DO DOSSIE
+============================================================

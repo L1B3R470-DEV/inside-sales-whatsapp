@@ -1,0 +1,142 @@
+{
+  "autoMemoryEnabled": true,
+  "enableAllProjectMcpServers": true,
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(docker:*)",
+      "Bash(docker-compose:*)",
+      "Bash(docker compose:*)",
+      "Bash(python:*)",
+      "Bash(pip:*)",
+      "Bash(node:*)",
+      "Bash(npm:*)",
+      "Bash(npx:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Bash(cat:*)",
+      "Bash(ls:*)",
+      "Bash(dir:*)",
+      "Bash(cd:*)",
+      "Bash(cp:*)",
+      "Bash(mv:*)",
+      "Bash(mkdir:*)",
+      "Bash(touch:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(grep:*)",
+      "Bash(find:*)",
+      "Bash(wc:*)",
+      "Bash(sort:*)",
+      "Bash(uniq:*)",
+      "Bash(awk:*)",
+      "Bash(sed:*)",
+      "Bash(echo:*)",
+      "Bash(printf:*)",
+      "Bash(which:*)",
+      "Bash(where:*)",
+      "Bash(whoami:*)",
+      "Bash(pwd:*)",
+      "Bash(env:*)",
+      "Bash(export:*)",
+      "Bash(set:*)",
+      "Bash(sqlite3:*)",
+      "Bash(chmod:*)",
+      "Bash(chown:*)",
+      "Bash(tar:*)",
+      "Bash(zip:*)",
+      "Bash(unzip:*)",
+      "Bash(diff:*)",
+      "Bash(patch:*)",
+      "Bash(tee:*)",
+      "Bash(xargs:*)",
+      "Bash(kill:*)",
+      "Bash(ps:*)",
+      "Bash(top:*)",
+      "Bash(netstat:*)",
+      "Bash(ss:*)",
+      "Bash(lsof:*)",
+      "Bash(ping:*)",
+      "Bash(nslookup:*)",
+      "Bash(dig:*)",
+      "Bash(powershell:*)",
+      "Bash(cmd:*)",
+      "Bash(pytest:*)",
+      "Bash(source:*)",
+      "Bash(.:*)",
+      "Bash(test:*)",
+      "Bash([:*)",
+      "Bash(true:*)",
+      "Bash(false:*)",
+      "Bash(gh:*)",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "WebFetch",
+      "WebSearch",
+      "Agent",
+      "TodoWrite",
+      "NotebookEdit"
+    ],
+    "deny": [
+      "Bash(rm -rf /:*)",
+      "Bash(format:*)",
+      "Bash(del /s /q C::*)"
+    ],
+    "defaultMode": "bypassPermissions"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"\nimport json,sys,subprocess,os\nd=json.load(sys.stdin)\nf=d.get('tool_input',{}).get('file_path','')\nif not f.endswith('.js'): sys.exit(0)\nif not os.path.isfile(f): sys.exit(0)\ncontent=open(f,'r',encoding='utf-8').read()\nr=subprocess.run(['docker','exec','-i','n8n','node','-e','new Function(require(\\\"fs\\\").readFileSync(0,\\\"utf8\\\"))'],input=content.encode(),capture_output=True,timeout=10)\nif r.returncode!=0:\n    print(json.dumps({'decision':'block','reason':'Erro sintaxe JS: '+r.stderr.decode().strip()[:200]}))\nelse:\n    print(json.dumps({'systemMessage':'JS OK: '+os.path.basename(f)}))\n\"",
+            "timeout": 15,
+            "statusMessage": "Validando sintaxe JS..."
+          },
+          {
+            "type": "command",
+            "command": "python -c \"\nimport json,sys,subprocess,os\nd=json.load(sys.stdin)\nf=d.get('tool_input',{}).get('file_path','')\nif not f.endswith('.py'): sys.exit(0)\nif not os.path.isfile(f): sys.exit(0)\nr=subprocess.run(['python','-m','py_compile',f],capture_output=True,timeout=10)\nif r.returncode!=0:\n    print(json.dumps({'decision':'block','reason':'Erro sintaxe Python: '+r.stderr.decode().strip()[:200]}))\nelse:\n    print(json.dumps({'systemMessage':'Python OK: '+os.path.basename(f)}))\n\"",
+            "timeout": 15,
+            "statusMessage": "Validando sintaxe Python..."
+          },
+          {
+            "type": "command",
+            "command": "python -c \"\nimport json,sys,subprocess,os\nd=json.load(sys.stdin)\nf=d.get('tool_input',{}).get('file_path','')\nif 'docker-compose' not in os.path.basename(f): sys.exit(0)\nr=subprocess.run(['docker','compose','-f',f,'config','-q'],capture_output=True,timeout=15)\nif r.returncode!=0:\n    print(json.dumps({'decision':'block','reason':'docker-compose.yml invalido: '+r.stderr.decode().strip()[:200]}))\nelse:\n    print(json.dumps({'systemMessage':'docker-compose.yml OK'}))\n\"",
+            "timeout": 20,
+            "statusMessage": "Validando docker-compose.yml..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"\nimport json,sys,re\nd=json.load(sys.stdin)\ncmd=d.get('tool_input',{}).get('command','')\nif re.search(r'docker\\s+(rm|rmi|compose\\s+down|system\\s+prune)',cmd):\n    print(json.dumps({'hookSpecificOutput':{'hookEventName':'PreToolUse','permissionDecision':'ask','permissionDecisionReason':'Comando Docker destrutivo: '+cmd[:100]}}))\n\"",
+            "timeout": 5,
+            "statusMessage": "Verificando comando Docker..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -c \"\nimport json,sys,subprocess\ntry:\n    r=subprocess.run(['curl','-s','-o','/dev/null','-w','%{http_code}','http://localhost:8091/health'],capture_output=True,timeout=5)\n    code=r.stdout.decode().strip()\n    if code=='200':\n        print(json.dumps({'systemMessage':'Router health: OK (HTTP '+code+')'}))\n    else:\n        print(json.dumps({'systemMessage':'ALERTA: Router retornou HTTP '+code}))\nexcept:\n    print(json.dumps({'systemMessage':'ALERTA: Router inacessivel!'}))\n\"",
+            "timeout": 10,
+            "statusMessage": "Health check do router..."
+          }
+        ]
+      }
+    ]
+  }
+}

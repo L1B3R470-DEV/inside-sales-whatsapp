@@ -1,0 +1,387 @@
+{
+  "name": "WhatsApp AI Auto Reply (Evolution + OpenAI) - Low Cost",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "evolution-inbound",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "3e7d5bf0-2e8b-4a89-9f09-829479f004a9",
+      "name": "Webhook Evolution",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1060,
+        0
+      ],
+      "webhookId": "evolution-inbound"
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const body = $json.body ?? $json;\n\nif (body.event && !['messages.upsert', 'MESSAGES_UPSERT'].includes(body.event)) {\n  return [];\n}\n\nconst payload = body.data ?? body;\nconst key = payload.key ?? {};\n\nif (key.fromMe === true) {\n  return [];\n}\n\nconst remoteJid = String(key.remoteJid ?? body.sender ?? '').toLowerCase();\nif (!remoteJid || remoteJid.endsWith('@g.us') || remoteJid === 'status@broadcast') {\n  return [];\n}\n\nlet text =\n  payload.message?.conversation ??\n  payload.message?.extendedTextMessage?.text ??\n  payload.message?.imageMessage?.caption ??\n  payload.message?.videoMessage?.caption ??\n  payload.message?.documentMessage?.caption ??\n  payload.message?.buttonsResponseMessage?.selectedDisplayText ??\n  payload.message?.listResponseMessage?.title ??\n  payload.message?.listResponseMessage?.singleSelectReply?.selectedRowId ??\n  '';\n\ntext = String(text || '').trim();\nif (!text) {\n  return [];\n}\n\nconst isLid = remoteJid.endsWith('@lid');\nconst number = isLid\n  ? ''\n  : remoteJid\n      .replace(/@s\\.whatsapp\\.net|@g\\.us/g, '')\n      .replace(/\\D/g, '');\n\nreturn [{\n  json: {\n    instance: body.instance ?? body.instanceName ?? '',\n    remoteJid,\n    isLid,\n    number,\n    pushName: payload.pushName ?? body.pushName ?? 'Cliente',\n    inboundText: text\n  }\n}];"
+      },
+      "id": "c2f8f41f-98f4-4782-9a70-cf82f6764130",
+      "name": "Normalize Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -820,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const input = $json;\n\nconst cfg = {\n  maxInputChars: 500,\n  maxOutputChars: 280,\n  maxOutputTokens: 120,\n  maxMsgsPerMinute: 3,\n  maxMsgsPerHour: 25,\n  maxMsgsPerDay: 200,\n  workTimezone: 'America/Bahia',\n  workDays: [1, 2, 3, 4, 5],\n  workWindows: ['08:00-12:00', '13:30-18:00'],\n  outOfHoursMessage: 'Atendimento automatico ativo de segunda a sexta, das 08:00 as 12:00 e das 13:30 as 18:00.',\n  highVolumeMessage: 'Estou com alto volume no momento. Tente novamente em alguns minutos.',\n  unresolvedRecipientMessage: 'Nao consegui identificar o numero real deste contato agora. Tente novamente em instantes.'\n};\n\nconst now = new Date();\nconst parts = new Intl.DateTimeFormat('en-CA', {\n  timeZone: cfg.workTimezone,\n  weekday: 'short',\n  year: 'numeric',\n  month: '2-digit',\n  day: '2-digit',\n  hour: '2-digit',\n  minute: '2-digit',\n  hour12: false\n}).formatToParts(now);\n\nconst p = Object.fromEntries(parts.map((x) => [x.type, x.value]));\nconst weekdayMap = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };\nconst dow = weekdayMap[p.weekday] || 0;\nconst hh = Number(p.hour || '0');\nconst mm = Number(p.minute || '0');\nconst minutesNow = (hh * 60) + mm;\nconst dayKey = `${p.year}-${p.month}-${p.day}`;\nconst hourKey = `${dayKey}-${String(hh).padStart(2, '0')}`;\nconst minuteKey = `${hourKey}-${String(mm).padStart(2, '0')}`;\n\nfunction hhmmToMinutes(hhmm) {\n  const [h, m] = String(hhmm).split(':').map((v) => Number(v));\n  return (h * 60) + m;\n}\n\nfunction inAnyWindow(value, windows) {\n  for (const w of windows) {\n    const [start, end] = w.split('-').map((v) => v.trim());\n    if (!start || !end) continue;\n    const s = hhmmToMinutes(start);\n    const e = hhmmToMinutes(end);\n    if (value >= s && value < e) return true;\n  }\n  return false;\n}\n\nconst inWorkDay = cfg.workDays.includes(dow);\nconst inWorkTime = inAnyWindow(minutesNow, cfg.workWindows);\nconst inBusinessHours = inWorkDay && inWorkTime;\n\nconst staticData = $getWorkflowStaticData('global');\nif (!staticData.dailyCounts) staticData.dailyCounts = {};\nif (!staticData.hourlyCounts) staticData.hourlyCounts = {};\nif (!staticData.minuteCounts) staticData.minuteCounts = {};\n\nfor (const key of Object.keys(staticData.dailyCounts)) {\n  if (key !== dayKey) delete staticData.dailyCounts[key];\n}\nfor (const key of Object.keys(staticData.hourlyCounts)) {\n  if (!key.startsWith(dayKey)) delete staticData.hourlyCounts[key];\n}\nfor (const key of Object.keys(staticData.minuteCounts)) {\n  if (!key.startsWith(hourKey)) delete staticData.minuteCounts[key];\n}\n\nlet allowAi = true;\nlet blockReason = '';\n\nconst recipientNumber = String(input.number || '').replace(/\\D/g, '');\nif (!recipientNumber) {\n  allowAi = false;\n  blockReason = 'no_recipient';\n} else if (!inBusinessHours) {\n  allowAi = false;\n  blockReason = 'out_of_hours';\n} else {\n  const nextDaily = Number(staticData.dailyCounts[dayKey] || 0) + 1;\n  const nextHourly = Number(staticData.hourlyCounts[hourKey] || 0) + 1;\n  const nextMinute = Number(staticData.minuteCounts[minuteKey] || 0) + 1;\n\n  if (nextDaily > cfg.maxMsgsPerDay || nextHourly > cfg.maxMsgsPerHour || nextMinute > cfg.maxMsgsPerMinute) {\n    allowAi = false;\n    blockReason = 'volume';\n  } else {\n    staticData.dailyCounts[dayKey] = nextDaily;\n    staticData.hourlyCounts[hourKey] = nextHourly;\n    staticData.minuteCounts[minuteKey] = nextMinute;\n  }\n}\n\nconst inboundText = String(input.inboundText || '').slice(0, cfg.maxInputChars).trim();\n\nconst fallbackText = blockReason === 'volume'\n  ? cfg.highVolumeMessage\n  : blockReason === 'no_recipient'\n    ? cfg.unresolvedRecipientMessage\n    : cfg.outOfHoursMessage;\n\nreturn [{\n  json: {\n    instance: input.instance || '',\n    remoteJid: input.remoteJid || '',\n    resolutionStatus: input.resolutionStatus || 'unknown',\n    number: recipientNumber,\n    pushName: input.pushName,\n    inboundTextOriginal: input.inboundText,\n    promptInput: inboundText,\n    allowAi,\n    blockReason,\n    maxOutputChars: cfg.maxOutputChars,\n    maxOutputTokens: cfg.maxOutputTokens,\n    fallbackText\n  }\n}];"
+      },
+      "id": "56c08f1d-a5e4-4f2c-b5aa-f4e8cc614f09",
+      "name": "Guardrails",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -360,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d21869a8-d8e2-4c82-aae4-b23f9337fc27",
+              "leftValue": "={{$json.allowAi}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c3555ef8-95fb-4749-b8f3-ff12429ca0fd",
+      "name": "AI Allowed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -120,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.openai.com/v1/responses",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer OPENAI_API_KEY_PLACEHOLDER"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"model\": \"gpt-4.1-nano\",\n  \"input\": [\n    {\n      \"role\": \"system\",\n      \"content\": [\n        {\n          \"type\": \"input_text\",\n          \"text\": \"Responda educadamente a mensagem do cliente no WhatsApp. Seja claro e objetivo.\"\n        }\n      ]\n    },\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"input_text\",\n          \"text\": $node[\"Guardrails\"].json.promptInput\n        }\n      ]\n    }\n  ],\n  \"temperature\": 0.2,\n  \"max_output_tokens\": Number($node[\"Guardrails\"].json.maxOutputTokens || 120)\n} }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "cc2c9f77-3251-46f8-87c8-36c6f8b7bfdd",
+      "name": "OpenAI Responses",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        120,
+        -120
+      ],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const response = $json;\nconst guardrails = $node['Guardrails'].json;\n\nlet reply = '';\n\n// Trata erros do HTTP node (ex: 429 / rate limit)\nif (response?.error || response?.statusCode >= 400) {\n  const errMsg = String(\n    response?.error?.message ??\n    response?.message ??\n    response?.body?.error?.message ??\n    ''\n  );\n\n  if (/too many|rate.?limit|429/i.test(errMsg)) {\n    reply = 'Estou com muitas solicitacoes no momento. Tente novamente em 1 minuto.';\n  } else {\n    reply = 'Desculpe, nao consegui responder agora. Pode repetir sua mensagem?';\n  }\n} else {\n  reply = response.output_text ?? '';\n\n  if (!reply && Array.isArray(response.output)) {\n    reply = response.output\n      .flatMap((item) => item?.content ?? [])\n      .map((part) => part?.text ?? '')\n      .filter(Boolean)\n      .join('\\n')\n      .trim();\n  }\n\n  if (!reply) {\n    reply = 'Desculpe, nao consegui responder agora. Pode repetir sua mensagem?';\n  }\n}\n\nreply = String(reply).slice(0, Number(guardrails.maxOutputChars || 280));\n\nreturn [{\n  json: {\n    instance: guardrails.instance || '',\n    number: guardrails.number,\n    replyText: reply\n  }\n}];"
+      },
+      "id": "a8bc3c9c-e898-4f4a-8f9c-f5732f3e39ac",
+      "name": "Extract Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        360,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const payload = $json;\nconst maxOutputChars = Number(payload.maxOutputChars || 280);\nconst text = String(payload.fallbackText || 'Atendimento indisponivel no momento.').slice(0, maxOutputChars);\n\nreturn [{\n  json: {\n    instance: payload.instance || '',\n    number: payload.number,\n    replyText: text\n  }\n}];"
+      },
+      "id": "7762fd93-51d5-4f3f-aa6c-a44a17d18f0f",
+      "name": "Build Fallback Reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        120,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'http://evolution:8080'.replace(/\\/$/, '') + '/message/sendText/' + ($json.instance || 'ATENDIMENTO_VENDAS_CLEAN') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "123456"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"number\": String($json.number || '').trim(),\n  \"text\": String($json.replyText || ''),\n  \"delay\": 1200,\n  \"linkPreview\": false\n} }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "d9dd0a3b-4cd6-4689-9e4a-7b5c74f7f7dc",
+      "name": "Evolution Send Text",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ 'http://evolution:8080'.replace(/\\/$/, '') + '/chat/findContacts/' + ($json.instance || 'ATENDIMENTO_VENDAS_CLEAN') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "123456"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"where\": {} } }}",
+        "options": {}
+      },
+      "id": "04193a6c-de6b-4de9-b8b6-e3cf8451cb5c",
+      "name": "Evolution Find Contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -620,
+        -120
+      ]
+    },
+    {
+      "parameters": {
+        "language": "JavaScript",
+        "jsCode": "const base = $node['Normalize Payload'].json;\nconst contactsResponse = $json;\nconst contacts = Array.isArray(contactsResponse?.value) ? contactsResponse.value : [];\n\nconst remoteJid = String(base.remoteJid || '').toLowerCase();\nconst isLid = remoteJid.endsWith('@lid');\n\nfunction norm(value) {\n  return String(value || '')\n    .normalize('NFD')\n    .replace(/[\\u0300-\\u036f]/g, '')\n    .toLowerCase()\n    .replace(/[^a-z0-9]/g, '');\n}\n\nlet resolvedJid = '';\nlet number = String(base.number || '').replace(/\\D/g, '');\nlet resolutionStatus = 'passthrough';\n\nif (/@s\\.whatsapp\\.net$/.test(remoteJid)) {\n  resolvedJid = remoteJid;\n  number = remoteJid.replace('@s.whatsapp.net', '').replace(/\\D/g, '');\n  resolutionStatus = 'resolved_direct';\n}\n\nif (isLid) {\n  resolutionStatus = 'unresolved_lid';\n  const staticData = $getWorkflowStaticData('global');\n  if (!staticData.lidToSJid) staticData.lidToSJid = {};\n\n  const cached = staticData.lidToSJid[remoteJid];\n  if (cached && /@s\\.whatsapp\\.net$/i.test(String(cached))) {\n    resolvedJid = String(cached).toLowerCase();\n  }\n\n  const sContacts = contacts.filter((c) => /@s\\.whatsapp\\.net$/i.test(String(c.remoteJid || '')));\n  const targetName = norm(base.pushName);\n\n  const pickUnique = (arr) => (arr.length === 1 ? arr[0] : null);\n\n  if (!resolvedJid && targetName) {\n    const byExactName = sContacts.filter((c) => norm(c.pushName) === targetName);\n    const pickedExact = pickUnique(byExactName);\n    if (pickedExact) resolvedJid = String(pickedExact.remoteJid || '').toLowerCase();\n  }\n\n  if (!resolvedJid && targetName && targetName.length >= 5) {\n    const byContains = sContacts.filter((c) => {\n      const candidate = norm(c.pushName);\n      return candidate && (candidate.includes(targetName) || targetName.includes(candidate));\n    });\n    const pickedContains = pickUnique(byContains);\n    if (pickedContains) resolvedJid = String(pickedContains.remoteJid || '').toLowerCase();\n  }\n\n  if (resolvedJid && /@s\\.whatsapp\\.net$/.test(resolvedJid)) {\n    staticData.lidToSJid[remoteJid] = resolvedJid;\n    number = resolvedJid.replace('@s.whatsapp.net', '').replace(/\\D/g, '');\n    resolutionStatus = 'resolved_from_lid';\n  } else {\n    number = '';\n  }\n}\n\nreturn [{\n  json: {\n    ...base,\n    number,\n    resolvedJid,\n    resolutionStatus\n  }\n}];"
+      },
+      "id": "1ad5e90d-1ed6-40ef-a432-21d60651357b",
+      "name": "Resolve Recipient",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -620,
+        40
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e147bd9e-bd33-4087-9f5b-9f8e429cd49e",
+              "leftValue": "={{!!$json.number}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "962e582f-2507-431d-b6b6-cb46d2109b73",
+      "name": "Can Send?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        430,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Evolution": {
+      "main": [
+        [
+          {
+            "node": "Normalize Payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Payload": {
+      "main": [
+        [
+          {
+            "node": "Evolution Find Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evolution Find Contacts": {
+      "main": [
+        [
+          {
+            "node": "Resolve Recipient",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resolve Recipient": {
+      "main": [
+        [
+          {
+            "node": "Guardrails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardrails": {
+      "main": [
+        [
+          {
+            "node": "AI Allowed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Allowed?": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Responses",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Build Fallback Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Responses": {
+      "main": [
+        [
+          {
+            "node": "Extract Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Reply": {
+      "main": [
+        [
+          {
+            "node": "Can Send?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Fallback Reply": {
+      "main": [
+        [
+          {
+            "node": "Can Send?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Can Send?": {
+      "main": [
+        [
+          {
+            "node": "Evolution Send Text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "local-whatsapp-ai"
+  },
+  "id": "whatsapp-ai-low-cost"
+}

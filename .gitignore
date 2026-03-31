@@ -1,0 +1,63 @@
+# Ambiente virtual Python
+.venv-router/
+.venv*/
+
+# Variáveis de ambiente (senhas, tokens)
+.env
+
+# Bancos de dados (grandes, binários, mudam constantemente)
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+
+# Backups de banco n8n
+n8n-database-backup-*.sqlite
+
+# Logs
+logs/
+*.log
+
+# Cache Python
+__pycache__/
+*.pyc
+
+# Perfil temporário navegador
+vivaldi_temp_profile/
+
+# Arquivos grandes/binários que não precisam versionar
+*.xlsx
+*.png
+
+# Exports CRM
+crm_exports/
+
+# Referência/cache gerado
+reference_patterns_cache/
+rag_vector_store/
+
+# Datasets / modelos ML (13GB+)
+CHATGPT_MACHINE_LEARNING/
+
+# Instagram scraping (dados temporários)
+ig_candidates/
+ig_candidates2/
+ig_direct_posts/
+ig_meta_posts/
+ig_sheet/
+ig_profile.html
+harambe_store_image_scraper/
+
+# HTML capturados
+chrome_dom.html
+chrome_err.txt
+
+# Arquivo morto (debug, backups, scripts únicos)
+_archive/
+
+# Temporários
+*.tmp
+*.bak
+
+# Outputs de execução n8n (debug)
+exec-*.txt
+exec*.txt

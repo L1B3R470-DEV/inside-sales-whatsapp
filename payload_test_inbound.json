@@ -1,0 +1,25 @@
+﻿{
+  "event": "messages.upsert",
+  "instance": "ATENDIMENTO_VENDAS_CLEAN",
+  "data": {
+    "key": {
+      "remoteJid": "114062134407423@lid",
+      "fromMe": false,
+      "id": "A587A24AD360BEE82B6CDEBBC543314D-REPLAY",
+      "participant": null
+    },
+    "pushName": "Classe Comercial Pedidos",
+    "status": "DELIVERY_ACK",
+    "message": {
+      "conversation": "Boa tarde"
+    },
+    "contextInfo": null,
+    "messageType": "conversation",
+    "messageTimestamp": 1774293397,
+    "instanceId": "7ed36341-95f8-4b68-a680-0a7208d87b28",
+    "source": "android"
+  },
+  "sender": "557583211367@s.whatsapp.net",
+  "server_url": "http://localhost:8080",
+  "apikey": "CADCEA48-83F7-4C14-A967-ACB0898F2356"
+}

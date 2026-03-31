@@ -1,0 +1,18 @@
+CENARIO
+Em alguns computadores cliente, o Windows bloqueia acesso SMB sem credenciais (guest).
+
+ARQUIVO DE CORRECAO
+- fix_acesso_guest_cliente.cmd
+
+COMO USAR EM CADA MAQUINA QUE BLOQUEIA
+1) Copie o arquivo fix_acesso_guest_cliente.cmd para a maquina.
+2) Clique com o botao direito nele.
+3) Escolha "Executar como administrador".
+4) Aguarde a finalizacao.
+5) Teste o caminho:
+   \\DESKTOP-2BIV5RS\INTELIGENCIA_COMERCIAL
+
+SE AINDA PEDIR CREDENCIAL
+- O computador provavelmente esta com politica corporativa gerenciada (dominio/MDM).
+- O TI precisa habilitar:
+  Computer Configuration > Administrative Templates > Network > Lanman Workstation > Enable insecure guest logons = Enabled

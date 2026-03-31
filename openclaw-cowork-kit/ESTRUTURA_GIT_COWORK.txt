@@ -1,0 +1,98 @@
+ESTRUTURA GIT DE COWORK
+
+OBJETIVO
+- Permitir trabalho paralelo entre Claude do escritorio, este agente e seus agents sem caos no repo.
+
+BRANCHES
+- main
+  Estado estavel e entregavel.
+
+- develop
+  Integracao continua das features aprovadas.
+
+- feat/<tema>
+  Desenvolvimento de feature.
+  Exemplos:
+  - feat/openclaw-migration
+  - feat/whatsapp-routing
+  - feat/crm-sync
+
+- fix/<tema>
+  Correcao focada.
+
+- spike/<tema>
+  Exploracao tecnica sem compromisso de merge.
+
+- ops/<tema>
+  Infra, scripts, deploy, tunel SSH, observabilidade.
+
+FLUXO RECOMENDADO
+1. `main` protegida.
+2. `develop` como base diaria.
+3. Cada frente de trabalho abre sua propria branch.
+4. Merge para `develop` apos revisao.
+5. Release para `main` somente depois de validacao funcional.
+
+MAPEAMENTO DE RESPONSABILIDADE
+- claude-office
+  Branches:
+  - feat/*
+  - fix/*
+
+- architect
+  Branches:
+  - spike/*
+  - docs/*
+
+- integration
+  Branches:
+  - feat/openclaw-*
+  - feat/integration-*
+  - ops/*
+
+- qa
+  Branches:
+  - fix/test-*
+  - docs/runbooks-*
+
+PASTAS RECOMENDADAS NO REPO
+- agents/
+- docs/architecture/
+- docs/decisions/
+- docs/runbooks/
+- knowledge/
+- integrations/evolution/
+- integrations/n8n/
+- ops/openclaw/
+- ops/ssh/
+- prompts/
+- scripts/dev/
+- scripts/ops/
+- tests/manual/
+
+REGRAS DE COWORK
+- Nunca trabalhar em `main` diretamente.
+- Uma branch por objetivo claro.
+- Um PR por assunto.
+- Prompt, regras e runbooks versionados junto do codigo.
+- Credenciais fora do repo.
+- Tudo que depender do escritorio deve ter runbook em `docs/runbooks/`.
+
+ARQUIVOS QUE DEVEM FICAR FORA DO GIT
+- .env
+- .openclaw/
+- tokens
+- logs
+- bancos sqlite
+- backups
+
+COMANDOS GIT MINIMOS
+- Criar branch:
+  git switch -c feat/openclaw-migration
+
+- Atualizar com develop:
+  git fetch origin
+  git rebase origin/develop
+
+- Publicar branch:
+  git push -u origin feat/openclaw-migration
