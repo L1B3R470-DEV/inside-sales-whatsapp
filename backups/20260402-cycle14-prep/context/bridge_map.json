@@ -1,0 +1,362 @@
+﻿[
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\ack_from_codex",
+        "Name":  "ack_from_codex",
+        "PSIsContainer":  true,
+        "Length":  null,
+        "LastWriteTime":  "\/Date(1774632591561)\/",
+        "Mode":  "d-----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\ack_from_codex\\ACK-REPLY-20241220-113045.json",
+        "Name":  "ACK-REPLY-20241220-113045.json",
+        "PSIsContainer":  false,
+        "Length":  274,
+        "LastWriteTime":  "\/Date(1774630933984)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\ack_from_codex\\ACK-REPLY-20260327-100931.json",
+        "Name":  "ACK-REPLY-20260327-100931.json",
+        "PSIsContainer":  false,
+        "Length":  274,
+        "LastWriteTime":  "\/Date(1774630767133)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\ack_from_codex\\ACK-REPLY-20260327-140045.json",
+        "Name":  "ACK-REPLY-20260327-140045.json",
+        "PSIsContainer":  false,
+        "Length":  274,
+        "LastWriteTime":  "\/Date(1774630874099)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\ack_from_codex\\ACK-REPLY-20260327-140130.json",
+        "Name":  "ACK-REPLY-20260327-140130.json",
+        "PSIsContainer":  false,
+        "Length":  274,
+        "LastWriteTime":  "\/Date(1774630890153)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\ack_from_codex\\ACK-REPLY-20260327-140144.json",
+        "Name":  "ACK-REPLY-20260327-140144.json",
+        "PSIsContainer":  false,
+        "Length":  274,
+        "LastWriteTime":  "\/Date(1774630925963)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\ack_from_codex\\ACK-REPLY-20260327-140247.json",
+        "Name":  "ACK-REPLY-20260327-140247.json",
+        "PSIsContainer":  false,
+        "Length":  274,
+        "LastWriteTime":  "\/Date(1774630866088)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\ack_from_codex\\ACK-REPLY-20260327-140301.json",
+        "Name":  "ACK-REPLY-20260327-140301.json",
+        "PSIsContainer":  false,
+        "Length":  274,
+        "LastWriteTime":  "\/Date(1774631004367)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\ack_from_codex\\ACK-REPLY-20260327-142904.json",
+        "Name":  "ACK-REPLY-20260327-142904.json",
+        "PSIsContainer":  false,
+        "Length":  274,
+        "LastWriteTime":  "\/Date(1774632547504)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\ack_from_codex\\ACK-REPLY-20260327-142937.json",
+        "Name":  "ACK-REPLY-20260327-142937.json",
+        "PSIsContainer":  false,
+        "Length":  274,
+        "LastWriteTime":  "\/Date(1774632591561)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\ack_from_codex\\ACK-REPLY-20260327-163500.json",
+        "Name":  "ACK-REPLY-20260327-163500.json",
+        "PSIsContainer":  false,
+        "Length":  274,
+        "LastWriteTime":  "\/Date(1774631574054)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\autopilot.lock",
+        "Name":  "autopilot.lock",
+        "PSIsContainer":  false,
+        "Length":  5,
+        "LastWriteTime":  "\/Date(1774634437650)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\autopilot.log",
+        "Name":  "autopilot.log",
+        "PSIsContainer":  false,
+        "Length":  1329,
+        "LastWriteTime":  "\/Date(1774634437654)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\autopilot_state.json",
+        "Name":  "autopilot_state.json",
+        "PSIsContainer":  false,
+        "Length":  809,
+        "LastWriteTime":  "\/Date(1774632591563)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\autoplan_failed",
+        "Name":  "autoplan_failed",
+        "PSIsContainer":  true,
+        "Length":  null,
+        "LastWriteTime":  "\/Date(1774630767126)\/",
+        "Mode":  "d-----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\autoplan_inbox",
+        "Name":  "autoplan_inbox",
+        "PSIsContainer":  true,
+        "Length":  null,
+        "LastWriteTime":  "\/Date(1774630984274)\/",
+        "Mode":  "d-----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\autoplan_processed",
+        "Name":  "autoplan_processed",
+        "PSIsContainer":  true,
+        "Length":  null,
+        "LastWriteTime":  "\/Date(1774630984274)\/",
+        "Mode":  "d-----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\autoplan_processed\\MASTERTEST-20260327-140045.json",
+        "Name":  "MASTERTEST-20260327-140045.json",
+        "PSIsContainer":  false,
+        "Length":  548,
+        "LastWriteTime":  "\/Date(1774630845777)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\autoplan_processed\\MASTERTEST2-20260327-140144.json",
+        "Name":  "MASTERTEST2-20260327-140144.json",
+        "PSIsContainer":  false,
+        "Length":  261,
+        "LastWriteTime":  "\/Date(1774630904785)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\autoplan_processed\\MASTERTEST3-20260327-140258.json",
+        "Name":  "MASTERTEST3-20260327-140258.json",
+        "PSIsContainer":  false,
+        "Length":  291,
+        "LastWriteTime":  "\/Date(1774630978830)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\bridge_state.json",
+        "Name":  "bridge_state.json",
+        "PSIsContainer":  false,
+        "Length":  128,
+        "LastWriteTime":  "\/Date(1774615405495)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\cowork_worker.lock",
+        "Name":  "cowork_worker.lock",
+        "PSIsContainer":  false,
+        "Length":  5,
+        "LastWriteTime":  "\/Date(1774634437389)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\inbox_for_claude",
+        "Name":  "inbox_for_claude",
+        "PSIsContainer":  true,
+        "Length":  null,
+        "LastWriteTime":  "\/Date(1774632576252)\/",
+        "Mode":  "d-----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\inbox_for_claude\\MASTER-20260327-140045-S1.json",
+        "Name":  "MASTER-20260327-140045-S1.json",
+        "PSIsContainer":  false,
+        "Length":  1004,
+        "LastWriteTime":  "\/Date(1774630846045)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\inbox_for_claude\\MASTER-20260327-140045-S2.json",
+        "Name":  "MASTER-20260327-140045-S2.json",
+        "PSIsContainer":  false,
+        "Length":  980,
+        "LastWriteTime":  "\/Date(1774630846050)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\inbox_for_claude\\MASTER-20260327-140045-S3.json",
+        "Name":  "MASTER-20260327-140045-S3.json",
+        "PSIsContainer":  false,
+        "Length":  1019,
+        "LastWriteTime":  "\/Date(1774630846052)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\inbox_for_claude\\MASTER-20260327-140144-S1.json",
+        "Name":  "MASTER-20260327-140144-S1.json",
+        "PSIsContainer":  false,
+        "Length":  878,
+        "LastWriteTime":  "\/Date(1774630909937)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\inbox_for_claude\\MASTER-20260327-140144-S2.json",
+        "Name":  "MASTER-20260327-140144-S2.json",
+        "PSIsContainer":  false,
+        "Length":  848,
+        "LastWriteTime":  "\/Date(1774630909939)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\inbox_for_claude\\MASTER-20260327-140144-S3.json",
+        "Name":  "MASTER-20260327-140144-S3.json",
+        "PSIsContainer":  false,
+        "Length":  875,
+        "LastWriteTime":  "\/Date(1774630909941)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\inbox_for_claude\\MASTER-20260327-140258-S1.json",
+        "Name":  "MASTER-20260327-140258-S1.json",
+        "PSIsContainer":  false,
+        "Length":  881,
+        "LastWriteTime":  "\/Date(1774630984272)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\inbox_for_claude\\TASK-20260327-100931.json",
+        "Name":  "TASK-20260327-100931.json",
+        "PSIsContainer":  false,
+        "Length":  350,
+        "LastWriteTime":  "\/Date(1774616971635)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\inbox_for_claude\\TASK-AUDIT-20260327-142847.json",
+        "Name":  "TASK-AUDIT-20260327-142847.json",
+        "PSIsContainer":  false,
+        "Length":  1110,
+        "LastWriteTime":  "\/Date(1774632528037)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\inbox_for_claude\\TASK-AUDIT2-20260327-142936.json",
+        "Name":  "TASK-AUDIT2-20260327-142936.json",
+        "PSIsContainer":  false,
+        "Length":  909,
+        "LastWriteTime":  "\/Date(1774632576252)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\outbox_from_claude",
+        "Name":  "outbox_from_claude",
+        "PSIsContainer":  true,
+        "Length":  null,
+        "LastWriteTime":  "\/Date(1774632589783)\/",
+        "Mode":  "d-----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\outbox_from_claude\\REPLY-20241220-113045.json",
+        "Name":  "REPLY-20241220-113045.json",
+        "PSIsContainer":  false,
+        "Length":  1911,
+        "LastWriteTime":  "\/Date(1774630932611)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\outbox_from_claude\\REPLY-20260327-100931.json",
+        "Name":  "REPLY-20260327-100931.json",
+        "PSIsContainer":  false,
+        "Length":  356,
+        "LastWriteTime":  "\/Date(1774617047700)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\outbox_from_claude\\REPLY-20260327-140045.json",
+        "Name":  "REPLY-20260327-140045.json",
+        "PSIsContainer":  false,
+        "Length":  1606,
+        "LastWriteTime":  "\/Date(1774630872565)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\outbox_from_claude\\REPLY-20260327-140130.json",
+        "Name":  "REPLY-20260327-140130.json",
+        "PSIsContainer":  false,
+        "Length":  2205,
+        "LastWriteTime":  "\/Date(1774630886917)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\outbox_from_claude\\REPLY-20260327-140144.json",
+        "Name":  "REPLY-20260327-140144.json",
+        "PSIsContainer":  false,
+        "Length":  2607,
+        "LastWriteTime":  "\/Date(1774630946241)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\outbox_from_claude\\REPLY-20260327-140247.json",
+        "Name":  "REPLY-20260327-140247.json",
+        "PSIsContainer":  false,
+        "Length":  2126,
+        "LastWriteTime":  "\/Date(1774630863734)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\outbox_from_claude\\REPLY-20260327-140301.json",
+        "Name":  "REPLY-20260327-140301.json",
+        "PSIsContainer":  false,
+        "Length":  2283,
+        "LastWriteTime":  "\/Date(1774631002032)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\outbox_from_claude\\REPLY-20260327-142904.json",
+        "Name":  "REPLY-20260327-142904.json",
+        "PSIsContainer":  false,
+        "Length":  320,
+        "LastWriteTime":  "\/Date(1774632544965)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\outbox_from_claude\\REPLY-20260327-142937.json",
+        "Name":  "REPLY-20260327-142937.json",
+        "PSIsContainer":  false,
+        "Length":  2085,
+        "LastWriteTime":  "\/Date(1774632589783)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\outbox_from_claude\\REPLY-20260327-163500.json",
+        "Name":  "REPLY-20260327-163500.json",
+        "PSIsContainer":  false,
+        "Length":  2557,
+        "LastWriteTime":  "\/Date(1774631572440)\/",
+        "Mode":  "-a----"
+    },
+    {
+        "FullName":  "C:\\AUTOMACAO\\cowork\\claude_bridge\\worker_state.json",
+        "Name":  "worker_state.json",
+        "PSIsContainer":  false,
+        "Length":  370,
+        "LastWriteTime":  "\/Date(1774632589784)\/",
+        "Mode":  "-a----"
+    }
+]

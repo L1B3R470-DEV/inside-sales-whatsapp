@@ -1,0 +1,62 @@
+{
+  "cycle": 17,
+  "phase": "governance-basis-register",
+  "generated_at": "2026-04-02T17:35:03Z",
+  "source_of_truth": {
+    "primary_review": "cycle-016B-r2-governance-analytical-reading-review.json",
+    "payload_origin": "cycle-016A-r2-governance-analytical-reading.json"
+  },
+  "governance_observations": [
+    {
+      "id": "GO1",
+      "statement": "R2 should be governed as a bounded coverage-watch item, not as a live operational diagnosis.",
+      "anchored_to": "15A funnel_concentration_hypothesis",
+      "carry_forward_to_cycle_17": true
+    },
+    {
+      "id": "GO2",
+      "statement": "The main governance concern is preserving visibility of aggregate movement between new and qualifying in future approved snapshots.",
+      "anchored_to": "15A monitoring_recommendations and coverage_gaps_identified",
+      "carry_forward_to_cycle_17": true
+    },
+    {
+      "id": "GO3",
+      "statement": "A single approved snapshot is sufficient for governance signaling, but insufficient for governance certainty about directionality.",
+      "anchored_to": "15A coverage_gaps_identified and snapshot_limitations",
+      "carry_forward_to_cycle_17": true
+    },
+    {
+      "id": "GO4",
+      "statement": "The governance layer must continue to separate snapshot evidence from any claim about current CRM or current operational performance.",
+      "anchored_to": "15A snapshot_limitations and 14B cycle002_assessment",
+      "carry_forward_to_cycle_17": true
+    }
+  ],
+  "open_questions": [
+    {
+      "id": "OQ1",
+      "question": "Is the observed concentration in qualifying stable, improving, or worsening across time?",
+      "status": "open",
+      "reason_open": "single snapshot does not establish trend continuity"
+    },
+    {
+      "id": "OQ2",
+      "question": "Is low representation of new leads seasonal, structural, or incidental?",
+      "status": "open",
+      "reason_open": "snapshot supports visibility concern but not causal explanation"
+    },
+    {
+      "id": "OQ3",
+      "question": "Can any future approved chain anchor a live CRM surface without ambiguity?",
+      "status": "open",
+      "reason_open": "current official chain resolves cycle-002 only as snapshot-only evidence"
+    },
+    {
+      "id": "OQ4",
+      "question": "Could a future agent-assisted phase ever be tolerated under the session-write caveat without violating zero-write-sensitive rules?",
+      "status": "open",
+      "reason_open": "session_write_policy remains RESSALVA_OPERACIONAL and no tolerance is implied"
+    }
+  ],
+  "basis_note": "O ciclo 17 deve usar GO1–GO4 e OQ1–OQ4 como base documental para decidir entre formalizar recomendacao documental ou reconhecer limite natural do escopo snapshot-bound, sem inventar base nova."
+}

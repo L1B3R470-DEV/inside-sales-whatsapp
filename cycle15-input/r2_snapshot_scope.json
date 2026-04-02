@@ -1,0 +1,58 @@
+{
+  "cycle": 15,
+  "phase": "r2-snapshot-scope",
+  "generated_at": "2026-04-02T13:04:28Z",
+  "item": {
+    "rec_id": "R2",
+    "title": "Aprimorar cobertura do funil para reduzir concentracao no estagio intermediario",
+    "category": "crm_coverage",
+    "scope_mode": "snapshot-bound",
+    "status_for_cycle_15": "documentary_preparation_only"
+  },
+  "scope_summary": "No ciclo 15, R2 fica limitado a produzir conteudo analitico documental baseado exclusivamente no snapshot aprovado do ciclo 2 e na cadeia oficial homologada dos ciclos 12 a 14. O escopo concreto e descrever cobertura agregada do funil, concentracao no estagio qualificando, variacao relativa entre novo e qualificando e limites do proprio snapshot sem qualquer reclassificacao como CRM live.",
+  "supported_documentary_findings": [
+    "contagem total agregada de leads",
+    "distribuicao agregada de leads por estagio",
+    "proporcao relativa entre novo e qualificando",
+    "volume agregado de interacoes",
+    "volume agregado de regras de conhecimento ativas",
+    "volume agregado de ciclos de conhecimento executados",
+    "volume agregado de contatos ignorados",
+    "leitura contextual do equilibrio da bridge apenas como indicio documental historico do ciclo 2"
+  ],
+  "surfaces_in_scope": [
+    {
+      "surface": "cycle-002-crm-snapshot.json",
+      "role": "fonte primaria snapshot-bound para achados agregados de CRM",
+      "supports_live_crm": false
+    },
+    {
+      "surface": "cycle-013A/13B read-only specification",
+      "role": "delimita linguagem permitida de analise, monitoramento e ausencia de PII",
+      "supports_live_crm": false
+    },
+    {
+      "surface": "cycle-014A/14B restriction chain",
+      "role": "mantem vinculante a decisao de snapshot-only e a ressalva operacional sobre escrita de sessao",
+      "supports_live_crm": false
+    }
+  ],
+  "surfaces_out_of_scope": [
+    "CRM live ou qualquer superficie atual nao ancorada explicitamente",
+    "leituras row-level ou qualquer dado identificavel de lead",
+    "producao, projeto real, .mcp.json, bridge local e qualquer workspace real",
+    "ativacao de sandbox, escrita real, patch, DDL, DML ou validacao operacional"
+  ],
+  "snapshot_limitations_to_preserve": [
+    "cycle-002 ancora snapshot e nao CRM live",
+    "router baseline do ciclo 2 e herdado de arquivo aprovado e nao de leitura live",
+    "findings do ciclo 2 sao historicos e agregados, nao series temporais atuais",
+    "qualquer progressao futura continua dependente de contrato explicito novo antes de sandbox ou escrita"
+  ],
+  "binding_requirements": [
+    "manter linguagem de analise e monitoramento agregados",
+    "preservar baseline pos-R6 exatamente como homologado",
+    "nao herdar autorizacao, escopo ou premissa de R6, 13A ou 14A",
+    "aplicar a decisao 14A/14B de escrita de sessao como ressalva operacional"
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "cycle": 16,
+  "phase": "scope-draft",
+  "generated_at": "2026-04-02T13:19:23Z",
+  "focus_item": "R2",
+  "goal": "Preparar a base documental para transformar os findings homologados do snapshot de R2 em leitura de governanca, deixando claro o que pode ser afirmado estruturalmente, o que deve continuar aberto e quais restricoes herdadas continuam vinculantes.",
+  "allowed_sources": [
+    "cycle-015B-r2-snapshot-documentary-analysis-review.json",
+    "cycle-015A-r2-snapshot-documentary-analysis.json",
+    "cycle-014B-r2-restriction-resolution-review.json",
+    "cycle-014A-restriction-resolution-classification.json",
+    "cycle-013B-r2-readonly-specification-review.json",
+    "cycle-012B-next-item-reopen-decision.json",
+    "cycle-011-stability-report.json",
+    "cycle-010-real-write-evidence.json",
+    "cycle-005-write-proposals.json",
+    "cycle-004-execution-plan.json",
+    "cycle-003-improvement-plan.json",
+    "cycle-002-crm-snapshot.json"
+  ],
+  "questions_to_answer_next": [
+    "Como traduzir os findings homologados do snapshot em leitura de governanca sem sugerir diagnostico live?",
+    "Quais observacoes estruturais sobre balanceamento de funil podem ser declaradas com seguranca documental?",
+    "Quais questoes precisam permanecer explicitamente nao resolvidas por dependerem de tendencia temporal ou CRM live?",
+    "Como carregar para o ciclo 16 as restricoes herdadas de 14A/14B e 15A/15B sem alargar o escopo?"
+  ],
+  "hard_constraints": [
+    "Nao executar o ciclo 16 analitico nesta rodada.",
+    "Nao tocar no projeto real, na producao, em .mcp.json, na bridge local ou em qualquer binding real.",
+    "Nao executar patch, SQL, DDL, DML, sandbox, rollback, validacao operacional ou escrita fora do workspace-integration.",
+    "Nao tratar cycle-002 como CRM live; manter enquadramento snapshot-bound.",
+    "Nao reutilizar autorizacao, escopo ou premissa de R6, 14A ou 15A.",
+    "Nao introduzir PII nem campos row-level."
+  ],
+  "expected_outputs_next": [
+    "leitura de governanca de R2 limitada a evidencias estruturais do snapshot homologado",
+    "mapeamento das observacoes que podem ser afirmadas sem extrapolacao live",
+    "lista formal das questoes que devem permanecer abertas",
+    "reconfirmacao das restricoes vinculantes herdadas da cadeia 14/15"
+  ],
+  "execution_now": {
+    "authorized": false,
+    "reason": "Esta rodada apenas prepara a base tecnica do ciclo 16."
+  }
+}

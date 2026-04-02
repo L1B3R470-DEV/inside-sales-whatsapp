@@ -1,0 +1,25 @@
+﻿{
+    "cycle":  9,
+    "selected_item":  "R6",
+    "allowed_item_count":  1,
+    "allowed_file_count":  1,
+    "allowed_component_count":  1,
+    "allowed_item":  {
+                         "rec_id":  "R6",
+                         "title":  "Aumentar a observabilidade da eficiÃªncia do cache por amostragem contÃ­nua",
+                         "category":  "cache",
+                         "target_file":  "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\router_runtime.sqlite",
+                         "target_component":  "observabilidade do cache / mÃ©tricas do router",
+                         "change_type":  "instrumentation-analysis",
+                         "change_summary":  "Preparar escrita futura de telemetria observacional para medir aproveitamento do cache por janela e distinguir problema de cobertura versus matching.",
+                         "proposed_state":  "Passar a acompanhar amostras agregadas para correlacionar entradas cacheadas com cache_hit por janela, sem expor PII e sem alterar a lÃ³gica de produÃ§Ã£o.",
+                         "diff_description":  "A mudanÃ§a pretendida Ã© nÃ£o funcional e descritiva: adicionar observabilidade agregada ao fluxo jÃ¡ existente de cache e roteamento, sem alterar a semÃ¢ntica das decisÃµes atuais."
+                     },
+    "prohibitions":  [
+                         "proibido editar qualquer arquivo alem de router_runtime.sqlite",
+                         "proibido processar qualquer item alem de R6",
+                         "proibido alterar .mcp.json, bridge local, gateway ou producao",
+                         "proibido criar patch, diff executavel ou escrita nesta rodada",
+                         "proibido ampliar o escopo para componentes nao ligados a observabilidade do cache / metricas do router"
+                     ]
+}

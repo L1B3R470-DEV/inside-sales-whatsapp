@@ -1,0 +1,58 @@
+{
+  "cycle": 16,
+  "phase": "inherited-constraints",
+  "generated_at": "2026-04-02T13:19:23Z",
+  "binding_sources": [
+    "cycle-015B-r2-snapshot-documentary-analysis-review.json",
+    "cycle-015A-r2-snapshot-documentary-analysis.json",
+    "cycle-014B-r2-restriction-resolution-review.json",
+    "cycle-014A-restriction-resolution-classification.json",
+    "cycle-013B-r2-readonly-specification-review.json",
+    "cycle-012B-next-item-reopen-decision.json",
+    "cycle-011-stability-report.json",
+    "cycle-010-real-write-evidence.json"
+  ],
+  "authorization_reset": {
+    "authorization_inheritance": false,
+    "scope_reused": false,
+    "premises_reused": false,
+    "note": "O ciclo 16 nao recebe autorizacao operacional nem reaproveita escopo ou premissa operativa de R6, 14A ou 15A."
+  },
+  "binding_constraints": [
+    "R2 permanece limitado a leitura documental, agregada e snapshot-bound de crm_coverage.",
+    "cycle-002 continua sendo ancora de snapshot e nao de CRM live.",
+    "o baseline pos-R6 continua protegido e nao pode ser reinterpretado como permissao de execucao.",
+    "cache_observability_windows e router_runtime.sqlite permanecem apenas como evidencia protegida do baseline.",
+    "proibido tocar em producao, projeto real, .mcp.json, bridge local, bindings ou qualquer workspace real.",
+    "proibido introduzir PII, consultas row-level, leitura live de CRM, escrita real, sandbox, patch, SQL, DDL, DML, rollback ou validacao operacional.",
+    "qualquer fase futura com apoio de agent continua sujeita a session_write_policy = RESSALVA_OPERACIONAL.",
+    "qualquer escrita ou ativacao de sandbox continua exigindo contrato explicito novo."
+  ],
+  "session_write_policy": {
+    "decision": "RESSALVA_OPERACIONAL",
+    "binding_from": "14A",
+    "meaning": "escritas de sessao fora de workspace-integration nao sao aceitas por padrao em fases sensiveis a zero escrita e precisam de tolerancia contratual explicita se algum dia forem admitidas",
+    "applies_to": [
+      "agent-assisted phases",
+      "embedded/local style workflows",
+      "qualquer caminho que persista sessao sob ~/.openclaw/agents"
+    ]
+  },
+  "governance_specific_limits": [
+    "permitido apenas traduzir findings homologados em leitura de governanca",
+    "nao permitido extrapolar findings snapshot-bound para diagnostico live",
+    "questoes abertas devem permanecer explicitamente nao resolvidas quando o snapshot nao sustentar conclusao"
+  ],
+  "progression_state": {
+    "restriction_classification": "RESOLVIVEL_COM_CONDICAO",
+    "progression_recommendation": "PROGREDIR_COM_CONDICAO",
+    "documentary_readiness": "ANALISE_DOCUMENTAL_COMPLETA",
+    "required_conditions": [
+      "tratar cycle-002 como evidencia snapshot-only",
+      "manter linguagem agregada e sem PII",
+      "preservar baseline pos-R6",
+      "aplicar a ressalva operacional de escrita de sessao a qualquer fase assistida por agent",
+      "novo contrato explicito antes de qualquer escrita ou sandbox"
+    ]
+  }
+}

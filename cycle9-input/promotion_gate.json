@@ -1,0 +1,54 @@
+﻿{
+    "cycle":  9,
+    "selected_item":  "R6",
+    "already_satisfied":  [
+                              {
+                                  "gate":  "promotion_decision_approved",
+                                  "status":  "passed",
+                                  "source":  "cycle-008-promotion-decision.json"
+                              },
+                              {
+                                  "gate":  "sandbox_write_confined",
+                                  "status":  "passed",
+                                  "source":  "cycle-007-sandbox-write-evidence.json"
+                              },
+                              {
+                                  "gate":  "real_file_untouched_confirmed",
+                                  "status":  "passed",
+                                  "source":  "cycle-007-sandbox-write-evidence.json"
+                              },
+                              {
+                                  "gate":  "rollback_available_in_sandbox",
+                                  "status":  "passed",
+                                  "source":  "cycle-006-isolated-write-plan.json"
+                              },
+                              {
+                                  "gate":  "single_item_scope_locked",
+                                  "status":  "passed",
+                                  "source":  "cycle9-input/write_scope_lock.json"
+                              }
+                          ],
+    "remaining_before_future_write":  [
+                                          {
+                                              "gate":  "fresh_pre_write_hash_confirmation",
+                                              "status":  "pending",
+                                              "note":  "Reconfirmar hash e metadados do arquivo real imediatamente antes da futura escrita supervisionada."
+                                          },
+                                          {
+                                              "gate":  "single_backup_creation",
+                                              "status":  "pending",
+                                              "note":  "Criar backup binario unico do arquivo real no caminho planejado antes da primeira modificacao."
+                                          },
+                                          {
+                                              "gate":  "final_human_go_no_go",
+                                              "status":  "pending",
+                                              "note":  "Obter autorizacao explicita final do orquestrador para a escrita unica supervisionada."
+                                          },
+                                          {
+                                              "gate":  "post_write_validation_plan_recheck",
+                                              "status":  "pending",
+                                              "note":  "Reexecutar criterios objetivos de validacao e rollback no momento da escrita."
+                                          }
+                                      ],
+    "gate_note":  "Este checklist apenas prepara a futura escrita supervisionada. Nao autoriza escrita nesta rodada."
+}

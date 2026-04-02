@@ -1,0 +1,26 @@
+{
+  "cycle": 7,
+  "input_artifacts": [
+    {
+      "file": "cycle-006-isolated-write-plan.json",
+      "source_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-006-isolated-write-plan.json",
+      "consolidated_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle7-input\\artifacts\\cycle-006-isolated-write-plan.json",
+      "purpose": "Plano aprovado de escrita isolada do ciclo 6, usado como entrada oficial do ciclo 7",
+      "status": "approved"
+    },
+    {
+      "file": "cycle-005-write-proposals.json",
+      "source_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-005-write-proposals.json",
+      "consolidated_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle7-input\\artifacts\\cycle-005-write-proposals.json",
+      "purpose": "Propostas de escrita aprovadas do ciclo 5 que originam o item selecionado",
+      "status": "approved"
+    },
+    {
+      "file": "cycle-004-execution-plan.json",
+      "source_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-004-execution-plan.json",
+      "consolidated_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle7-input\\artifacts\\cycle-004-execution-plan.json",
+      "purpose": "Plano de execu??o aprovado do ciclo 4 para rastreabilidade do item original",
+      "status": "approved"
+    }
+  ]
+}

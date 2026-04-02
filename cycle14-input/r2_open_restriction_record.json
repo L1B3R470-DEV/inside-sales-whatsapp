@@ -1,0 +1,30 @@
+{
+  "cycle": 14,
+  "phase": "open-restriction-record",
+  "generated_at": "2026-04-02T12:45:18Z",
+  "item": "R2",
+  "restriction_status": "open",
+  "restriction_origin": {
+    "source": "cycle-013B-r2-readonly-specification-review.json",
+    "classification": "ESPECIFICACAO_COMPLETA_COM_RESTRICAO",
+    "blocking_statement": "A current live CRM read-only surface is not explicitly anchored without ambiguity in the official 13A source set."
+  },
+  "restriction_summary": "R2 was specified successfully in documentary read-only form, but the specification remained restricted because no current CRM live surface was anchored without ambiguity. Cycle 14 exists to determine whether this is resolvable through the official documentary chain or whether the restriction remains blocking.",
+  "documentary_facts": [
+    "R2 remains reopened and compatible with the post-R6 baseline.",
+    "R2 remains limited to aggregated funnel coverage analysis and no-PII monitoring language.",
+    "R6 remains stable_closed and cannot be reused as authorization, scope, or operative premise.",
+    "cycle-002-crm-snapshot.json is present in the expected official output set and can be inspected documentary in cycle 14."
+  ],
+  "candidate_resolution_paths": [
+    "Determine whether cycle-002-crm-snapshot.json anchors only a snapshot surface or a valid current CRM source for future phases.",
+    "Determine whether the restriction can be downgraded from blocking to manageable if only snapshot-based CRM evidence is available.",
+    "Freeze R2 progression if the CRM surface remains ambiguous after documentary review."
+  ],
+  "not_authorized_yet": [
+    "no cycle 14 analysis execution in this round",
+    "no live CRM consultation",
+    "no production read with ambiguity",
+    "no sandbox or real write"
+  ]
+}

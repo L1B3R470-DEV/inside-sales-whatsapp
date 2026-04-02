@@ -1,0 +1,18 @@
+{
+  "cycle": 11,
+  "selected_item": "R6",
+  "title": "Aumentar a observabilidade da eficiencia do cache por amostragem continua",
+  "database_logical_unit": {
+    "mode": "sqlite-wal",
+    "primary_file": "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\router_runtime.sqlite",
+    "wal_file": "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\router_runtime.sqlite-wal",
+    "shm_file": "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\router_runtime.sqlite-shm"
+  },
+  "target_component": "observabilidade do cache / mÃ©tricas do router",
+  "created_table": "cache_observability_windows",
+  "change_type": "ddl_only",
+  "post_write_status": "created_and_empty",
+  "final_file_sha256": "A494A6C176A25FF46EA01169455A53C47D890CAF5B199B2119B9FD23CB484278",
+  "backup_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\backups\\cycle9\\router_runtime.sqlite.bak",
+  "write_success_confirmed": true
+}

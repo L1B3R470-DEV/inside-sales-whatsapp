@@ -1,0 +1,66 @@
+{
+  "cycle": 11,
+  "selected_item": "R6",
+  "baseline_refresh_scope": {
+    "logical_database_unit": "router_runtime.sqlite + router_runtime.sqlite-wal + router_runtime.sqlite-shm",
+    "new_table_included": "cache_observability_windows",
+    "new_table_expected_state": "exists_and_empty",
+    "read_only_future_focus": [
+      "sqlite_master table list",
+      "PRAGMA table_info(cache_observability_windows)",
+      "COUNT(*) on cache_observability_windows",
+      "hash and metadata of primary file"
+    ],
+    "excluded_actions": [
+      "no DDL",
+      "no DML",
+      "no writes to real database",
+      "no production changes"
+    ]
+  },
+  "baseline_before_write_sha256": "305B7F640A7D825D6EE4C9AF09FC35AD0F40ED09936BEF28E73DCF8AA4691A40",
+  "baseline_after_write_sha256": "A494A6C176A25FF46EA01169455A53C47D890CAF5B199B2119B9FD23CB484278",
+  "post_write_tables_baseline": [
+    [
+      "always_allowed_numbers",
+      "CREATE TABLE always_allowed_numbers (\n          number TEXT PRIMARY KEY,\n          reason TEXT DEFAULT '',\n          added_at TEXT NOT NULL\n        )"
+    ],
+    [
+      "blocked_numbers",
+      "CREATE TABLE blocked_numbers (\n          number TEXT PRIMARY KEY,\n          reason TEXT DEFAULT '',\n          added_at TEXT NOT NULL\n        )"
+    ],
+    [
+      "cache_observability_windows",
+      "CREATE TABLE cache_observability_windows (\n  window_start TEXT NOT NULL,\n  window_end TEXT NOT NULL,\n  response_cache_count INTEGER NOT NULL,\n  cache_hit_count INTEGER NOT NULL,\n  notes TEXT NOT NULL\n)"
+    ],
+    [
+      "conversation_history",
+      "CREATE TABLE conversation_history (\n          id INTEGER PRIMARY KEY AUTOINCREMENT,\n          contact_key TEXT NOT NULL,\n          direction TEXT NOT NULL DEFAULT 'inbound',\n          message_text TEXT NOT NULL,\n          intent TEXT DEFAULT '',\n          complexity TEXT DEFAULT '',\n          lead_score REAL DEFAULT 0,\n          route_decision TEXT DEFAULT '',\n          created_at TEXT NOT NULL\n        )"
+    ],
+    [
+      "lid_mappings",
+      "CREATE TABLE lid_mappings (\n          remote_jid TEXT PRIMARY KEY,\n          phone_number TEXT NOT NULL,\n          resolved_jid TEXT NOT NULL,\n          push_name TEXT,\n          source TEXT DEFAULT 'log_scan',\n          message_id TEXT,\n          created_at TEXT NOT NULL,\n          updated_at TEXT NOT NULL,\n          last_seen_at TEXT NOT NULL\n        )"
+    ],
+    [
+      "rag_chunks",
+      "CREATE TABLE rag_chunks (\n          chunk_id TEXT PRIMARY KEY,\n          file_path TEXT NOT NULL,\n          chunk_hash TEXT NOT NULL,\n          token_count INTEGER DEFAULT 0,\n          created_at TEXT NOT NULL,\n          updated_at TEXT NOT NULL\n        , file_name TEXT, chunk_text TEXT, normalized_text TEXT)"
+    ],
+    [
+      "rag_documents",
+      "CREATE TABLE rag_documents (\n          file_path TEXT PRIMARY KEY,\n          file_name TEXT NOT NULL,\n          extension TEXT NOT NULL,\n          file_hash TEXT NOT NULL,\n          last_modified REAL NOT NULL,\n          chunk_count INTEGER DEFAULT 0,\n          indexed_at TEXT NOT NULL,\n          status TEXT DEFAULT 'active'\n        )"
+    ],
+    [
+      "response_cache",
+      "CREATE TABLE response_cache (\n          normalized_message TEXT PRIMARY KEY,\n          reply_text TEXT NOT NULL,\n          intent TEXT,\n          confidence REAL DEFAULT 0,\n          source TEXT DEFAULT 'auto',\n          active INTEGER DEFAULT 1,\n          hit_count INTEGER DEFAULT 0,\n          created_at TEXT NOT NULL,\n          updated_at TEXT NOT NULL,\n          last_hit_at TEXT\n        )"
+    ],
+    [
+      "route_logs",
+      "CREATE TABLE route_logs (\n          id INTEGER PRIMARY KEY AUTOINCREMENT,\n          number TEXT,\n          push_name TEXT,\n          inbound_text TEXT,\n          normalized_message TEXT,\n          route_decision TEXT,\n          message_complexity TEXT,\n          cache_hit INTEGER DEFAULT 0,\n          lead_score INTEGER DEFAULT 0,\n          rag_hit_count INTEGER DEFAULT 0,\n          rag_top_score REAL DEFAULT 0,\n          created_at TEXT NOT NULL\n        )"
+    ],
+    [
+      "sqlite_sequence",
+      "CREATE TABLE sqlite_sequence(name,seq)"
+    ]
+  ],
+  "scope_note": "O novo baseline tecnico passa a considerar a tabela cache_observability_windows como parte do schema esperado de R6 apos a escrita real bem-sucedida."
+}

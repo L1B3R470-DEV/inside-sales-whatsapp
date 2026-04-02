@@ -1,0 +1,103 @@
+{
+  "cycle": 4,
+  "source_file": "cycle-003-improvement-plan.json",
+  "candidate_actions": [
+    {
+      "recommendation_id": "R1",
+      "title": "Reduzir o desalinhamento entre cache ativo e uso efetivo na decisÃ£o de rota",
+      "category": "routing",
+      "source_priority": 1,
+      "provisional_risk_band": "medium_risk",
+      "validation_required": true,
+      "status": "candidate_only",
+      "technical_goal": "Maior taxa de aproveitamento do cache, menor custo por interaÃ§Ã£o e respostas mais consistentes.",
+      "hypothesis": "O roteamento pode estar ignorando entradas de cache vÃ¡lidas ou falhando na normalizaÃ§Ã£o da chave de lookup, o que reduz eficiÃªncia e consistÃªncia operacional.",
+      "evidence_sources": [
+        "output:cycle-001-router-read.json",
+        "output:cycle-002-crm-snapshot.json"
+      ],
+      "notes": "Derived from approved cycle 3 plan; not yet transformed into patch or executable change."
+    },
+    {
+      "recommendation_id": "R2",
+      "title": "Aprimorar cobertura do funil para reduzir concentraÃ§Ã£o no estÃ¡gio intermediÃ¡rio",
+      "category": "crm_coverage",
+      "source_priority": 2,
+      "provisional_risk_band": "low_risk",
+      "validation_required": false,
+      "status": "candidate_only",
+      "technical_goal": "Melhor distribuiÃ§Ã£o do pipeline e maior previsibilidade de avanÃ§o dos leads.",
+      "hypothesis": "O funil estÃ¡ concentrado em leads qualificando, com baixa renovaÃ§Ã£o de novos leads e pouca evidÃªncia de avanÃ§o para etapas finais.",
+      "evidence_sources": [
+        "output:cycle-002-crm-snapshot.json",
+        "mcp:sqlite-generic:read_query:knowledge_cycles.total"
+      ],
+      "notes": "Derived from approved cycle 3 plan; not yet transformed into patch or executable change."
+    },
+    {
+      "recommendation_id": "R3",
+      "title": "Reavaliar o volume de contatos ignorados em relaÃ§Ã£o ao perfil atual da operaÃ§Ã£o",
+      "category": "guardrails",
+      "source_priority": 3,
+      "provisional_risk_band": "medium_risk",
+      "validation_required": true,
+      "status": "candidate_only",
+      "technical_goal": "Maior seguranÃ§a comercial sem perder oportunidades vÃ¡lidas por excesso de restriÃ§Ã£o.",
+      "hypothesis": "O nÃ­vel de contatos ignorados pode refletir filtros corretos, mas tambÃ©m pode esconder bloqueio excessivo se a base crescer.",
+      "evidence_sources": [
+        "output:cycle-002-crm-snapshot.json",
+        "mcp:sqlite-generic:read_query:knowledge_rules.active",
+        "mcp:bridge-monitor:bridge_status"
+      ],
+      "notes": "Derived from approved cycle 3 plan; not yet transformed into patch or executable change."
+    },
+    {
+      "recommendation_id": "R4",
+      "title": "Padronizar a consistÃªncia consultiva da persona em respostas de baixa complexidade",
+      "category": "persona",
+      "source_priority": 4,
+      "provisional_risk_band": "medium_risk",
+      "validation_required": true,
+      "status": "candidate_only",
+      "technical_goal": "Maior coerÃªncia percebida pelo lead e menor variaÃ§Ã£o de tom entre caminhos de resposta.",
+      "hypothesis": "A persona consultiva existe, mas a evidÃªncia disponÃ­vel nÃ£o garante consistÃªncia entre respostas cacheadas e rotas diretas em todos os cenÃ¡rios.",
+      "evidence_sources": [
+        "output:cycle-001-router-read.json",
+        "context:current_state_summary.json"
+      ],
+      "notes": "Derived from approved cycle 3 plan; not yet transformed into patch or executable change."
+    },
+    {
+      "recommendation_id": "R5",
+      "title": "Verificar se o fallback preserva utilidade comercial suficiente em mensagens recorrentes",
+      "category": "fallback",
+      "source_priority": 5,
+      "provisional_risk_band": "low_risk",
+      "validation_required": false,
+      "status": "candidate_only",
+      "technical_goal": "Resposta sem IA forte mais consistente e menos dependente de intervenÃ§Ã£o posterior.",
+      "hypothesis": "O fallback parece funcional, mas a evidÃªncia atual Ã© insuficiente para garantir que ele mantenha clareza comercial e continuidade de conversa em casos simples.",
+      "evidence_sources": [
+        "output:cycle-001-router-read.json",
+        "context:improvement_targets.json"
+      ],
+      "notes": "Derived from approved cycle 3 plan; not yet transformed into patch or executable change."
+    },
+    {
+      "recommendation_id": "R6",
+      "title": "Aumentar a observabilidade da eficiÃªncia do cache por amostragem contÃ­nua",
+      "category": "cache",
+      "source_priority": 6,
+      "provisional_risk_band": "low_risk",
+      "validation_required": false,
+      "status": "candidate_only",
+      "technical_goal": "Melhor visibilidade sobre ganhos reais de cache e menor risco de falsa sensaÃ§Ã£o de eficiÃªncia.",
+      "hypothesis": "O cache existe e contÃ©m entrada ativa, mas a leitura disponÃ­vel mostra uso pouco efetivo; isso merece monitoramento especÃ­fico para confirmar se o problema Ã© cobertura ou matching.",
+      "evidence_sources": [
+        "output:cycle-001-router-read.json",
+        "mcp:sqlite-generic:read_query:leads.total"
+      ],
+      "notes": "Derived from approved cycle 3 plan; not yet transformed into patch or executable change."
+    }
+  ]
+}

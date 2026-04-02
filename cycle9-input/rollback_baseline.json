@@ -1,0 +1,16 @@
+﻿{
+    "cycle":  9,
+    "selected_item":  "R6",
+    "real_file":  "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\router_runtime.sqlite",
+    "baseline_sha256":  "305B7F640A7D825D6EE4C9AF09FC35AD0F40ED09936BEF28E73DCF8AA4691A40",
+    "baseline_size_bytes":  225280,
+    "baseline_last_modified":  "2026-03-27T17:50:35.8687406Z",
+    "proposed_backup_path":  "C:\\Users\\User\\.openclaw\\workspace-integration\\backups\\cycle9\\router_runtime.sqlite.bak",
+    "backup_not_created_yet":  true,
+    "rollback_strategy":  "Antes de qualquer escrita futura, criar um backup binario unico do arquivo real e, em caso de rollback, restaurar exatamente esse backup no mesmo caminho do arquivo original.",
+    "rollback_constraints":  [
+                                 "nenhum backup e criado nesta rodada",
+                                 "rollback so pode usar backup gerado imediatamente antes da futura escrita supervisionada",
+                                 "qualquer restauracao futura deve ocorrer apenas com autorizacao explicita do orquestrador"
+                             ]
+}

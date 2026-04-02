@@ -1,0 +1,18 @@
+{
+  "cycle": 11,
+  "selected_item": "R6",
+  "documentary_readiness_only": true,
+  "current_position": "R6 foi executado com success e agora exige observacao pos-escrita antes de qualquer proxima promocao.",
+  "can_discuss_future_item_without_reopening_r6": "condicional",
+  "conditions": [
+    "confirmar que cache_observability_windows permanece no schema esperado em leitura futura",
+    "confirmar que a tabela continua vazia ou dentro do comportamento esperado sem DML desta rodada",
+    "tratar R6 como baseline atualizado antes de promover novo item"
+  ],
+  "non_authorizations": [
+    "nao autoriza novo item nesta rodada",
+    "nao autoriza nova escrita real",
+    "nao autoriza reabrir risco operacional de R6 sem observacao do ciclo 11"
+  ],
+  "note": "A avaliacao e estritamente documental e preparatoria, sem liberar proxima promocao automaticamente."
+}

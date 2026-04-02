@@ -1,0 +1,49 @@
+{
+  "cycle": 13,
+  "phase": "input-preparation",
+  "generated_at": "2026-04-02T12:27:07Z",
+  "artifacts": [
+    {
+      "name": "cycle-012B-next-item-reopen-decision.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-012B-next-item-reopen-decision.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle13-input\\artifacts\\cycle-012B-next-item-reopen-decision.json",
+      "purpose": "decisao aprovada de reabertura do proximo item apos R6",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-011-stability-report.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-011-stability-report.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle13-input\\artifacts\\cycle-011-stability-report.json",
+      "purpose": "evidencia do fechamento estavel de R6 no baseline pos-R6",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-010-real-write-evidence.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-010-real-write-evidence.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle13-input\\artifacts\\cycle-010-real-write-evidence.json",
+      "purpose": "evidencia formal da criacao e verificacao do artefato de R6",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-005-write-proposals.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-005-write-proposals.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle13-input\\artifacts\\cycle-005-write-proposals.json",
+      "purpose": "ordem de aplicacao e escopo documental dos itens prontos",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-004-execution-plan.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-004-execution-plan.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle13-input\\artifacts\\cycle-004-execution-plan.json",
+      "purpose": "elegibilidade tecnica, risco e ordem de execucao dos itens",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-003-improvement-plan.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-003-improvement-plan.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle13-input\\artifacts\\cycle-003-improvement-plan.json",
+      "purpose": "plano original de melhoria e prioridade historica de R2",
+      "status": "approved"
+    }
+  ]
+}

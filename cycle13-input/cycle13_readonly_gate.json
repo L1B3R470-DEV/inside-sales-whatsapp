@@ -1,0 +1,46 @@
+{
+  "cycle": 13,
+  "phase": "readonly-gate",
+  "generated_at": "2026-04-02T12:27:07Z",
+  "goal": "Prepare the analytical gate for a future cycle 13A without executing it now.",
+  "prerequisites": [
+    {
+      "check": "cycle_012b_present",
+      "status": "ok",
+      "evidence": "cycle-012B-next-item-reopen-decision.json copied into cycle13-input/artifacts"
+    },
+    {
+      "check": "r2_reopened_and_bounded",
+      "status": "ok",
+      "evidence": "R2 remains the next eligible item with PRONTO_PARA_REABERTURA_CONTROLADA and no inherited authorization, scope, or premise"
+    },
+    {
+      "check": "post_r6_baseline_preserved",
+      "status": "ok",
+      "evidence": "R6 remains stable_closed; cache_observability_windows present, empty, and unchanged"
+    },
+    {
+      "check": "approved_sources_consolidated",
+      "status": "ok",
+      "evidence": "cycles 12B, 11, 10, 5, 4, and 3 are organized under cycle13-input/artifacts"
+    },
+    {
+      "check": "execution_not_authorized",
+      "status": "ok",
+      "evidence": "this preparation phase does not authorize 13A execution, sandbox, or real write"
+    }
+  ],
+  "cycle_13a_must_answer": [
+    "What is the exact analytical and read-only scope of R2 under the post-R6 baseline?",
+    "Which official sources still sustain R2 and which constraints remain locked from the R6 baseline?",
+    "What is the minimum documentary chain required before any future sandbox or write proposal?"
+  ],
+  "hard_stops": [
+    "stop if any source conflict makes R2 ordering ambiguous",
+    "stop if any step would require production touch",
+    "stop if any step would rely on inherited R6 authorization, scope, or operative premise",
+    "stop if any step would require PII"
+  ],
+  "ready_for_future_contract": true,
+  "ready_for_execution_now": false
+}

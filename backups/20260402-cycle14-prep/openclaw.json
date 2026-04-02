@@ -1,0 +1,104 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.3.28",
+    "lastTouchedAt": "2026-03-29T06:15:08.768Z"
+  },
+  "wizard": {
+    "lastRunAt": "2026-03-29T03:13:16.923Z",
+    "lastRunVersion": "2026.3.28",
+    "lastRunCommand": "onboard",
+    "lastRunMode": "local"
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "openai-codex/gpt-5.4-mini"
+      },
+      "models": {
+        "openai-codex/gpt-5.4-mini": {}
+      },
+      "workspace": "C:\\Users\\User\\.openclaw\\workspace"
+    },
+    "list": [
+      {
+        "id": "main"
+      },
+      {
+        "id": "claude-office",
+        "name": "claude-office",
+        "workspace": "C:\\Users\\User\\.openclaw\\workspace-claude-office",
+        "agentDir": "C:\\Users\\User\\.openclaw\\agents\\claude-office"
+      },
+      {
+        "id": "architect",
+        "name": "architect",
+        "workspace": "C:\\Users\\User\\.openclaw\\workspace-architect",
+        "agentDir": "C:\\Users\\User\\.openclaw\\agents\\architect"
+      },
+      {
+        "id": "qa",
+        "name": "qa",
+        "workspace": "C:\\Users\\User\\.openclaw\\workspace-qa",
+        "agentDir": "C:\\Users\\User\\.openclaw\\agents\\qa"
+      },
+      {
+        "id": "integration",
+        "name": "integration",
+        "workspace": "C:\\Users\\User\\.openclaw\\workspace-integration",
+        "agentDir": "C:\\Users\\User\\.openclaw\\agents\\integration",
+        "model": {
+          "primary": "openai-codex/gpt-5.4-mini"
+        }
+      }
+    ]
+  },
+  "tools": {
+    "profile": "coding"
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "loopback",
+    "auth": {
+      "mode": "token",
+      "token": "6KhEX8j6qTunGQmGJkbU9KqgzRXPqgxD1-11p-1SVAV90WxzkKETj8w5EYhTn65x"
+    },
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    }
+  },
+  "mcp": {
+    "servers": {
+      "bridge-monitor": {
+        "command": "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\.venv-router\\Scripts\\python.exe",
+        "args": [
+          "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\mcp_bridge_monitor.py"
+        ]
+      },
+      "sqlite-crm-snapshot": {
+        "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\mcp-server-sqlite.exe",
+        "args": [
+          "--db-path",
+          "C:\\Users\\User\\.openclaw\\snapshots\\20260329-021916-cycle2-prep\\crm_operacional.snapshot.sqlite"
+        ]
+      }
+    }
+  },
+  "plugins": {
+    "entries": {
+      "xai": {
+        "enabled": false
+      }
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "generated_at": "2026-03-30T00:00:00Z",
+  "cycle": 3,
+  "objective": "Preparar insumos para an?lise supervisionada de aprimoramento do atendente sem aplicar mudan?as.",
+  "allowed_analysis_scope": [
+    "prompt/persona",
+    "guardrails",
+    "fallback",
+    "regras comerciais",
+    "roteamento",
+    "qualidade de resposta",
+    "cobertura de contexto",
+    "consist?ncia operacional"
+  ],
+  "allowed_sources": [
+    "C:\\Users\\User\\.openclaw\\workspace-integration\\context",
+    "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-000-bridge-only.json",
+    "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-001-router-read.json",
+    "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-002-crm-snapshot.json",
+    "OpenClaw config and MCP state already materialized in isolated space"
+  ],
+  "explicit_prohibitions": [
+    "N?o editar arquivos do projeto real",
+    "N?o alterar .mcp.json",
+    "N?o escrever em C:\\AUTOMACAO\\cowork\\",
+    "N?o tocar em produ??o ou religar ATENDIMENTO_VENDAS_CLEAN",
+    "N?o gerar patch de c?digo nesta rodada",
+    "N?o criar v?nculo ao workspace real",
+    "N?o executar agent em modo de escrita fora do workspace isolado"
+  ],
+  "operational_constraints": {
+    "production_isolated": true,
+    "bridge_write_forbidden": true,
+    "project_real_edit_forbidden": true,
+    "mcp_active": [
+      "bridge-monitor",
+      "sqlite-crm-snapshot"
+    ],
+    "gateway_mode": "local",
+    "gateway_bind": "loopback",
+    "integration_model": "openai-codex/gpt-5.4-mini"
+  }
+}

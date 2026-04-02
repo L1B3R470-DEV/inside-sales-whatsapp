@@ -1,0 +1,32 @@
+{
+  "cycle": 12,
+  "phase": "documentary-scope-draft",
+  "focus_item": "R2",
+  "focus_summary": "Aprimorar cobertura do funil para reduzir concentração no estágio intermediário",
+  "documentary_scope_only": true,
+  "goal": "Confirmar se R2 continua v?lido ap?s o fechamento est?vel de R6 e delimitar o pr?ximo escopo documental sem autorizar execu??o.",
+  "allowed_sources": [
+    "cycle-011-stability-report.json",
+    "cycle-010-real-write-evidence.json",
+    "cycle-009-real-write-handoff.json",
+    "cycle-005-write-proposals.json",
+    "cycle-004-execution-plan.json",
+    "cycle-003-improvement-plan.json"
+  ],
+  "baseline_dependencies": [
+    "fechamento est?vel de R6",
+    "baseline p?s-R6 preservado",
+    "artefatos aprovados dos ciclos 3, 4, 5, 9, 10 e 11"
+  ],
+  "questions_to_answer_next": [
+    "R2 continua sendo o pr?ximo item eleg?vel ap?s o fechamento est?vel de R6?",
+    "As restri??es herdadas de R6 alteram o escopo documental de R2?",
+    "Qual ? o menor pacote anal?tico necess?rio para reabrir o trabalho em R2 sem reintroduzir risco em R6?"
+  ],
+  "not_authorized": [
+    "nenhuma escrita real",
+    "nenhum patch",
+    "nenhuma DDL ou DML",
+    "nenhuma mudan?a em .mcp.json, bridge local ou produ??o"
+  ]
+}

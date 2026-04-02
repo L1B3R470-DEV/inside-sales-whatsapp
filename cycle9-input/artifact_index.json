@@ -1,0 +1,38 @@
+﻿{
+    "cycle":  9,
+    "prepared_at":  "2026-03-31T01:41:04.0513491Z",
+    "source_artifacts":  [
+                             {
+                                 "cycle":  8,
+                                 "file":  "cycle-008-promotion-decision.json",
+                                 "path":  "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-008-promotion-decision.json",
+                                 "consolidated_path":  "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle9-input\\artifacts\\cycle-008-promotion-decision.json",
+                                 "purpose":  "decisao tecnica de promocao do item R6 para futura escrita supervisionada",
+                                 "status":  "approved"
+                             },
+                             {
+                                 "cycle":  7,
+                                 "file":  "cycle-007-sandbox-write-evidence.json",
+                                 "path":  "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-007-sandbox-write-evidence.json",
+                                 "consolidated_path":  "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle9-input\\artifacts\\cycle-007-sandbox-write-evidence.json",
+                                 "purpose":  "evidencia auditavel da escrita executada na sandbox",
+                                 "status":  "approved"
+                             },
+                             {
+                                 "cycle":  6,
+                                 "file":  "cycle-006-isolated-write-plan.json",
+                                 "path":  "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-006-isolated-write-plan.json",
+                                 "consolidated_path":  "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle9-input\\artifacts\\cycle-006-isolated-write-plan.json",
+                                 "purpose":  "plano aprovado da escrita isolada e escopo autorizado",
+                                 "status":  "approved"
+                             },
+                             {
+                                 "cycle":  5,
+                                 "file":  "cycle-005-write-proposals.json",
+                                 "path":  "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-005-write-proposals.json",
+                                 "consolidated_path":  "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle9-input\\artifacts\\cycle-005-write-proposals.json",
+                                 "purpose":  "propostas de escrita que originaram o item R6",
+                                 "status":  "approved"
+                             }
+                         ]
+}

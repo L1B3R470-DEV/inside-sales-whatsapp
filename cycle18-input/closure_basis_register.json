@@ -1,0 +1,27 @@
+{
+  "cycle": 18,
+  "phase": "closure-basis-register",
+  "generated_at": "2026-04-02T18:13:18Z",
+  "source_of_truth": {
+    "primary_review": "cycle-017B-r2-snapshot-scope-decision-review.json",
+    "payload_origin": "cycle-017A-r2-snapshot-scope-decision.json"
+  },
+  "closure_outcome": {
+    "decision": "RECONHECER_LIMITE_NATURAL",
+    "readiness_classification": "DECISAO_DOCUMENTAL_COMPLETA",
+    "recognition_statement": "The approved snapshot-bound scope of R2 has reached its natural documentary limit for now."
+  },
+  "basis_summary": [
+    "GO1 and GO2 already delivered the bounded governance usefulness of R2 as a coverage-watch item with aggregate monitoring focus.",
+    "GO3 states that one approved snapshot is insufficient for certainty about directionality.",
+    "GO4 prohibits turning snapshot evidence into live CRM or current operational claims.",
+    "OQ1 and OQ2 remain open because the approved chain does not establish trend or causality.",
+    "OQ3 and OQ4 remain open because live CRM anchoring and session-write tolerance were not resolved by the official chain."
+  ],
+  "natural_limit_reasons": [
+    "The chain already extracted the aggregate funnel reading that the snapshot can support.",
+    "Further documentary expansion would mostly restate existing monitoring guidance without adding new approved evidence.",
+    "The unresolved open questions depend on evidence types that remain outside the authorized snapshot-bound scope."
+  ],
+  "administrative_note": "O ciclo 18 deve tratar este desfecho como base para avaliar encerramento formal da iteracao snapshot-bound ou condicoes minimas de eventual reabertura futura, sem reabrir a analise em si."
+}

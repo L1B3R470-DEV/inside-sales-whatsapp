@@ -1,0 +1,32 @@
+{
+  "expected_next_candidate": "R2",
+  "eligibility_status": "eligible_if_artifacts_remain_consistent",
+  "selection_basis": {
+    "cycle3_priority": 2,
+    "cycle4_execution_order": 2,
+    "cycle4_status": "ready_for_execution",
+    "cycle5_application_order": 2,
+    "cycle5_readiness_level": "ready"
+  },
+  "candidate_record": {
+    "rec_id": "R2",
+    "title": "Aprimorar cobertura do funil para reduzir concentração no estágio intermediário",
+    "category": "crm_coverage",
+    "target_component": "pipeline de qualificação / cobertura de funil",
+    "change_type": "analysis-and-monitoring",
+    "current_state": "O snapshot aprovado mostra 12 leads no total, com 3 novos e 9 qualificando, indicando concentração no meio do funil.",
+    "proposed_state": "Manter acompanhamento agregado da distribuição por estágio e da evolução de novos para qualificando, para entender se a concentração intermediária está estável ou crescendo.",
+    "validation_method": "comparação de distribuição agregada",
+    "dependencies": [
+      "snapshot CRM aprovado",
+      "métricas agregadas de estágio"
+    ]
+  },
+  "consistency_checks": {
+    "r6_closed_stably": true,
+    "r2_present_in_cycle3": true,
+    "r2_present_in_cycle4": true,
+    "r2_present_in_cycle5": true,
+    "r2_is_next_after_r6": true
+  }
+}

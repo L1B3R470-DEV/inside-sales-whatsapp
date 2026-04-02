@@ -1,0 +1,38 @@
+{
+  "cycle": 16,
+  "phase": "snapshot-governance-limits",
+  "generated_at": "2026-04-02T13:19:23Z",
+  "allowed_conclusions": [
+    "The approved evidence supports a qualifying-heavy funnel snapshot.",
+    "The approved evidence supports a low top-of-funnel representation relative to qualifying.",
+    "The approved evidence supports governance concern about visibility of replenishment of new leads.",
+    "The approved evidence supports governance framing of R2 as aggregate monitoring and coverage review."
+  ],
+  "forbidden_conclusions": [
+    "The approved evidence does not support any claim about current live CRM state.",
+    "The approved evidence does not support trend certainty across time.",
+    "The approved evidence does not support row-level lead interpretation or PII-bearing analysis.",
+    "The approved evidence does not support causal claims about why the funnel is concentrated.",
+    "The approved evidence does not support operational authorization, sandbox, or write."
+  ],
+  "open_questions_that_must_remain_open": [
+    "Whether the concentration in qualifying is stable, improving, or worsening over time.",
+    "Whether low inflow of new leads is seasonal, structural, or incidental.",
+    "Whether any live CRM surface can ever be anchored without ambiguity in a future approved chain.",
+    "Whether any agent-assisted phase can be tolerated under the session-write caveat without violating zero-write-sensitive requirements."
+  ],
+  "limit_evidence": [
+    {
+      "source": "cycle-002-crm-snapshot.json",
+      "evidence": "context_binding.crm_live_not_consulted = true and crm_snapshot_state is explicitly aggregate snapshot data"
+    },
+    {
+      "source": "cycle-014B-r2-restriction-resolution-review.json",
+      "evidence": "cycle002_assessment declares snapshot-only evidence and not a live CRM anchor"
+    },
+    {
+      "source": "cycle-015B-r2-snapshot-documentary-analysis-review.json",
+      "evidence": "snapshot_limitations explicitly prohibit live-state, trend, row-level, and non-snapshot claims"
+    }
+  ]
+}

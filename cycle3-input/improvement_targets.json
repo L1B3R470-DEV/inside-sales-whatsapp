@@ -1,0 +1,103 @@
+{
+  "generated_at": "2026-03-30T00:00:00Z",
+  "cycle": 3,
+  "status": "initial-target-list",
+  "categories": [
+    {
+      "category": "prompt/persona",
+      "focus": [
+        "ader?ncia ao papel comercial consultivo",
+        "clareza do tom do atendente",
+        "consist?ncia do SDR nas respostas"
+      ],
+      "questions": [
+        "H? sinais de desvio de persona ou de tom entre fallback, cache e decis?es diretas?",
+        "A persona atual maximiza clareza comercial sem parecer rob?tica?"
+      ]
+    },
+    {
+      "category": "guardrails",
+      "focus": [
+        "seguran?a de resposta",
+        "restri??es comerciais",
+        "tratamento de exce??es"
+      ],
+      "questions": [
+        "Os guardrails atuais bloqueiam demais ou de menos?",
+        "H? ?reas em que a resposta parece excessivamente conservadora ou insuficientemente controlada?"
+      ]
+    },
+    {
+      "category": "fallback",
+      "focus": [
+        "qualidade das respostas sem IA forte",
+        "coer?ncia com persona",
+        "capacidade de continuidade de conversa"
+      ],
+      "questions": [
+        "O fallback cobre bem cen?rios recorrentes?",
+        "H? perda percept?vel de qualidade quando o fluxo cai em fallback?"
+      ]
+    },
+    {
+      "category": "regras comerciais",
+      "focus": [
+        "qualifica??o de leads",
+        "regras de hor?rio",
+        "encaminhamento para humano"
+      ],
+      "questions": [
+        "As regras comerciais est?o alinhadas ao est?gio real dos leads?",
+        "H? oportunidades de reduzir atrito na qualifica??o?"
+      ]
+    },
+    {
+      "category": "roteamento",
+      "focus": [
+        "uso de cache",
+        "decis?o entre rotas diretas",
+        "coer?ncia entre dados do router e comportamento esperado"
+      ],
+      "questions": [
+        "Por que o cache_hit recente permaneceu zerado apesar de existir cache ativo?",
+        "O roteamento est? escolhendo o melhor caminho para custo, velocidade e qualidade?"
+      ]
+    },
+    {
+      "category": "qualidade de resposta",
+      "focus": [
+        "clareza",
+        "objetividade",
+        "capacidade de conduzir a pr?xima a??o comercial"
+      ],
+      "questions": [
+        "O atendente conduz bem o lead para o pr?ximo passo?",
+        "H? sinais de resposta vaga, prolixa ou pouco ?til?"
+      ]
+    },
+    {
+      "category": "cobertura de contexto",
+      "focus": [
+        "uso de regras ativas",
+        "contexto operacional dispon?vel",
+        "limites entre conhecimento estruturado e resposta livre"
+      ],
+      "questions": [
+        "As regras ativas parecem suficientes para o est?gio atual da opera??o?",
+        "H? lacunas evidentes entre o contexto dispon?vel e a decis?o final do atendente?"
+      ]
+    },
+    {
+      "category": "consist?ncia operacional",
+      "focus": [
+        "equil?brio bridge/inbox/outbox/acks",
+        "estabilidade dos ciclos aprovados",
+        "coer?ncia entre baseline do router e snapshot do CRM"
+      ],
+      "questions": [
+        "H? sinais de gargalo estrutural entre bridge, router e CRM?",
+        "Os ciclos aprovados apontam consist?ncia ou tens?es na opera??o atual?"
+      ]
+    }
+  ]
+}

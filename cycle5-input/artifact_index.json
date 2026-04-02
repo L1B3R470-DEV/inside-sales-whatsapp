@@ -1,0 +1,33 @@
+{
+  "cycle": 5,
+  "input_artifacts": [
+    {
+      "file": "cycle-004-execution-plan.json",
+      "source_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-004-execution-plan.json",
+      "consolidated_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle5-input\\artifacts\\cycle-004-execution-plan.json",
+      "purpose": "Plano t?cnico aprovado do ciclo 4 para execu??o supervisionada futura",
+      "status": "approved"
+    },
+    {
+      "file": "cycle-003-improvement-plan.json",
+      "source_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-003-improvement-plan.json",
+      "consolidated_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle5-input\\artifacts\\cycle-003-improvement-plan.json",
+      "purpose": "Plano de melhorias aprovado do ciclo 3 que origina as recomenda??es",
+      "status": "approved"
+    },
+    {
+      "file": "cycle-002-crm-snapshot.json",
+      "source_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-002-crm-snapshot.json",
+      "consolidated_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle5-input\\artifacts\\cycle-002-crm-snapshot.json",
+      "purpose": "Snapshot agregado de CRM aprovado usado como base factual",
+      "status": "approved"
+    },
+    {
+      "file": "cycle-001-router-read.json",
+      "source_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-001-router-read.json",
+      "consolidated_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle5-input\\artifacts\\cycle-001-router-read.json",
+      "purpose": "Baseline aprovado de roteamento usado como refer?ncia estrutural",
+      "status": "approved"
+    }
+  ]
+}

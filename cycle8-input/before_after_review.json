@@ -1,0 +1,45 @@
+﻿{
+    "cycle":  8,
+    "selected_item":  "R6",
+    "component":  "sandbox mirror / cache observability",
+    "before":  {
+                   "line_range":  "sqlite schema snapshot",
+                   "content":  "Before the change, the sandbox mirror did not contain the table cache_observability_windows. The mirrored database reflected the original schema only, with route_logs and response_cache as the relevant cache/router structures and no dedicated observability aggregate store."
+               },
+    "after":  {
+                  "line_range":  "sqlite schema snapshot",
+                  "content":  "After the change, the sandbox mirror contains cache_observability_windows with columns window_start, window_end, response_cache_count, cache_hit_count, and notes, plus one aggregate row seeded for sandbox-only observability."
+              },
+    "distinguishable":  true,
+    "validation_results":  [
+                               {
+                                   "step":  "espelhar o arquivo real em sandbox isolada",
+                                   "result":  "pass",
+                                   "observation":  "Sandbox mirror was created at the planned isolated path and opened successfully.",
+                                   "notes":  "Mirror path matches the approved cycle 6 plan."
+                               },
+                               {
+                                   "step":  "executar leitura agregada sobre o espelho",
+                                   "result":  "pass",
+                                   "observation":  "The sandbox mirror returned aggregate values and exposed the new observability table.",
+                                   "notes":  "No PII was queried or emitted."
+                               },
+                               {
+                                   "step":  "comparar entradas cacheadas com cache_hit por janela",
+                                   "result":  "pass",
+                                   "observation":  "The seeded row records response_cache_count=1 and cache_hit_count=1 for the sandbox window.",
+                                   "notes":  "This is a sandbox-only aggregate used to validate the observability structure."
+                               },
+                               {
+                                   "step":  "confirmar ausÃªncia de PII nas amostras e nos relatÃ³rios",
+                                   "result":  "pass",
+                                   "observation":  "Only aggregate counts and timestamps are present; no identifiers, message text, or personal data were introduced.",
+                                   "notes":  "The sandbox row contains non-identifying metrics only."
+                               }
+                           ],
+    "review_focus":  [
+                         "confirmar que o before e o after pertencem ao mesmo componente auditado",
+                         "confirmar que a mudanca ficou restrita a observabilidade agregada aprovada",
+                         "confirmar que a diferenca observada e compativel com o diff_description aprovado no ciclo 6"
+                     ]
+}

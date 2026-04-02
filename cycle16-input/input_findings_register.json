@@ -1,0 +1,71 @@
+{
+  "cycle": 16,
+  "phase": "input-findings-register",
+  "generated_at": "2026-04-02T13:19:23Z",
+  "source_of_truth": {
+    "primary_review": "cycle-015B-r2-snapshot-documentary-analysis-review.json",
+    "payload_origin": "cycle-015A-r2-snapshot-documentary-analysis.json"
+  },
+  "registered_findings": [
+    {
+      "id": "F1",
+      "topic": "total_leads",
+      "value": 12,
+      "statement": "The approved snapshot documents 12 total leads in aggregated form.",
+      "evidence_source": "cycle-002-crm-snapshot.json"
+    },
+    {
+      "id": "F2",
+      "topic": "stage_distribution",
+      "value": {
+        "novo": 3,
+        "qualificando": 9
+      },
+      "statement": "The approved snapshot shows a stage split of 3 new leads and 9 qualifying leads.",
+      "evidence_source": "cycle-002-crm-snapshot.json"
+    },
+    {
+      "id": "F3",
+      "topic": "funnel_concentration_hypothesis",
+      "value": "intermediate_stage_concentration",
+      "statement": "The approved snapshot supports a documentary hypothesis of concentration in the intermediate qualifying stage.",
+      "evidence_source": "cycle-002-crm-snapshot.json"
+    },
+    {
+      "id": "F4",
+      "topic": "coverage_gap_low_top_of_funnel",
+      "value": "low_new_relative_to_qualifying",
+      "statement": "The snapshot indicates low top-of-funnel representation relative to qualifying, limiting visibility into replenishment of new leads.",
+      "evidence_source": "cycle-015A-r2-snapshot-documentary-analysis.json"
+    },
+    {
+      "id": "F5",
+      "topic": "coverage_gap_no_trend_continuity",
+      "value": "single_snapshot_only",
+      "statement": "The approved evidence is a single aggregate snapshot and does not establish trend continuity by itself.",
+      "evidence_source": "cycle-015A-r2-snapshot-documentary-analysis.json"
+    },
+    {
+      "id": "F6",
+      "topic": "snapshot_non_live_limit",
+      "value": "snapshot_only_not_live",
+      "statement": "The approved chain does not anchor live CRM and all findings remain historical and snapshot-bound.",
+      "evidence_source": "cycle-014B-r2-restriction-resolution-review.json"
+    },
+    {
+      "id": "F7",
+      "topic": "monitoring_recommendation",
+      "value": "compare_aggregate_stage_distributions",
+      "statement": "Future documentary monitoring should stay focused on aggregate stage counts and the balance between new and qualifying.",
+      "evidence_source": "cycle-015A-r2-snapshot-documentary-analysis.json"
+    }
+  ],
+  "baseline_and_scope_bindings": [
+    "R2 remains compatible with the preserved post-R6 baseline.",
+    "No R6 artifact is reopened or reused as operational authorization.",
+    "The findings register is limited to aggregated CRM coverage and governance reading.",
+    "No PII, row-level data, live CRM reading, sandbox, or write is authorized."
+  ],
+  "ready_for_cycle_16a": true,
+  "ready_for_execution_now": false
+}

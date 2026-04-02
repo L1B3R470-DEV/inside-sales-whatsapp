@@ -1,0 +1,136 @@
+{
+  "cycle": 2,
+  "mode": "crm-snapshot-read",
+  "agent": "integration",
+  "generated_at": "2026-03-27T17:50:35Z",
+  "sources_read": [
+    "context:project_overview.md",
+    "context:red_lines.md",
+    "context:cycle1_router_read_contract.md",
+    "context:cycle0_bridge_only_contract.md",
+    "output:cycle-001-router-read.json",
+    "mcp:bridge-monitor:bridge_status",
+    "mcp:sqlite-generic:list_tables",
+    "mcp:sqlite-generic:describe_table:leads",
+    "mcp:sqlite-generic:describe_table:knowledge_rules",
+    "mcp:sqlite-generic:describe_table:ignored_contacts_registry",
+    "mcp:sqlite-generic:read_query:leads.total",
+    "mcp:sqlite-generic:read_query:leads.lead_stage_distribution",
+    "mcp:sqlite-generic:read_query:leads.awaiting_and_completed",
+    "mcp:sqlite-generic:read_query:knowledge_rules.active",
+    "mcp:sqlite-generic:read_query:knowledge_cycles.total",
+    "mcp:sqlite-generic:read_query:ignored_contacts_registry.total",
+    "convention:sqlite-generic-bound-to-crm-snapshot"
+  ],
+  "context_binding": {
+    "sqlite_generic_bound_to": "crm-snapshot",
+    "sqlite_router_absent": true,
+    "crm_live_not_consulted": true,
+    "binding_note": "Nesta rodada, a única superfície SQLite genérica disponível foi tratada por convenção contratual explícita como o snapshot do CRM; o router permanece fora da leitura operacional e o baseline do router vem apenas do arquivo aprovado do ciclo 1."
+  },
+  "bridge_state": {
+    "inbox_pending_count": 10,
+    "outbox_reply_count": 10,
+    "last_reply_id": "REPLY-20260327-142937",
+    "acks_count": 10
+  },
+  "router_baseline": {
+    "source_file": "cycle-001-router-read.json",
+    "cycle_approved_at": "2026-03-27T17:50:35Z",
+    "response_cache_count": 1,
+    "route_logs_count": 17,
+    "baseline_note": "Os dados do router são herdados de baseline estático e não de leitura live."
+  },
+  "crm_snapshot_state": {
+    "snapshot_source": "C:\\Users\\User\\.openclaw\\snapshots\\20260329-021916-cycle2-prep\\crm_operacional.snapshot.sqlite",
+    "total_leads": 12,
+    "leads_by_status": {
+      "novo": 3,
+      "qualificando": 9
+    },
+    "total_interactions": 210,
+    "active_knowledge_rules": 20,
+    "knowledge_cycles_executed": 1136,
+    "ignored_contacts_count": 28,
+    "crm_note": "Snapshot agregado e sem PII: volume concentrado em qualificando, com baixa fração de leads novos e estrutura de regras ativa estável."
+  },
+  "findings": [
+    {
+      "source": "mcp:sqlite-generic:read_query:leads.total",
+      "key": "total_leads",
+      "value": 12,
+      "note": "Base de leads enxuta, coerente com operação B2B de alta qualificação."
+    },
+    {
+      "source": "mcp:sqlite-generic:read_query:leads.lead_stage_distribution",
+      "key": "lead_stage_distribution",
+      "value": {
+        "novo": 3,
+        "qualificando": 9
+      },
+      "note": "Predomínio de leads em qualificação; pipeline concentrado no meio do funil."
+    },
+    {
+      "source": "mcp:sqlite-generic:read_query:leads.awaiting_and_completed",
+      "key": "awaiting_human_count_and_script_completed_count",
+      "value": {
+        "awaiting_human": 0,
+        "script_completed": 1
+      },
+      "note": "Sem leads marcados para atendimento humano neste agregado; apenas um registro com script concluído."
+    },
+    {
+      "source": "mcp:sqlite-generic:read_query:knowledge_rules.active",
+      "key": "active_knowledge_rules",
+      "value": 20,
+      "note": "Conjunto de regras ativas relativamente estável e não trivial."
+    },
+    {
+      "source": "mcp:sqlite-generic:read_query:knowledge_cycles.total",
+      "key": "knowledge_cycles_executed",
+      "value": 1136,
+      "note": "Histórico de ciclos de conhecimento elevado, sugerindo maturidade operacional."
+    },
+    {
+      "source": "mcp:sqlite-generic:read_query:ignored_contacts_registry.total",
+      "key": "ignored_contacts_count",
+      "value": 28,
+      "note": "Registro de contatos ignorados dimensionado e consistente com controle de bloqueios."
+    },
+    {
+      "source": "mcp:bridge-monitor:bridge_status",
+      "key": "bridge_counts",
+      "value": {
+        "inbox_pending_count": 10,
+        "outbox_reply_count": 10,
+        "acks_count": 10
+      },
+      "note": "Bridge equilibrada, sem indício de assimetria entre inbox, outbox e ACKs."
+    }
+  ],
+  "anomalies": [],
+  "violations": [],
+  "previous_cycle": {
+    "file": "cycle-001-router-read.json",
+    "status": "passed"
+  },
+  "next_steps": [
+    "Manter monitoramento do crescimento do grupo qualificando",
+    "Revisar se a ausência de leads novos é sazonal ou indica gargalo de entrada",
+    "Acompanhar se regras ativas continuam coerentes com o volume de ciclos",
+    "Se a convenção mudar, atualizar explicitamente o contexto_binding antes do próximo ciclo"
+  ],
+  "meta": {
+    "workspace": "C:\\Users\\User\\.openclaw\\workspace-integration",
+    "context_files_read": [
+      "project_overview.md",
+      "red_lines.md",
+      "cycle1_router_read_contract.md",
+      "cycle0_bridge_only_contract.md"
+    ],
+    "snapshot_file": "C:\\Users\\User\\.openclaw\\snapshots\\20260329-021916-cycle2-prep\\crm_operacional.snapshot.sqlite",
+    "output_file": "output/cycle-002-crm-snapshot.json",
+    "active_sqlite_mcp_count": 1,
+    "sqlite_tool_binding": "generic-sqlite-tools-bound-to-snapshot-by-contract"
+  }
+}

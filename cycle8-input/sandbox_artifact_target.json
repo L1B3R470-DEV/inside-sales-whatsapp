@@ -1,0 +1,15 @@
+﻿{
+    "cycle":  8,
+    "selected_item":  "R6",
+    "application_order":  1,
+    "category":  "cache",
+    "title":  "Aumentar a observabilidade da eficiÃªncia do cache por amostragem contÃ­nua",
+    "real_source_path":  "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\router_runtime.sqlite",
+    "sandbox_path_used":  "C:\\Users\\User\\.openclaw\\workspace-integration\\sandbox\\cycle6\\router_runtime.sqlite",
+    "sandbox_created":  true,
+    "change_applied":  true,
+    "change_description_used":  "A mudanÃ§a pretendida Ã© nÃ£o funcional e descritiva: adicionar observabilidade agregada ao fluxo jÃ¡ existente de cache e roteamento, sem alterar a semÃ¢ntica das decisÃµes atuais.",
+    "apply_method":  "sqlite3 schema creation + aggregate seed row on sandbox mirror only",
+    "result_status":  "success",
+    "real_file_untouched":  true
+}

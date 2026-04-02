@@ -1,0 +1,38 @@
+{
+  "cycle": 5,
+  "source_file": "cycle-004-execution-plan.json",
+  "items": [
+    {
+      "rec_id": "R6",
+      "title": "Aumentar a observabilidade da eficiência do cache por amostragem contínua",
+      "pre_conditions": [
+        "baseline do router disponível",
+        "consulta agregada sem PII"
+      ],
+      "validation_criteria": [
+        "taxa de cache_hit calculável por janela",
+        "ausência de PII nas amostras",
+        "comparação direta entre entradas cacheadas e hits"
+      ],
+      "rollback_procedure": "Encerrar a coleta observacional e manter apenas o baseline já aprovado, sem persistência de novos artefatos.",
+      "validation_required": false,
+      "validation_note": "Não altera routing, guardrails ou persona; requer apenas validação analítica de qualidade de evidência."
+    },
+    {
+      "rec_id": "R2",
+      "title": "Aprimorar cobertura do funil para reduzir concentração no estágio intermediário",
+      "pre_conditions": [
+        "snapshot agregado disponível",
+        "sem consulta a dados identificáveis"
+      ],
+      "validation_criteria": [
+        "distribuição por estágio mantida em agregados",
+        "tendência de entrada de novos leads observável",
+        "sem exposição de PII"
+      ],
+      "rollback_procedure": "Reverter ao acompanhamento agregado anterior sem qualquer alteração em sistemas operacionais.",
+      "validation_required": false,
+      "validation_note": "A recomendação é de monitoramento e análise; não altera o comportamento do atendente nesta rodada."
+    }
+  ]
+}

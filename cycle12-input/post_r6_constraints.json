@@ -1,0 +1,18 @@
+{
+  "inherits_from_r6_baseline": true,
+  "constraints": [
+    "N?o reabrir o escopo de R6 nem alterar cache_observability_windows sem contrato novo.",
+    "Preservar o baseline p?s-R6 do banco l?gico SQLite/WAL como refer?ncia est?vel.",
+    "N?o tocar em produ??o, .mcp.json, bridge local ou bindings nesta fase documental.",
+    "Manter o pr?ximo item em escopo estritamente documental/anal?tico at? autoriza??o posterior.",
+    "Evitar qualquer depend?ncia de superf?cies SQLite amb?guas; leitura futura deve provar o alvo consultado.",
+    "Para R2, trabalhar apenas com m?tricas agregadas e sem PII.",
+    "Qualquer pr?xima promo??o deve respeitar o fechamento est?vel de R6 como pr?-condi??o herdada."
+  ],
+  "protected_assets": [
+    "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\router_runtime.sqlite",
+    "cache_observability_windows",
+    "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-011-stability-report.json",
+    "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-010-real-write-evidence.json"
+  ]
+}

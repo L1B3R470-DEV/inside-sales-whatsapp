@@ -1,0 +1,90 @@
+﻿{
+    "generatedAt":  "2026-03-29T00:42:17.1844366-03:00",
+    "production":  {
+                       "instance":  "ATENDIMENTO_VENDAS_CLEAN",
+                       "webhookEnabled":  false,
+                       "connectionState":  "close"
+                   },
+    "relevantPorts":  [
+                          {
+                              "LocalAddress":  "::",
+                              "LocalPort":  8080,
+                              "ProcessId":  23380,
+                              "Name":  "com.docker.backend.exe",
+                              "ExecutablePath":  "C:\\Program Files\\Docker\\Docker\\resources\\com.docker.backend.exe",
+                              "CommandLine":  "\"C:\\Program Files\\Docker\\Docker\\resources\\com.docker.backend.exe\" services"
+                          },
+                          {
+                              "LocalAddress":  "::1",
+                              "LocalPort":  8080,
+                              "ProcessId":  3908,
+                              "Name":  "wslrelay.exe",
+                              "ExecutablePath":  "C:\\Program Files\\WSL\\wslrelay.exe",
+                              "CommandLine":  " --mode 2 --vm-id {bc3d94b4-c16b-4ea6-8947-117fbf542fb8} --handle 1392"
+                          },
+                          {
+                              "LocalAddress":  "0.0.0.0",
+                              "LocalPort":  8091,
+                              "ProcessId":  23620,
+                              "Name":  "python.exe",
+                              "ExecutablePath":  "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+                              "CommandLine":  "\"C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python311\\python.exe\" \"C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\router_service.py\""
+                          },
+                          {
+                              "LocalAddress":  "::",
+                              "LocalPort":  9000,
+                              "ProcessId":  23380,
+                              "Name":  "com.docker.backend.exe",
+                              "ExecutablePath":  "C:\\Program Files\\Docker\\Docker\\resources\\com.docker.backend.exe",
+                              "CommandLine":  "\"C:\\Program Files\\Docker\\Docker\\resources\\com.docker.backend.exe\" services"
+                          },
+                          {
+                              "LocalAddress":  "::1",
+                              "LocalPort":  9000,
+                              "ProcessId":  3908,
+                              "Name":  "wslrelay.exe",
+                              "ExecutablePath":  "C:\\Program Files\\WSL\\wslrelay.exe",
+                              "CommandLine":  " --mode 2 --vm-id {bc3d94b4-c16b-4ea6-8947-117fbf542fb8} --handle 1392"
+                          },
+                          {
+                              "LocalAddress":  "::",
+                              "LocalPort":  9001,
+                              "ProcessId":  23380,
+                              "Name":  "com.docker.backend.exe",
+                              "ExecutablePath":  "C:\\Program Files\\Docker\\Docker\\resources\\com.docker.backend.exe",
+                              "CommandLine":  "\"C:\\Program Files\\Docker\\Docker\\resources\\com.docker.backend.exe\" services"
+                          },
+                          {
+                              "LocalAddress":  "::1",
+                              "LocalPort":  9001,
+                              "ProcessId":  3908,
+                              "Name":  "wslrelay.exe",
+                              "ExecutablePath":  "C:\\Program Files\\WSL\\wslrelay.exe",
+                              "CommandLine":  " --mode 2 --vm-id {bc3d94b4-c16b-4ea6-8947-117fbf542fb8} --handle 1392"
+                          },
+                          {
+                              "LocalAddress":  "::1",
+                              "LocalPort":  18789,
+                              "ProcessId":  21148,
+                              "Name":  "node.exe",
+                              "ExecutablePath":  "C:\\Program Files\\nodejs\\node.exe",
+                              "CommandLine":  "\"C:\\Program Files\\nodejs\\node.exe\"  C:\\Users\\User\\AppData\\Roaming\\npm\\node_modules\\openclaw\\dist\\index.js gateway --port 18789"
+                          },
+                          {
+                              "LocalAddress":  "127.0.0.1",
+                              "LocalPort":  18789,
+                              "ProcessId":  21148,
+                              "Name":  "node.exe",
+                              "ExecutablePath":  "C:\\Program Files\\nodejs\\node.exe",
+                              "CommandLine":  "\"C:\\Program Files\\nodejs\\node.exe\"  C:\\Users\\User\\AppData\\Roaming\\npm\\node_modules\\openclaw\\dist\\index.js gateway --port 18789"
+                          }
+                      ],
+    "gatewayStatusText":  "Service: Scheduled Task (registered)\r\nFile logs: ~\\AppData\\Local\\Temp\\openclaw\\openclaw-2026-03-29.log\r\nCommand: C:\\Program Files\\nodejs\\node.exe C:\\Users\\User\\AppData\\Roaming\\npm\\node_modules\\openclaw\\dist\\index.js gateway --port 18789\r\nService file: ~\\.openclaw\\gateway.cmd\r\nService env: OPENCLAW_GATEWAY_PORT=18789\r\n\r\nConfig (cli): ~\\.openclaw\\openclaw.json\r\nConfig (service): ~\\.openclaw\\openclaw.json\r\n\r\nGateway: bind=loopback (127.0.0.1), port=18789 (service args)\r\nProbe target: ws://127.0.0.1:18789\r\nDashboard: http://127.0.0.1:18789/\r\nProbe note: Loopback-only gateway; only local clients can connect.\r\n\r\nRuntime: unknown (state Em execução, Task status is locale-dependent and no numeric Last Run Result was available.)\r\nRPC probe: ok\r\n\r\nListening: 127.0.0.1:18789\r\nTroubles: run openclaw status\r\nTroubleshooting: https://docs.openclaw.ai/troubleshooting\r\n",
+    "criticalPaths":  {
+                          "project":  "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES",
+                          "mcp":  "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\.mcp.json",
+                          "bridge":  "C:\\AUTOMACAO\\cowork\\claude_bridge",
+                          "openclawRoot":  "C:\\Users\\User\\.openclaw",
+                          "integrationWorkspace":  "C:\\Users\\User\\.openclaw\\workspace-integration"
+                      }
+}

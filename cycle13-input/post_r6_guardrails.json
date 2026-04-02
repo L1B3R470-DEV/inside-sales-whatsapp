@@ -1,0 +1,35 @@
+{
+  "cycle": 13,
+  "phase": "post-r6-guardrails",
+  "generated_at": "2026-04-02T12:27:07Z",
+  "baseline_reference": {
+    "closed_item_reference": "R6",
+    "stability_source": "cycle-011-stability-report.json",
+    "write_evidence_source": "cycle-010-real-write-evidence.json",
+    "reopen_decision_source": "cycle-012B-next-item-reopen-decision.json"
+  },
+  "guardrails": [
+    "Do not reopen, rewrite, extend, or reinterpret the R6 artifact in cycle 13.",
+    "Treat cache_observability_windows as protected baseline evidence, not as an editable or testable target.",
+    "Keep all R2 work restricted to documentary or aggregated read-only analysis.",
+    "Do not consult ambiguous SQLite surfaces unless the target can be proven explicitly.",
+    "Do not inherit authorization, scope, or operative premise from R6.",
+    "Do not touch production, .mcp.json, bridge local, bindings, or the real project workspace.",
+    "Do not expose PII; only aggregated CRM stage metrics are in scope.",
+    "Any future sandbox or real write must be preceded by a fresh explicit contract after the cycle 13 analytical phase."
+  ],
+  "protected_assets": [
+    "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\router_runtime.sqlite",
+    "cache_observability_windows",
+    "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-011-stability-report.json",
+    "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-010-real-write-evidence.json",
+    "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\.mcp.json",
+    "C:\\AUTOMACAO\\cowork\\claude_bridge"
+  ],
+  "allowed_scope_only": [
+    "documentary synthesis",
+    "approved artifact comparison",
+    "aggregated CRM funnel reasoning",
+    "read-only specification drafting"
+  ]
+}

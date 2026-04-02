@@ -1,0 +1,22 @@
+{
+  "cycle": 6,
+  "source_rec_id": "R6",
+  "source_title": "Aumentar a observabilidade da eficiência do cache por amostragem contínua",
+  "validation_plan": {
+    "method": "observação agregada com comparação de amostras",
+    "success_criteria": "cache hit rate > 40% em 100 interações observadas",
+    "observation_window": "100 interações ou 24h, o que ocorrer primeiro",
+    "test_steps": [
+      "coletar janela agregada de interações",
+      "comparar entradas cacheadas com hits",
+      "confirmar ausência de PII nas amostras"
+    ]
+  },
+  "rollback_plan": {
+    "procedure": "Encerrar a coleta observacional e manter somente o baseline aprovado, sem persistência de novos artefatos.",
+    "estimated_effort": "baixo",
+    "risk_if_rollback_fails": "perda temporária apenas de visibilidade adicional, sem impacto funcional no atendente."
+  },
+  "human_review_required_before_write": true,
+  "review_note": "Mesmo para item low e ready, a primeira escrita futura permanece supervisionada e depende de revis?o humana antes de qualquer patch em sandbox isolada."
+}

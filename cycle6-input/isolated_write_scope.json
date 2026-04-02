@@ -1,0 +1,31 @@
+{
+  "cycle": 6,
+  "source_rec_id": "R6",
+  "source_title": "Aumentar a observabilidade da eficiência do cache por amostragem contínua",
+  "isolated_execution_only": true,
+  "project_real_editing_allowed_now": false,
+  "workspace_binding_allowed": false,
+  "target_mirroring_plan": {
+    "target_file_reference": "router_runtime.sqlite (somente leitura supervisionada)",
+    "target_component": "observabilidade do cache / métricas do router",
+    "change_type": "instrumentation-analysis",
+    "mirror_required_before_write": true,
+    "mirror_note": "Qualquer escrita futura dever? ocorrer apenas sobre c?pia ou espelho isolado no workspace-integration, nunca sobre o projeto real."
+  },
+  "proposed_scope": {
+    "current_state": "O baseline aprovado indica cache ativo no router, mas as amostras lidas mostraram cache_hit zerado e não há telemetria dedicada por janela nesta preparação.",
+    "proposed_state": "Passar a acompanhar amostras agregadas para correlacionar entradas cacheadas com cache_hit por janela, sem expor PII e sem alterar a lógica de produção.",
+    "change_summary": "Preparar escrita futura de telemetria observacional para medir aproveitamento do cache por janela e distinguir problema de cobertura versus matching.",
+    "estimated_scope": "baixo",
+    "pre_conditions": [
+      "baseline do router aprovado",
+      "consulta agregada sem PII",
+      "janela de amostragem definida"
+    ]
+  },
+  "application_order": 1,
+  "dependencies": [
+    "baseline do router aprovado",
+    "janela de amostragem de logs do router"
+  ]
+}

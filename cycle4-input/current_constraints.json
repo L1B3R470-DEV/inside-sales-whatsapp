@@ -1,0 +1,61 @@
+{
+  "cycle": 4,
+  "workspace": "C:\\Users\\User\\.openclaw\\workspace-integration",
+  "operational_constraints": [
+    "production must remain isolated",
+    "real project must not be edited in this phase",
+    ".mcp.json must remain untouched",
+    "bridge local must remain untouched",
+    "no bindings to the real workspace may be created",
+    "no writing outside the isolated workspace is allowed except requested snapshots/reporting artifacts",
+    "human review is required before any future patch proposal or application"
+  ],
+  "stack_state": {
+    "approved_previous_cycle": "cycle-003-improvement-plan.json",
+    "current_mcp_servers": [
+      "bridge-monitor",
+      "sqlite-crm-snapshot"
+    ],
+    "provider_model_baseline": "openai-codex/gpt-5.4-mini",
+    "xai_plugin_disabled": true,
+    "sqlite_router_operationally_absent": true,
+    "fetch_operationally_absent": true
+  },
+  "validated_baselines": {
+    "bridge": {
+      "inbox_pending_count": 10,
+      "outbox_reply_count": 10,
+      "last_reply_id": "REPLY-20260327-142937",
+      "acks_count": 10
+    },
+    "crm_snapshot": {
+      "snapshot_source": "C:\\Users\\User\\.openclaw\\snapshots\\20260329-021916-cycle2-prep\\crm_operacional.snapshot.sqlite",
+      "total_leads": 12,
+      "leads_by_status": {
+        "novo": 3,
+        "qualificando": 9
+      },
+      "total_interactions": 210,
+      "active_knowledge_rules": 20,
+      "knowledge_cycles_executed": 1136,
+      "ignored_contacts_count": 28,
+      "crm_note": "Snapshot agregado e sem PII: volume concentrado em qualificando, com baixa fração de leads novos e estrutura de regras ativa estável."
+    },
+    "router": {
+      "tables_found": [
+        "response_cache",
+        "route_logs",
+        "sqlite_sequence",
+        "rag_documents",
+        "rag_chunks",
+        "lid_mappings",
+        "blocked_numbers",
+        "conversation_history",
+        "always_allowed_numbers"
+      ],
+      "response_cache_count": 1,
+      "route_logs_count": 17,
+      "cache_note": "Cache nÃ£o estÃ¡ vazio; hÃ¡ ao menos 1 entrada ativa em response_cache. O histÃ³rico recente indica route_logs com decisÃµes claude_direct e gpt_direct, com cache_hit = 0 nas Ãºltimas 5 execuÃ§Ãµes."
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "cycle": 18,
+  "phase": "scope-draft",
+  "generated_at": "2026-04-02T18:13:18Z",
+  "focus_item": "R2",
+  "goal": "Preparar a base documental para decidir administrativamente se a iteracao snapshot-bound de R2 deve ser formalmente encerrada ou se devem ser registradas condicoes minimas e objetivas para eventual reabertura futura, sem reabrir a analise e sem ampliar o escopo.",
+  "allowed_sources": [
+    "cycle-017B-r2-snapshot-scope-decision-review.json",
+    "cycle-017A-r2-snapshot-scope-decision.json",
+    "cycle-016B-r2-governance-analytical-reading-review.json",
+    "cycle-016A-r2-governance-analytical-reading.json",
+    "cycle-015B-r2-snapshot-documentary-analysis-review.json",
+    "cycle-015A-r2-snapshot-documentary-analysis.json",
+    "cycle-014B-r2-restriction-resolution-review.json",
+    "cycle-014A-restriction-resolution-classification.json",
+    "cycle-012B-next-item-reopen-decision.json",
+    "cycle-011-stability-report.json",
+    "cycle-010-real-write-evidence.json"
+  ],
+  "questions_to_answer_next": [
+    "O desfecho RECONHECER_LIMITE_NATURAL deve levar ao encerramento formal da iteracao snapshot-bound de R2?",
+    "Se nao houver encerramento formal, quais condicoes minimas e objetivas poderiam ser registradas para eventual reabertura futura sem autorizar execucao?",
+    "Quais entregas herdadas do 17A compoem o inventario oficial que precisa ser preservado?"
+  ],
+  "hard_constraints": [
+    "Nao executar o ciclo 18 administrativo nesta rodada.",
+    "Nao tocar no projeto real, na producao, em .mcp.json, na bridge local ou em qualquer binding real.",
+    "Nao executar patch, SQL, DDL, DML, sandbox, rollback, validacao operacional ou escrita fora do workspace-integration.",
+    "Nao reabrir a analise snapshot-bound nem tratar open questions como agenda autorizada.",
+    "Nao reutilizar autorizacao, escopo ou premissa de R6, 14A, 15A, 16A ou 17A."
+  ],
+  "expected_outputs_next": [
+    "decisao administrativa entre encerramento formal da iteracao ou registro de condicoes minimas de eventual reabertura futura",
+    "inventario oficial das entregas herdadas da cadeia 12A-S → 17B",
+    "registro administrativo das open questions apenas como fronteiras"
+  ],
+  "execution_now": {
+    "authorized": false,
+    "reason": "Esta rodada apenas prepara a base tecnica do ciclo 18."
+  }
+}

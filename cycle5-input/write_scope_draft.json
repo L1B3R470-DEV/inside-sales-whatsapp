@@ -1,0 +1,46 @@
+{
+  "cycle": 5,
+  "scope_basis": "Derived only from approved low-risk ready_for_execution items of cycle-004-execution-plan.json",
+  "items": [
+    {
+      "rec_id": "R6",
+      "title": "Aumentar a observabilidade da eficiência do cache por amostragem contínua",
+      "proposed_write_scope": {
+        "target_file": "router_runtime.sqlite (somente leitura supervisionada)",
+        "target_component": "observabilidade do cache / métricas do router",
+        "change_type": "instrumentation-analysis",
+        "description": "Monitorar amostras para correlacionar entradas cacheadas com cache_hit e registrar taxa de aproveitamento por janela."
+      },
+      "safety_frame": {
+        "project_real_editing_allowed_now": false,
+        "workspace_isolated_only": true,
+        "requires_human_review_before_any_patch": true
+      },
+      "dependencies": [
+        "baseline do router aprovado",
+        "janela de amostragem de logs do router"
+      ],
+      "execution_order": 1
+    },
+    {
+      "rec_id": "R2",
+      "title": "Aprimorar cobertura do funil para reduzir concentração no estágio intermediário",
+      "proposed_write_scope": {
+        "target_file": "cycle-002-crm-snapshot.json (referência analítica)",
+        "target_component": "pipeline de qualificação / cobertura de funil",
+        "change_type": "analysis-and-monitoring",
+        "description": "Acompanhar a distribuição de leads por estágio e a evolução de novos para qualificando, com foco em reduzir concentração no meio do funil."
+      },
+      "safety_frame": {
+        "project_real_editing_allowed_now": false,
+        "workspace_isolated_only": true,
+        "requires_human_review_before_any_patch": true
+      },
+      "dependencies": [
+        "snapshot CRM aprovado",
+        "métricas agregadas de estágio"
+      ],
+      "execution_order": 2
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "cycle": 15,
+  "phase": "scope-draft",
+  "generated_at": "2026-04-02T13:04:28Z",
+  "focus_item": "R2",
+  "goal": "Preparar a base documental para produzir o conteudo analitico concreto de R2 em modo snapshot-bound, identificando quais campos de cycle-002 sustentam findings agregados, quais limites precisam permanecer travados e como a cadeia 14A/14B continua vinculando a progressao de R2.",
+  "allowed_sources": [
+    "cycle-014B-r2-restriction-resolution-review.json",
+    "cycle-014A-restriction-resolution-classification.json",
+    "cycle-013B-r2-readonly-specification-review.json",
+    "cycle-013A-r2-readonly-specification.json",
+    "cycle-012B-next-item-reopen-decision.json",
+    "cycle-011-stability-report.json",
+    "cycle-010-real-write-evidence.json",
+    "cycle-005-write-proposals.json",
+    "cycle-004-execution-plan.json",
+    "cycle-003-improvement-plan.json",
+    "cycle-002-crm-snapshot.json"
+  ],
+  "questions_to_answer_next": [
+    "Quais findings documentais concretos sobre cobertura do funil podem ser produzidos apenas com os campos agregados do cycle-002?",
+    "Como explicitar no payload analitico que o snapshot sustenta cobertura agregada sem virar ancora de CRM live?",
+    "Quais limites do snapshot precisam aparecer como restricao formal para evitar extrapolacao indevida?",
+    "Como carregar para o ciclo 15 a ressalva operacional sobre escrita de sessao sem bloquear indevidamente uma fase puramente manual/orquestrada?"
+  ],
+  "hard_constraints": [
+    "Nao executar o ciclo 15 analitico nesta rodada.",
+    "Nao tocar no projeto real, na producao, em .mcp.json, na bridge local ou em qualquer binding real.",
+    "Nao executar patch, SQL, DDL, DML, sandbox, rollback, validacao operacional ou escrita fora do workspace-integration.",
+    "Nao tratar cycle-002 como CRM live; manter enquadramento snapshot-bound.",
+    "Nao reutilizar autorizacao, escopo ou premissa de R6, 13A ou 14A.",
+    "Nao introduzir PII nem campos row-level."
+  ],
+  "expected_outputs_next": [
+    "finding documentario concreto de R2 limitado a metricas agregadas do snapshot",
+    "mapeamento explicito dos campos do cycle-002 usados como base analitica",
+    "declaracao formal das limitacoes do snapshot e dos limites de inferencia",
+    "reconfirmacao das restricoes vinculantes herdadas de 14A/14B"
+  ],
+  "execution_now": {
+    "authorized": false,
+    "reason": "Esta rodada apenas prepara a base tecnica do ciclo 15."
+  }
+}

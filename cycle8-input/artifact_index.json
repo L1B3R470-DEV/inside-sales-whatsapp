@@ -1,0 +1,30 @@
+﻿{
+    "cycle":  8,
+    "prepared_at":  "2026-03-31T01:26:18.5987379Z",
+    "source_artifacts":  [
+                             {
+                                 "cycle":  7,
+                                 "file":  "cycle-007-sandbox-write-evidence.json",
+                                 "path":  "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-007-sandbox-write-evidence.json",
+                                 "consolidated_path":  "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle8-input\\artifacts\\cycle-007-sandbox-write-evidence.json",
+                                 "purpose":  "evidencia auditavel da escrita executada na sandbox",
+                                 "status":  "approved"
+                             },
+                             {
+                                 "cycle":  6,
+                                 "file":  "cycle-006-isolated-write-plan.json",
+                                 "path":  "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-006-isolated-write-plan.json",
+                                 "consolidated_path":  "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle8-input\\artifacts\\cycle-006-isolated-write-plan.json",
+                                 "purpose":  "plano aprovado da escrita isolada e escopo autorizado",
+                                 "status":  "approved"
+                             },
+                             {
+                                 "cycle":  5,
+                                 "file":  "cycle-005-write-proposals.json",
+                                 "path":  "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-005-write-proposals.json",
+                                 "consolidated_path":  "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle8-input\\artifacts\\cycle-005-write-proposals.json",
+                                 "purpose":  "propostas de escrita que originaram o item low-risk selecionado",
+                                 "status":  "approved"
+                             }
+                         ]
+}

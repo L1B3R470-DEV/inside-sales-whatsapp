@@ -1,0 +1,111 @@
+{
+  "cycle": 15,
+  "phase": "cycle002-field-inventory",
+  "generated_at": "2026-04-02T13:04:28Z",
+  "artifact": {
+    "name": "cycle-002-crm-snapshot.json",
+    "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-002-crm-snapshot.json",
+    "mode": "crm-snapshot-read",
+    "parseable": true
+  },
+  "usable_structures": [
+    {
+      "field": "context_binding.sqlite_generic_bound_to",
+      "type": "string",
+      "supports": "prova de que a superficie lida foi crm-snapshot",
+      "usage_limit": "nao pode ser reinterpretado como CRM live"
+    },
+    {
+      "field": "context_binding.crm_live_not_consulted",
+      "type": "boolean",
+      "supports": "prova negativa de consulta live",
+      "usage_limit": "deve permanecer vinculante para evitar ancoragem indevida"
+    },
+    {
+      "field": "crm_snapshot_state.snapshot_source",
+      "type": "string",
+      "supports": "origem documental do snapshot usado no ciclo 2",
+      "usage_limit": "serve como referencia historica de snapshot, nao de base live"
+    },
+    {
+      "field": "crm_snapshot_state.total_leads",
+      "type": "integer",
+      "supports": "volume agregado de leads para finding documental",
+      "usage_limit": "sem extrapolacao temporal ou individual"
+    },
+    {
+      "field": "crm_snapshot_state.leads_by_status",
+      "type": "object",
+      "supports": "distribuicao agregada por estagio e concentracao em qualificando",
+      "usage_limit": "sem inferencia de casos individuais"
+    },
+    {
+      "field": "crm_snapshot_state.total_interactions",
+      "type": "integer",
+      "supports": "intensidade agregada de interacoes",
+      "usage_limit": "nao representa qualidade individual de atendimento"
+    },
+    {
+      "field": "crm_snapshot_state.active_knowledge_rules",
+      "type": "integer",
+      "supports": "estabilidade agregada de regras ativas",
+      "usage_limit": "nao autoriza tuning operacional"
+    },
+    {
+      "field": "crm_snapshot_state.knowledge_cycles_executed",
+      "type": "integer",
+      "supports": "historico agregado de ciclos de conhecimento",
+      "usage_limit": "nao comprova comportamento atual do sistema"
+    },
+    {
+      "field": "crm_snapshot_state.ignored_contacts_count",
+      "type": "integer",
+      "supports": "contexto agregado de contatos ignorados",
+      "usage_limit": "fora do foco principal de R2, usar apenas como contexto"
+    },
+    {
+      "field": "crm_snapshot_state.crm_note",
+      "type": "string",
+      "supports": "qualificacao documental de que o snapshot e agregado e sem PII",
+      "usage_limit": "nao substitui verificacoes de escopo em fases futuras"
+    },
+    {
+      "field": "findings[*]",
+      "type": "array",
+      "supports": "achados agregados com chave, valor e nota interpretativa",
+      "usage_limit": "usar apenas chaves relacionadas a cobertura de funil e limites documentais"
+    },
+    {
+      "field": "findings[*].value",
+      "type": "scalar_or_object",
+      "supports": "material concreto para findings documentais agregados",
+      "usage_limit": "proibido qualquer enriquecimento com superficies nao ancoradas"
+    },
+    {
+      "field": "meta.sqlite_tool_binding",
+      "type": "string",
+      "supports": "contexto de que o binding SQLite foi contratualmente preso ao snapshot",
+      "usage_limit": "serve para reforcar o escopo snapshot-bound"
+    }
+  ],
+  "structures_not_to_promote_as_findings": [
+    {
+      "field": "router_baseline",
+      "reason": "e baseline herdado do ciclo 1 e nao leitura live do router nesta cadeia"
+    },
+    {
+      "field": "bridge_counts",
+      "reason": "pode oferecer contexto operacional historico, mas nao sustenta o finding central de cobertura do funil"
+    },
+    {
+      "field": "meta.context_files_read",
+      "reason": "serve para rastreabilidade, nao para finding de negocio"
+    }
+  ],
+  "recommended_finding_axes_for_cycle_15": [
+    "concentracao relativa em qualificando",
+    "desbalanceamento entre novo e qualificando",
+    "leitura agregada de volume total de leads e interacoes",
+    "limites de inferencia por ser snapshot historico e nao CRM live"
+  ]
+}

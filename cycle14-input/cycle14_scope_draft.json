@@ -1,0 +1,36 @@
+{
+  "cycle": 14,
+  "phase": "scope-draft",
+  "generated_at": "2026-04-02T12:45:18Z",
+  "focus_item": "R2",
+  "goal": "Determine whether the open restriction on R2 is resolvable or blocking, whether cycle-002-crm-snapshot.json anchors a live CRM surface or only a snapshot, what operational rule should govern agent session writes, and whether R2 should progress or freeze.",
+  "allowed_sources": [
+    "cycle-013B-r2-readonly-specification-review.json",
+    "cycle-012B-next-item-reopen-decision.json",
+    "cycle-011-stability-report.json",
+    "cycle-010-real-write-evidence.json",
+    "cycle-005-write-proposals.json",
+    "cycle-004-execution-plan.json",
+    "cycle-003-improvement-plan.json",
+    "cycle-002-crm-snapshot.json"
+  ],
+  "questions_to_answer_next": [
+    "Does cycle-002-crm-snapshot.json reduce the open restriction by anchoring enough CRM evidence for R2, or does it confirm that only a snapshot exists?",
+    "Should the absence of a live CRM anchor freeze R2 progression or only keep it under restriction?",
+    "Should future contracts treat agent session writes as blocking, tolerated metadata, or context-dependent?",
+    "What is the formal recommendation for progression, hold, or freeze of R2 after documentary review?"
+  ],
+  "hard_constraints": [
+    "No cycle 14 analytical execution in this round.",
+    "No project-real edit, no production touch, no .mcp.json change, no bridge change, no binding creation.",
+    "No SQL, no DDL, no DML, no patch, no sandbox execution.",
+    "Do not treat cycle-002 as live CRM unless the documentary chain supports that explicitly.",
+    "Do not reuse authorization, scope, or operative premise from R6."
+  ],
+  "expected_outputs_next": [
+    "restriction decision for R2: resolvable or blocking",
+    "anchor decision for cycle 2: snapshot-only or stronger",
+    "session write policy recommendation",
+    "progression recommendation: proceed under restriction, hold, or freeze"
+  ]
+}

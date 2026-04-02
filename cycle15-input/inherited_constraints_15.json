@@ -1,0 +1,55 @@
+{
+  "cycle": 15,
+  "phase": "inherited-constraints",
+  "generated_at": "2026-04-02T13:04:28Z",
+  "binding_sources": [
+    "cycle-014B-r2-restriction-resolution-review.json",
+    "cycle-014A-restriction-resolution-classification.json",
+    "cycle-013B-r2-readonly-specification-review.json",
+    "cycle-013A-r2-readonly-specification.json",
+    "cycle-012B-next-item-reopen-decision.json",
+    "cycle-011-stability-report.json",
+    "cycle-010-real-write-evidence.json"
+  ],
+  "authorization_reset": {
+    "authorization_inheritance": false,
+    "scope_reused": false,
+    "premises_reused": false,
+    "note": "O ciclo 15 nao recebe autorizacao operacional nem reaproveita escopo ou premissa operative de R6, 13A ou 14A."
+  },
+  "binding_constraints": [
+    "R2 permanece limitado a analise documental e agregada de crm_coverage.",
+    "cycle-002 deve ser tratado como ancora de snapshot e nao de CRM live.",
+    "o baseline pos-R6 permanece protegido e nao pode ser reinterpretado como permissao de execucao.",
+    "cache_observability_windows e router_runtime.sqlite permanecem apenas como evidencia protegida do baseline.",
+    "proibido tocar em producao, projeto real, .mcp.json, bridge local, bindings ou qualquer workspace real.",
+    "proibido introduzir PII, consultas row-level, escrita real, sandbox, patch, SQL, DDL, DML, rollback ou validacao operacional.",
+    "qualquer fase futura com agent assistido deve respeitar a decisao de escrita de sessao como ressalva operacional.",
+    "qualquer escrita ou ativacao de sandbox exige contrato explicito novo."
+  ],
+  "session_write_policy": {
+    "decision": "RESSALVA_OPERACIONAL",
+    "meaning": "escritas de sessao do agente nao sao aceitas por padrao em fases sensiveis a zero escrita e precisam de tolerancia contratual explicita se algum dia forem admitidas",
+    "applies_to": [
+      "agent-assisted phases",
+      "embedded/local style workflows",
+      "qualquer caminho que persista sessao sob ~/.openclaw/agents"
+    ]
+  },
+  "snapshot_bound_limitations": [
+    "finding concreto de R2 deve permanecer apoiado em snapshot agregado historico",
+    "nao inferir estado atual do CRM live a partir do snapshot do ciclo 2",
+    "nao usar o snapshot para legitimar consultas a superficies ambiguas"
+  ],
+  "progression_state": {
+    "restriction_classification": "RESOLVIVEL_COM_CONDICAO",
+    "progression_recommendation": "PROGREDIR_COM_CONDICAO",
+    "required_conditions": [
+      "tratar cycle-002 como evidencia snapshot-only",
+      "manter linguagem agregada e sem PII",
+      "preservar baseline pos-R6",
+      "aplicar ressalva operacional de escrita de sessao",
+      "novo contrato explicito antes de qualquer escrita ou sandbox"
+    ]
+  }
+}

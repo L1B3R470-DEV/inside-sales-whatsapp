@@ -1,0 +1,27 @@
+{
+  "cycle": 4,
+  "purpose": "approved input map for cycle 4 supervised low-risk execution planning",
+  "artifacts": [
+    {
+      "id": "cycle-003-improvement-plan",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-003-improvement-plan.json",
+      "copied_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle4-input\\artifacts\\cycle-003-improvement-plan.json",
+      "status": "approved",
+      "purpose": "official improvement plan input for candidate execution analysis"
+    },
+    {
+      "id": "cycle-002-crm-snapshot",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-002-crm-snapshot.json",
+      "copied_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle4-input\\artifacts\\cycle-002-crm-snapshot.json",
+      "status": "approved",
+      "purpose": "CRM aggregate baseline supporting scope and safety checks"
+    },
+    {
+      "id": "cycle-001-router-read",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-001-router-read.json",
+      "copied_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle4-input\\artifacts\\cycle-001-router-read.json",
+      "status": "approved",
+      "purpose": "router and cache baseline supporting technical sequencing"
+    }
+  ]
+}

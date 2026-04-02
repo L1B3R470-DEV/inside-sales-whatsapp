@@ -1,0 +1,49 @@
+{
+  "cycle": 12,
+  "phase": "input-preparation",
+  "generated_at": "2026-04-01T00:00:00Z",
+  "artifacts": [
+    {
+      "name": "cycle-011-stability-report.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-011-stability-report.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle12-input\\artifacts\\cycle-011-stability-report.json",
+      "purpose": "evid?ncia do fechamento est?vel de R6",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-010-real-write-evidence.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-010-real-write-evidence.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle12-input\\artifacts\\cycle-010-real-write-evidence.json",
+      "purpose": "evid?ncia formal da escrita real aprovada de R6",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-009-real-write-handoff.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-009-real-write-handoff.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle12-input\\artifacts\\cycle-009-real-write-handoff.json",
+      "purpose": "handoff auditado da execu??o real de R6",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-005-write-proposals.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-005-write-proposals.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle12-input\\artifacts\\cycle-005-write-proposals.json",
+      "purpose": "ordem e escopo das propostas prontas para execu??o",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-004-execution-plan.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-004-execution-plan.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle12-input\\artifacts\\cycle-004-execution-plan.json",
+      "purpose": "classifica??o de risco e elegibilidade dos itens",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-003-improvement-plan.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-003-improvement-plan.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle12-input\\artifacts\\cycle-003-improvement-plan.json",
+      "purpose": "plano anal?tico original e prioridades dos itens",
+      "status": "approved"
+    }
+  ]
+}

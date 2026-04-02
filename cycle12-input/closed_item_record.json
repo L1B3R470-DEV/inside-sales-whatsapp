@@ -1,0 +1,19 @@
+{
+  "closed_item": "R6",
+  "closure_status": "stable_closed",
+  "closure_source": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-011-stability-report.json",
+  "closure_source_type": "json-string report approved in cycle 11B",
+  "execution_evidence_source": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-010-real-write-evidence.json",
+  "real_write_handoff_source": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-009-real-write-handoff.json",
+  "target_file": "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\router_runtime.sqlite",
+  "target_logical_scope": "sqlite wal logical database",
+  "post_r6_baseline_hash": "A494A6C176A25FF46EA01169455A53C47D890CAF5B199B2119B9FD23CB484278",
+  "closure_assertions": {
+    "stable_closed": true,
+    "table_found": true,
+    "row_count_zero": true,
+    "schema_matches_cycle7": true,
+    "consistent_with_cycle10": true,
+    "drift_detected": false
+  }
+}

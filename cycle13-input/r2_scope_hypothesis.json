@@ -1,0 +1,43 @@
+{
+  "cycle": 13,
+  "phase": "scope-hypothesis",
+  "generated_at": "2026-04-02T12:27:07Z",
+  "item": "R2",
+  "scope_type": "read-only-analytical-hypothesis",
+  "working_hypothesis": "R2 should remain limited to aggregated CRM funnel coverage analysis: stage distribution, concentration in qualifying, and progression visibility from new to qualifying, without touching any operational system or individual lead record.",
+  "supported_by": [
+    {
+      "source": "cycle-003-improvement-plan.json",
+      "support": "R2 is framed as crm_coverage with low implementation risk and no direct production change in that round."
+    },
+    {
+      "source": "cycle-004-execution-plan.json",
+      "support": "R2 technical_spec is analysis-and-monitoring over the qualification pipeline and stage distribution."
+    },
+    {
+      "source": "cycle-005-write-proposals.json",
+      "support": "R2 write_scope remains analytical, aggregated, and explicitly avoids identifiable data."
+    },
+    {
+      "source": "cycle-012B-next-item-reopen-decision.json",
+      "support": "R2 was reopened under a preserved post-R6 baseline with no inherited authorization, scope, or premise."
+    }
+  ],
+  "questions_for_cycle_13A": [
+    "Which aggregated CRM metrics are minimally sufficient to describe R2 under the post-R6 baseline?",
+    "Which parts of the historical R2 rationale still hold without relying on any R6 operational premise?",
+    "What documentary chain must be completed before any later sandbox or write-stage proposal can exist?"
+  ],
+  "explicitly_out_of_scope": [
+    "querying or mutating the real database",
+    "writing to production",
+    "changing routing, persona, fallback, or guardrails",
+    "touching cache_observability_windows beyond preserving it as baseline evidence",
+    "using PII or row-level lead data"
+  ],
+  "authorization": {
+    "execute_analysis_now": false,
+    "execute_sandbox_now": false,
+    "execute_real_write_now": false
+  }
+}

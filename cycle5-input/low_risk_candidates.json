@@ -1,0 +1,30 @@
+{
+  "cycle": 5,
+  "source_file": "cycle-004-execution-plan.json",
+  "selection_rule": "risk_level = low and status = ready_for_execution",
+  "count": 2,
+  "items": [
+    {
+      "rec_id": "R6",
+      "title": "Aumentar a observabilidade da eficiência do cache por amostragem contínua",
+      "category": "cache",
+      "execution_order": 1,
+      "target_file": "router_runtime.sqlite (somente leitura supervisionada)",
+      "target_component": "observabilidade do cache / métricas do router",
+      "change_type": "instrumentation-analysis",
+      "validation_required": false,
+      "validation_note": "Não altera routing, guardrails ou persona; requer apenas validação analítica de qualidade de evidência."
+    },
+    {
+      "rec_id": "R2",
+      "title": "Aprimorar cobertura do funil para reduzir concentração no estágio intermediário",
+      "category": "crm_coverage",
+      "execution_order": 2,
+      "target_file": "cycle-002-crm-snapshot.json (referência analítica)",
+      "target_component": "pipeline de qualificação / cobertura de funil",
+      "change_type": "analysis-and-monitoring",
+      "validation_required": false,
+      "validation_note": "A recomendação é de monitoramento e análise; não altera o comportamento do atendente nesta rodada."
+    }
+  ]
+}

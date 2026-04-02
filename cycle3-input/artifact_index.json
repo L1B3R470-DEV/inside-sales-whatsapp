@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-03-30T00:00:00Z",
+  "workspace": "C:\\Users\\User\\.openclaw\\workspace-integration",
+  "artifacts": [
+    {
+      "cycle": 0,
+      "id": "cycle-000-bridge-only",
+      "status": "approved",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-000-bridge-only.json",
+      "local_copy": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle3-input\\artifacts\\cycle-000-bridge-only.json",
+      "purpose": "Baseline de infraestrutura e leitura da bridge em modo bridge-monitor-only.",
+      "mode": "bridge-monitor-only",
+      "approved_output": "cycle-000-bridge-only.json"
+    },
+    {
+      "cycle": 1,
+      "id": "cycle-001-router-read",
+      "status": "approved",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-001-router-read.json",
+      "local_copy": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle3-input\\artifacts\\cycle-001-router-read.json",
+      "purpose": "Baseline operacional do router com leitura de cache, route_logs e estado da bridge.",
+      "mode": "router-read",
+      "approved_output": "cycle-001-router-read.json"
+    },
+    {
+      "cycle": 2,
+      "id": "cycle-002-crm-snapshot",
+      "status": "approved",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-002-crm-snapshot.json",
+      "local_copy": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle3-input\\artifacts\\cycle-002-crm-snapshot.json",
+      "purpose": "Baseline agregado do CRM via snapshot isolado, sem PII, com conven??o expl?cita de binding SQLite.",
+      "mode": "crm-snapshot-read",
+      "approved_output": "cycle-002-crm-snapshot.json"
+    }
+  ]
+}

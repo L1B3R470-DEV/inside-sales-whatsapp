@@ -1,0 +1,40 @@
+{
+  "cycle": 4,
+  "scope_type": "preparatory-supervised-execution-planning",
+  "risk_bands": {
+    "low_risk": {
+      "definition": "changes that are configuration- or prompt-level candidates with clear rollback, no production application in this cycle, and no dependence on new external integrations",
+      "candidate_patterns": [
+        "response consistency tuning",
+        "cache observability improvements",
+        "fallback wording refinements",
+        "non-invasive guardrail threshold review candidates"
+      ]
+    },
+    "medium_risk": {
+      "definition": "changes that alter routing decisions, eligibility criteria, or business-rule interpretation and therefore require explicit validation before any patch is proposed",
+      "candidate_patterns": [
+        "routing decision logic changes",
+        "guardrail eligibility adjustments",
+        "persona shifts with business impact",
+        "CRM stage handling changes"
+      ]
+    },
+    "high_risk": {
+      "definition": "changes that could affect production behavior broadly, depend on live infrastructure, or require direct edits in the real project or production stack",
+      "candidate_patterns": [
+        "production rollout changes",
+        "live CRM integration changes",
+        "bridge or gateway behavior changes",
+        "automatic execution without human review"
+      ]
+    }
+  },
+  "explicit_non_goals": [
+    "no patch generation in this preparation round",
+    "no production edits",
+    "no project-real edits",
+    "no gateway changes",
+    "no bindings to the real workspace"
+  ]
+}

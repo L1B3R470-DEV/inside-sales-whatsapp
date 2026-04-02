@@ -1,0 +1,47 @@
+{
+  "cycle": 6,
+  "source_file": "cycle-005-write-proposals.json",
+  "selection_rule": "first item with readiness_level = ready ordered by application_order",
+  "candidate_found": true,
+  "item": {
+    "rec_id": "R6",
+    "title": "Aumentar a observabilidade da eficiência do cache por amostragem contínua",
+    "category": "cache",
+    "readiness_level": "ready",
+    "readiness_reason": "Item low e ready_for_execution no ciclo 4, com escopo observacional claro e rollback simples por desativação da coleta.",
+    "application_order": 1,
+    "write_scope": {
+      "target_file": "router_runtime.sqlite (somente leitura supervisionada)",
+      "target_component": "observabilidade do cache / métricas do router",
+      "change_type": "instrumentation-analysis",
+      "current_state": "O baseline aprovado indica cache ativo no router, mas as amostras lidas mostraram cache_hit zerado e não há telemetria dedicada por janela nesta preparação.",
+      "proposed_state": "Passar a acompanhar amostras agregadas para correlacionar entradas cacheadas com cache_hit por janela, sem expor PII e sem alterar a lógica de produção.",
+      "change_summary": "Preparar escrita futura de telemetria observacional para medir aproveitamento do cache por janela e distinguir problema de cobertura versus matching.",
+      "estimated_scope": "baixo",
+      "pre_conditions": [
+        "baseline do router aprovado",
+        "consulta agregada sem PII",
+        "janela de amostragem definida"
+      ]
+    },
+    "validation_plan": {
+      "method": "observação agregada com comparação de amostras",
+      "success_criteria": "cache hit rate > 40% em 100 interações observadas",
+      "observation_window": "100 interações ou 24h, o que ocorrer primeiro",
+      "test_steps": [
+        "coletar janela agregada de interações",
+        "comparar entradas cacheadas com hits",
+        "confirmar ausência de PII nas amostras"
+      ]
+    },
+    "rollback_plan": {
+      "procedure": "Encerrar a coleta observacional e manter somente o baseline aprovado, sem persistência de novos artefatos.",
+      "estimated_effort": "baixo",
+      "risk_if_rollback_fails": "perda temporária apenas de visibilidade adicional, sem impacto funcional no atendente."
+    },
+    "dependencies": [
+      "baseline do router aprovado",
+      "janela de amostragem de logs do router"
+    ]
+  }
+}

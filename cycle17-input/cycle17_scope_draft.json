@@ -1,0 +1,47 @@
+{
+  "cycle": 17,
+  "phase": "scope-draft",
+  "generated_at": "2026-04-02T17:35:03Z",
+  "focus_item": "R2",
+  "goal": "Preparar a base documental para decidir se a cadeia homologada de R2 deve formalizar uma recomendacao documental ou reconhecer que o escopo snapshot-bound chegou ao seu limite natural, sem extrapolar os findings nem enfraquecer as restricoes herdadas.",
+  "allowed_sources": [
+    "cycle-016B-r2-governance-analytical-reading-review.json",
+    "cycle-016A-r2-governance-analytical-reading.json",
+    "cycle-015B-r2-snapshot-documentary-analysis-review.json",
+    "cycle-015A-r2-snapshot-documentary-analysis.json",
+    "cycle-014B-r2-restriction-resolution-review.json",
+    "cycle-014A-restriction-resolution-classification.json",
+    "cycle-013B-r2-readonly-specification-review.json",
+    "cycle-012B-next-item-reopen-decision.json",
+    "cycle-011-stability-report.json",
+    "cycle-010-real-write-evidence.json",
+    "cycle-005-write-proposals.json",
+    "cycle-004-execution-plan.json",
+    "cycle-003-improvement-plan.json",
+    "cycle-002-crm-snapshot.json"
+  ],
+  "questions_to_answer_next": [
+    "GO1–GO4 sao suficientes para sustentar uma recomendacao documental limitada?",
+    "OQ1–OQ4 mostram que o escopo snapshot-bound atingiu seu limite natural por falta de tendencia e de ancoragem live?",
+    "Qual forma de decisao preserva melhor as restricoes herdadas sem transformar incerteza em permissao?"
+  ],
+  "hard_constraints": [
+    "Nao executar o ciclo 17 analitico nesta rodada.",
+    "Nao tocar no projeto real, na producao, em .mcp.json, na bridge local ou em qualquer binding real.",
+    "Nao executar patch, SQL, DDL, DML, sandbox, rollback, validacao operacional ou escrita fora do workspace-integration.",
+    "Nao tratar cycle-002 como CRM live; manter enquadramento snapshot-bound.",
+    "Nao reutilizar autorizacao, escopo ou premissa de R6, 14A, 15A ou 16A.",
+    "Nao introduzir PII nem campos row-level.",
+    "Nao tratar open questions como autorizacao implicita."
+  ],
+  "expected_outputs_next": [
+    "decisao documental entre FORMALIZAR_RECOMENDACAO e RECONHECER_LIMITE_NATURAL",
+    "justificativa ancorada em GO1–GO4 e OQ1–OQ4",
+    "reconfirmacao das restricoes vinculantes herdadas da cadeia 14/15/16",
+    "registro explicito do que continua nao resolvido sob o escopo snapshot-bound"
+  ],
+  "execution_now": {
+    "authorized": false,
+    "reason": "Esta rodada apenas prepara a base tecnica do ciclo 17."
+  }
+}

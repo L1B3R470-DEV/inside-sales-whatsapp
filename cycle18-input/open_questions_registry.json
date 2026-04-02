@@ -1,0 +1,37 @@
+{
+  "cycle": 18,
+  "phase": "open-questions-registry",
+  "generated_at": "2026-04-02T18:13:18Z",
+  "status_model": "fronteiras registradas da iteracao atual; nao compoem agenda autorizada",
+  "open_questions": [
+    {
+      "id": "OQ1",
+      "question": "Is the observed concentration in qualifying stable, improving, or worsening across time?",
+      "status": "aberta",
+      "authorization": "nenhuma",
+      "reason_open": "single snapshot does not establish trend continuity"
+    },
+    {
+      "id": "OQ2",
+      "question": "Is low representation of new leads seasonal, structural, or incidental?",
+      "status": "aberta",
+      "authorization": "nenhuma",
+      "reason_open": "snapshot supports visibility concern but not causal explanation"
+    },
+    {
+      "id": "OQ3",
+      "question": "Can any future approved chain anchor a live CRM surface without ambiguity?",
+      "status": "aberta",
+      "authorization": "nenhuma",
+      "reason_open": "current official chain resolves cycle-002 only as snapshot-only evidence"
+    },
+    {
+      "id": "OQ4",
+      "question": "Could a future agent-assisted phase ever be tolerated under the session-write caveat without violating zero-write-sensitive rules?",
+      "status": "aberta",
+      "authorization": "nenhuma",
+      "reason_open": "session_write_policy remains RESSALVA_OPERACIONAL and no tolerance is implied"
+    }
+  ],
+  "registry_note": "O ciclo 18 deve registrar essas questoes como fronteiras administrativas da iteracao snapshot-bound, sem trata-las como backlog executavel ou permissao implicita."
+}

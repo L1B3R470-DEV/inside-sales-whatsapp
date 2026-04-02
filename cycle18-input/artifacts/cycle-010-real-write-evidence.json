@@ -1,0 +1,201 @@
+{
+  "artifact": {
+    "read": true,
+    "selected_item_r6": true,
+    "handoff_ready": true,
+    "ddl_present": true,
+    "ddl_literal": "CREATE TABLE IF NOT EXISTS cache_observability_windows (\n  window_start TEXT NOT NULL,\n  window_end TEXT NOT NULL,\n  response_cache_count INTEGER NOT NULL,\n  cache_hit_count INTEGER NOT NULL,\n  notes TEXT NOT NULL\n)",
+    "ddl_literal_matches_expected": true,
+    "no_forbidden_keywords_in_operational_fields": true,
+    "forbidden_hits": [],
+    "schema_matches_cycle7": true,
+    "backup_plan_present": true,
+    "validation_queries_present": true,
+    "rollback_plan_present": true
+  },
+  "baseline": {
+    "target_exists": true,
+    "sha256": "305B7F640A7D825D6EE4C9AF09FC35AD0F40ED09936BEF28E73DCF8AA4691A40",
+    "size_bytes": 225280,
+    "last_write_utc": "2026-03-27T17:50:35.868741Z",
+    "journal_mode": [
+      [
+        "wal"
+      ]
+    ],
+    "wal_exists": true,
+    "shm_exists": true,
+    "precheck_rows": [],
+    "baseline_tables": [
+      [
+        "always_allowed_numbers",
+        "CREATE TABLE always_allowed_numbers (\n          number TEXT PRIMARY KEY,\n          reason TEXT DEFAULT '',\n          added_at TEXT NOT NULL\n        )"
+      ],
+      [
+        "blocked_numbers",
+        "CREATE TABLE blocked_numbers (\n          number TEXT PRIMARY KEY,\n          reason TEXT DEFAULT '',\n          added_at TEXT NOT NULL\n        )"
+      ],
+      [
+        "conversation_history",
+        "CREATE TABLE conversation_history (\n          id INTEGER PRIMARY KEY AUTOINCREMENT,\n          contact_key TEXT NOT NULL,\n          direction TEXT NOT NULL DEFAULT 'inbound',\n          message_text TEXT NOT NULL,\n          intent TEXT DEFAULT '',\n          complexity TEXT DEFAULT '',\n          lead_score REAL DEFAULT 0,\n          route_decision TEXT DEFAULT '',\n          created_at TEXT NOT NULL\n        )"
+      ],
+      [
+        "lid_mappings",
+        "CREATE TABLE lid_mappings (\n          remote_jid TEXT PRIMARY KEY,\n          phone_number TEXT NOT NULL,\n          resolved_jid TEXT NOT NULL,\n          push_name TEXT,\n          source TEXT DEFAULT 'log_scan',\n          message_id TEXT,\n          created_at TEXT NOT NULL,\n          updated_at TEXT NOT NULL,\n          last_seen_at TEXT NOT NULL\n        )"
+      ],
+      [
+        "rag_chunks",
+        "CREATE TABLE rag_chunks (\n          chunk_id TEXT PRIMARY KEY,\n          file_path TEXT NOT NULL,\n          chunk_hash TEXT NOT NULL,\n          token_count INTEGER DEFAULT 0,\n          created_at TEXT NOT NULL,\n          updated_at TEXT NOT NULL\n        , file_name TEXT, chunk_text TEXT, normalized_text TEXT)"
+      ],
+      [
+        "rag_documents",
+        "CREATE TABLE rag_documents (\n          file_path TEXT PRIMARY KEY,\n          file_name TEXT NOT NULL,\n          extension TEXT NOT NULL,\n          file_hash TEXT NOT NULL,\n          last_modified REAL NOT NULL,\n          chunk_count INTEGER DEFAULT 0,\n          indexed_at TEXT NOT NULL,\n          status TEXT DEFAULT 'active'\n        )"
+      ],
+      [
+        "response_cache",
+        "CREATE TABLE response_cache (\n          normalized_message TEXT PRIMARY KEY,\n          reply_text TEXT NOT NULL,\n          intent TEXT,\n          confidence REAL DEFAULT 0,\n          source TEXT DEFAULT 'auto',\n          active INTEGER DEFAULT 1,\n          hit_count INTEGER DEFAULT 0,\n          created_at TEXT NOT NULL,\n          updated_at TEXT NOT NULL,\n          last_hit_at TEXT\n        )"
+      ],
+      [
+        "route_logs",
+        "CREATE TABLE route_logs (\n          id INTEGER PRIMARY KEY AUTOINCREMENT,\n          number TEXT,\n          push_name TEXT,\n          inbound_text TEXT,\n          normalized_message TEXT,\n          route_decision TEXT,\n          message_complexity TEXT,\n          cache_hit INTEGER DEFAULT 0,\n          lead_score INTEGER DEFAULT 0,\n          rag_hit_count INTEGER DEFAULT 0,\n          rag_top_score REAL DEFAULT 0,\n          created_at TEXT NOT NULL\n        )"
+      ],
+      [
+        "sqlite_sequence",
+        "CREATE TABLE sqlite_sequence(name,seq)"
+      ]
+    ]
+  },
+  "backup": {
+    "created": true,
+    "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\backups\\cycle9\\router_runtime.sqlite.bak",
+    "created_at": "2026-03-31T14:03:36Z",
+    "via_backup_api": true,
+    "sha256": "8CEBA04A70D3C580D20B8E067A70A340A8F00B85078D9BECCCE8E0B05A033FA1",
+    "size_bytes": 225280
+  },
+  "execution": {
+    "ddl_executed": true,
+    "timestamp": "2026-03-31T14:03:36Z",
+    "ddl_literal_executed": "CREATE TABLE IF NOT EXISTS cache_observability_windows (\n  window_start TEXT NOT NULL,\n  window_end TEXT NOT NULL,\n  response_cache_count INTEGER NOT NULL,\n  cache_hit_count INTEGER NOT NULL,\n  notes TEXT NOT NULL\n)",
+    "no_dml_executed": true
+  },
+  "verification": {
+    "select_name": [
+      [
+        "cache_observability_windows"
+      ]
+    ],
+    "select_count": [
+      [
+        0
+      ]
+    ],
+    "pragma_table_info": [
+      [
+        0,
+        "window_start",
+        "TEXT",
+        1,
+        null,
+        0
+      ],
+      [
+        1,
+        "window_end",
+        "TEXT",
+        1,
+        null,
+        0
+      ],
+      [
+        2,
+        "response_cache_count",
+        "INTEGER",
+        1,
+        null,
+        0
+      ],
+      [
+        3,
+        "cache_hit_count",
+        "INTEGER",
+        1,
+        null,
+        0
+      ],
+      [
+        4,
+        "notes",
+        "TEXT",
+        1,
+        null,
+        0
+      ]
+    ],
+    "post_tables": [
+      [
+        "always_allowed_numbers",
+        "CREATE TABLE always_allowed_numbers (\n          number TEXT PRIMARY KEY,\n          reason TEXT DEFAULT '',\n          added_at TEXT NOT NULL\n        )"
+      ],
+      [
+        "blocked_numbers",
+        "CREATE TABLE blocked_numbers (\n          number TEXT PRIMARY KEY,\n          reason TEXT DEFAULT '',\n          added_at TEXT NOT NULL\n        )"
+      ],
+      [
+        "cache_observability_windows",
+        "CREATE TABLE cache_observability_windows (\n  window_start TEXT NOT NULL,\n  window_end TEXT NOT NULL,\n  response_cache_count INTEGER NOT NULL,\n  cache_hit_count INTEGER NOT NULL,\n  notes TEXT NOT NULL\n)"
+      ],
+      [
+        "conversation_history",
+        "CREATE TABLE conversation_history (\n          id INTEGER PRIMARY KEY AUTOINCREMENT,\n          contact_key TEXT NOT NULL,\n          direction TEXT NOT NULL DEFAULT 'inbound',\n          message_text TEXT NOT NULL,\n          intent TEXT DEFAULT '',\n          complexity TEXT DEFAULT '',\n          lead_score REAL DEFAULT 0,\n          route_decision TEXT DEFAULT '',\n          created_at TEXT NOT NULL\n        )"
+      ],
+      [
+        "lid_mappings",
+        "CREATE TABLE lid_mappings (\n          remote_jid TEXT PRIMARY KEY,\n          phone_number TEXT NOT NULL,\n          resolved_jid TEXT NOT NULL,\n          push_name TEXT,\n          source TEXT DEFAULT 'log_scan',\n          message_id TEXT,\n          created_at TEXT NOT NULL,\n          updated_at TEXT NOT NULL,\n          last_seen_at TEXT NOT NULL\n        )"
+      ],
+      [
+        "rag_chunks",
+        "CREATE TABLE rag_chunks (\n          chunk_id TEXT PRIMARY KEY,\n          file_path TEXT NOT NULL,\n          chunk_hash TEXT NOT NULL,\n          token_count INTEGER DEFAULT 0,\n          created_at TEXT NOT NULL,\n          updated_at TEXT NOT NULL\n        , file_name TEXT, chunk_text TEXT, normalized_text TEXT)"
+      ],
+      [
+        "rag_documents",
+        "CREATE TABLE rag_documents (\n          file_path TEXT PRIMARY KEY,\n          file_name TEXT NOT NULL,\n          extension TEXT NOT NULL,\n          file_hash TEXT NOT NULL,\n          last_modified REAL NOT NULL,\n          chunk_count INTEGER DEFAULT 0,\n          indexed_at TEXT NOT NULL,\n          status TEXT DEFAULT 'active'\n        )"
+      ],
+      [
+        "response_cache",
+        "CREATE TABLE response_cache (\n          normalized_message TEXT PRIMARY KEY,\n          reply_text TEXT NOT NULL,\n          intent TEXT,\n          confidence REAL DEFAULT 0,\n          source TEXT DEFAULT 'auto',\n          active INTEGER DEFAULT 1,\n          hit_count INTEGER DEFAULT 0,\n          created_at TEXT NOT NULL,\n          updated_at TEXT NOT NULL,\n          last_hit_at TEXT\n        )"
+      ],
+      [
+        "route_logs",
+        "CREATE TABLE route_logs (\n          id INTEGER PRIMARY KEY AUTOINCREMENT,\n          number TEXT,\n          push_name TEXT,\n          inbound_text TEXT,\n          normalized_message TEXT,\n          route_decision TEXT,\n          message_complexity TEXT,\n          cache_hit INTEGER DEFAULT 0,\n          lead_score INTEGER DEFAULT 0,\n          rag_hit_count INTEGER DEFAULT 0,\n          rag_top_score REAL DEFAULT 0,\n          created_at TEXT NOT NULL\n        )"
+      ],
+      [
+        "sqlite_sequence",
+        "CREATE TABLE sqlite_sequence(name,seq)"
+      ]
+    ],
+    "table_created_confirmed": true,
+    "table_empty_confirmed": true,
+    "schema_identical": true,
+    "no_other_tables_altered": true
+  },
+  "rollback": {
+    "triggered": false,
+    "reason": null,
+    "method": null,
+    "executed": false,
+    "completed": false,
+    "final_hash": "A494A6C176A25FF46EA01169455A53C47D890CAF5B199B2119B9FD23CB484278",
+    "notes": ""
+  },
+  "isolation": {
+    "project_mcp_sha_before": "E2EB77CAF9B3DD35C26A1F71D45E4DCD75E61A046754DB116BA5B5BEC4AEED73",
+    "project_mcp_sha_after": "E2EB77CAF9B3DD35C26A1F71D45E4DCD75E61A046754DB116BA5B5BEC4AEED73",
+    "project_mcp_untouched": true,
+    "bridge_untouched": true,
+    "production_isolated": true,
+    "scope_restricted_to_wal_unit": true
+  },
+  "blocked": false,
+  "error": null
+}

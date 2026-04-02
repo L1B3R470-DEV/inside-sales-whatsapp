@@ -1,0 +1,38 @@
+{
+  "cycle": 11,
+  "prepared_at": "2026-04-01T18:44:24.191234Z",
+  "source_artifacts": [
+    {
+      "cycle": 10,
+      "file": "cycle-010-real-write-evidence.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-010-real-write-evidence.json",
+      "consolidated_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle11-input\\artifacts\\cycle-010-real-write-evidence.json",
+      "purpose": "evidencia aprovada da escrita real WAL-aware de R6",
+      "status": "approved"
+    },
+    {
+      "cycle": 9,
+      "file": "cycle-009-real-write-handoff.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-009-real-write-handoff.json",
+      "consolidated_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle11-input\\artifacts\\cycle-009-real-write-handoff.json",
+      "purpose": "handoff tecnico aprovado para a escrita real controlada de R6",
+      "status": "approved"
+    },
+    {
+      "cycle": 8,
+      "file": "cycle-008-promotion-decision.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-008-promotion-decision.json",
+      "consolidated_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle11-input\\artifacts\\cycle-008-promotion-decision.json",
+      "purpose": "decisao tecnica de promocao do item R6 para escrita real futura",
+      "status": "approved"
+    },
+    {
+      "cycle": 7,
+      "file": "cycle-007-sandbox-write-evidence.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-007-sandbox-write-evidence.json",
+      "consolidated_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle11-input\\artifacts\\cycle-007-sandbox-write-evidence.json",
+      "purpose": "evidencia auditavel da escrita executada na sandbox para R6",
+      "status": "approved"
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "generated_at": "2026-03-30T00:00:00Z",
+  "status": "factual-summary",
+  "production": {
+    "isolated": true,
+    "webhook_disabled": true,
+    "connection_state": "close"
+  },
+  "openclaw": {
+    "integration_workspace": "C:\\Users\\User\\.openclaw\\workspace-integration",
+    "integration_model": "openai-codex/gpt-5.4-mini",
+    "gateway": {
+      "mode": "local",
+      "bind": "loopback",
+      "port": 18789
+    },
+    "mcp_active": [
+      "bridge-monitor",
+      "sqlite-crm-snapshot"
+    ]
+  },
+  "approved_cycles": {
+    "cycle_0": {
+      "mode": "bridge-monitor-only",
+      "bridge_state": {
+        "inbox_pending_count": 10,
+        "outbox_reply_count": 10,
+        "last_reply_id": "REPLY-20260327-142937",
+        "acks_count": 10
+      },
+      "approval_mode": "0A/0B formalized"
+    },
+    "cycle_1": {
+      "mode": "router-read",
+      "bridge_state": {
+        "inbox_pending_count": 10,
+        "outbox_reply_count": 10,
+        "last_reply_id": "REPLY-20260327-142937",
+        "acks_count": 10
+      },
+      "router_state": {
+        "tables_found": [
+          "response_cache",
+          "route_logs",
+          "sqlite_sequence",
+          "rag_documents",
+          "rag_chunks",
+          "lid_mappings",
+          "blocked_numbers",
+          "conversation_history",
+          "always_allowed_numbers"
+        ],
+        "response_cache_count": 1,
+        "route_logs_count": 17,
+        "cache_note": "Cache nÃ£o estÃ¡ vazio; hÃ¡ ao menos 1 entrada ativa em response_cache. O histÃ³rico recente indica route_logs com decisÃµes claude_direct e gpt_direct, com cache_hit = 0 nas Ãºltimas 5 execuÃ§Ãµes."
+      },
+      "approved": true
+    },
+    "cycle_2": {
+      "mode": "crm-snapshot-read",
+      "context_binding": {
+        "sqlite_generic_bound_to": "crm-snapshot",
+        "sqlite_router_absent": true,
+        "crm_live_not_consulted": true,
+        "binding_note": "Nesta rodada, a única superfície SQLite genérica disponível foi tratada por convenção contratual explícita como o snapshot do CRM; o router permanece fora da leitura operacional e o baseline do router vem apenas do arquivo aprovado do ciclo 1."
+      },
+      "bridge_state": {
+        "inbox_pending_count": 10,
+        "outbox_reply_count": 10,
+        "last_reply_id": "REPLY-20260327-142937",
+        "acks_count": 10
+      },
+      "router_baseline": {
+        "source_file": "cycle-001-router-read.json",
+        "cycle_approved_at": "2026-03-27T17:50:35Z",
+        "response_cache_count": 1,
+        "route_logs_count": 17,
+        "baseline_note": "Os dados do router são herdados de baseline estático e não de leitura live."
+      },
+      "crm_snapshot_state": {
+        "snapshot_source": "C:\\Users\\User\\.openclaw\\snapshots\\20260329-021916-cycle2-prep\\crm_operacional.snapshot.sqlite",
+        "total_leads": 12,
+        "leads_by_status": {
+          "novo": 3,
+          "qualificando": 9
+        },
+        "total_interactions": 210,
+        "active_knowledge_rules": 20,
+        "knowledge_cycles_executed": 1136,
+        "ignored_contacts_count": 28,
+        "crm_note": "Snapshot agregado e sem PII: volume concentrado em qualificando, com baixa fração de leads novos e estrutura de regras ativa estável."
+      },
+      "approved": true
+    }
+  },
+  "validated_facts": [
+    "Bridge permaneceu com contagens equilibradas nos ciclos aprovados.",
+    "Router baseline aprovado registrou response_cache_count = 1 e route_logs_count = 17.",
+    "Snapshot do CRM aprovado registrou total_leads = 12, total_interactions = 210, active_knowledge_rules = 20, knowledge_cycles_executed = 1136 e ignored_contacts_count = 28.",
+    "O ciclo 2 aprovado usou conven??o expl?cita para vincular a superf?cie SQLite gen?rica ao snapshot do CRM.",
+    "Nenhum dos ciclos aprovados desta trilha aplicou mudan?a em produ??o."
+  ]
+}

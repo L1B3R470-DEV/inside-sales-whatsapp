@@ -1,0 +1,26 @@
+{
+  "cycle": 6,
+  "input_artifacts": [
+    {
+      "file": "cycle-005-write-proposals.json",
+      "source_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-005-write-proposals.json",
+      "consolidated_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle6-input\\artifacts\\cycle-005-write-proposals.json",
+      "purpose": "Propostas de escrita aprovadas do ciclo 5 usadas como entrada oficial do ciclo 6",
+      "status": "approved"
+    },
+    {
+      "file": "cycle-004-execution-plan.json",
+      "source_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-004-execution-plan.json",
+      "consolidated_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle6-input\\artifacts\\cycle-004-execution-plan.json",
+      "purpose": "Plano de execu??o aprovado do ciclo 4 que originou os itens de escrita",
+      "status": "approved"
+    },
+    {
+      "file": "cycle-003-improvement-plan.json",
+      "source_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-003-improvement-plan.json",
+      "consolidated_path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle6-input\\artifacts\\cycle-003-improvement-plan.json",
+      "purpose": "Plano de melhorias aprovado do ciclo 3 para rastreabilidade de origem",
+      "status": "approved"
+    }
+  ]
+}

@@ -1,0 +1,140 @@
+{
+  "cycle_id": "13A",
+  "mode": "r2-readonly-specification",
+  "agent": "manual-orchestrated",
+  "generated_at": "2026-04-02T12:32:15Z",
+  "source_precedence": [
+    "cycle-012B-next-item-reopen-decision.json",
+    "cycle-011-stability-report.json",
+    "cycle-010-real-write-evidence.json",
+    "cycle-005-write-proposals.json",
+    "cycle-004-execution-plan.json",
+    "cycle-003-improvement-plan.json"
+  ],
+  "r2_scope": {
+    "rec_id": "R2",
+    "category": "crm_coverage",
+    "nature": "documentary, read-only, analytical, and monitoring-oriented",
+    "description": "R2 is limited to specifying how aggregated funnel coverage should be analyzed and monitored after the stable closure of R6. The scope is restricted to documentary comparison of approved artifacts, definition of required aggregated metrics, and preservation of the post-R6 baseline without any operational execution, patch, sandbox action, or production change.",
+    "surfaces_touched": [
+      "Approved documentary source chain for cycles 12B, 11, 10, 5, 4, and 3.",
+      "Protected post-R6 baseline evidence concerning router_runtime.sqlite and cache_observability_windows, only as preserved documentary baseline.",
+      "Historical aggregated CRM snapshot reference cited inside the official R2 sources, without independent revalidation in cycle 13A."
+    ],
+    "sources_required": [
+      "cycle-012B-next-item-reopen-decision.json",
+      "cycle-011-stability-report.json",
+      "cycle-010-real-write-evidence.json",
+      "cycle-005-write-proposals.json",
+      "cycle-004-execution-plan.json",
+      "cycle-003-improvement-plan.json"
+    ]
+  },
+  "dependency_map": {
+    "internal_dependencies": [
+      "R2 must remain the next eligible item formally reopened by cycle 12B.",
+      "R6 must remain stable_closed and preserved as post-R6 baseline evidence.",
+      "R2 must remain bounded to aggregated stage distribution and progression analysis.",
+      "Any future R2 phase must preserve the no-PII rule and the no-write rule until explicitly changed by contract."
+    ],
+    "external_dependencies": [
+      "A valid current CRM read-only surface would need explicit documentary anchoring before any future phase depends on live CRM data.",
+      "Any future sandbox or production-adjacent phase would require a new explicit authorization contract."
+    ],
+    "data_sources": [
+      "Approved documentary reopen decision from cycle 12B.",
+      "Approved stability and write-evidence chain for the post-R6 baseline from cycles 11 and 10.",
+      "Approved historical R2 rationale, ordering, and scope from cycles 5, 4, and 3.",
+      "Aggregated CRM snapshot reference cited in the official R2 sources, but not independently revalidated in 13A."
+    ],
+    "conflicts_with_r6_artifacts": "No direct conflict is documented as long as R2 remains limited to aggregated CRM analysis and does not reopen, modify, or operationally depend on cache_observability_windows or any R6 write artifact."
+  },
+  "post_r6_constraints": [
+    "Do not reopen or reinterpret R6 as authorization for R2.",
+    "Do not touch cache_observability_windows beyond preserving it as stable baseline evidence.",
+    "Do not touch production, the real project, .mcp.json, the local bridge, bindings, or any real workspace linkage.",
+    "Do not introduce PII; only aggregated CRM metrics and documentary evidence are in scope.",
+    "Do not use ambiguous SQLite or CRM surfaces as truth without explicit anchoring.",
+    "Do not perform sandbox actions, writes, SQL execution, DDL, DML, rollback, or validation runs in this phase."
+  ],
+  "minimal_progression_chain": [
+    "Preservar R6 como baseline estavel e fechado usando apenas a cadeia oficial aprovada.",
+    "Delimitar R2 somente como analise e monitoramento agregados de cobertura de funil.",
+    "Confirmar quais metricas agregadas e quais superficies documentais sao suficientes sem PII.",
+    "Registrar explicitamente a ausencia de superficie CRM live ancorada sem ambiguidade nesta rodada.",
+    "Submeter a especificacao read-only para revisao e aceite formal antes de qualquer evolucao.",
+    "Novo contrato explícito exigido antes de qualquer escrita ou ativação de sandbox"
+  ],
+  "readiness_classification": "ESPECIFICACAO_COMPLETA_COM_RESTRICAO",
+  "readiness_justification": "The documentary specification of R2 is complete enough for the next controlled phase because the official sources consistently define R2 as low-risk, aggregated CRM coverage analysis and the post-R6 baseline remains preserved. The specification stays restricted because no current live CRM read-only surface was anchored without ambiguity in this cycle, so future work must remain documentary or re-anchor a valid aggregated CRM source before progressing.",
+  "authorization_reset": {
+    "authorization_inheritance": false,
+    "scope_reused": false,
+    "premises_reused": false,
+    "note": "R6 contributes only a protected baseline boundary. No authorization, no scope, and no operative premise from R6 is inherited for R2 in cycle 13A."
+  },
+  "blockers": [
+    "A current live CRM read-only surface is not explicitly anchored without ambiguity in the official 13A source set, so the specification cannot authorize live CRM-dependent analysis yet."
+  ],
+  "violations": [],
+  "prohibitions": [
+    "no embedded/local",
+    "no runner stateful",
+    "no gateway",
+    "no agent execution",
+    "no production write",
+    "no sandbox write",
+    "no SQL, DDL, or DML in this phase",
+    "no patch",
+    "no PII",
+    "no inherited authorization, scope, or premise from R6"
+  ],
+  "anomalies": [
+    "cycle-011-stability-report.json is an official textual report stored with .json extension.",
+    "The official R2 sources cite cycle-002-crm-snapshot.json as analytical reference, but that artifact is outside the official 13A source set and was not independently revalidated here."
+  ],
+  "evidence_trace": [
+    {
+      "source": "cycle-012B-next-item-reopen-decision.json",
+      "evidence": "R2 is the formally reopened next eligible item, classified as PRONTO_PARA_REABERTURA_CONTROLADA, with authorization_inheritance false, scope_reused false, and premises_reused false.",
+      "impact": "Anchors the reopened status and the non-inheritance rule for 13A."
+    },
+    {
+      "source": "cycle-011-stability-report.json",
+      "evidence": "The official report states stable_closed, confirms cache_observability_windows present, COUNT(*) = 0, no drift, and no write in that round.",
+      "impact": "Locks the post-R6 baseline that R2 must preserve."
+    },
+    {
+      "source": "cycle-010-real-write-evidence.json",
+      "evidence": "table_created_confirmed true, table_empty_confirmed true, schema_identical true, no_other_tables_altered true, and isolation flags remain intact.",
+      "impact": "Confirms that the R6 artifact is stable evidence and not a surface to reopen during R2 specification."
+    },
+    {
+      "source": "cycle-005-write-proposals.json",
+      "evidence": "R2 is readiness_level ready, application_order 2, and its write_scope is analysis-and-monitoring over aggregated stage distribution without identifiable data.",
+      "impact": "Defines the documentary scope and ordering constraints for R2."
+    },
+    {
+      "source": "cycle-004-execution-plan.json",
+      "evidence": "R2 is eligible_for_execution true, ready_for_execution, low risk, and described as analysis-and-monitoring over the qualification pipeline with aggregated metrics.",
+      "impact": "Supports the exact analytical nature and low-risk character of R2."
+    },
+    {
+      "source": "cycle-003-improvement-plan.json",
+      "evidence": "R2 is priority 2 in crm_coverage with hypothesis based on aggregated funnel concentration and explicitly no direct production change in that round.",
+      "impact": "Provides the original analytical rationale and category for R2."
+    }
+  ],
+  "meta": {
+    "workspace": "C:\\Users\\User\\.openclaw\\workspace-integration",
+    "context_files_read": [
+      "cycle-012B-next-item-reopen-decision.json",
+      "cycle-011-stability-report.json",
+      "cycle-010-real-write-evidence.json",
+      "cycle-005-write-proposals.json",
+      "cycle-004-execution-plan.json",
+      "cycle-003-improvement-plan.json"
+    ],
+    "output_file": "cycle13-input/cycle-013A-r2-readonly-specification.json"
+  }
+}

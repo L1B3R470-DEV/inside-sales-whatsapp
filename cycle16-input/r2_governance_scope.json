@@ -1,0 +1,36 @@
+{
+  "cycle": 16,
+  "phase": "r2-governance-scope",
+  "generated_at": "2026-04-02T13:19:23Z",
+  "item": {
+    "rec_id": "R2",
+    "category": "crm_coverage",
+    "scope_mode": "snapshot-bound-governance-reading"
+  },
+  "governance_goal": "Transform the already homologated snapshot-bound findings of R2 into a governance-oriented reading that describes structural funnel balance, monitoring priorities, and unresolved questions without extrapolating to live CRM or operational behavior.",
+  "in_scope_observations": [
+    "relative concentration between new and qualifying stages",
+    "documentary interpretation of low top-of-funnel replenishment visibility",
+    "governance significance of having only one approved aggregate snapshot",
+    "need to preserve aggregate monitoring language and zero-PII framing",
+    "need to keep explicit separation between snapshot evidence and live CRM claims"
+  ],
+  "out_of_scope_observations": [
+    "live CRM diagnosis",
+    "current operational effectiveness beyond the snapshot date",
+    "row-level lead explanations",
+    "root-cause claims about entry generation or workflow execution",
+    "any recommendation that implies sandbox activation, write, SQL, DDL, DML, patch, or production action"
+  ],
+  "governance_questions_for_cycle_16a": [
+    "What structural reading of funnel balance can be stated from 3 new versus 9 qualifying without inventing trend certainty?",
+    "Which governance concerns can be flagged from a single aggregate snapshot and which must remain unresolved?",
+    "How should the approved monitoring recommendations be reframed as governance clauses rather than operational instructions?"
+  ],
+  "required_boundaries": [
+    "Maintain snapshot-only interpretation of all CRM evidence.",
+    "Do not convert historical aggregate evidence into live CRM anchoring.",
+    "Keep all language aggregate, documentary, and monitoring-oriented.",
+    "Preserve the post-R6 baseline and the 14A session-write caveat as inherited constraints."
+  ]
+}

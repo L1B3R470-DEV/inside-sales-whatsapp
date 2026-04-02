@@ -1,0 +1,45 @@
+{
+  "cycle": 14,
+  "phase": "cycle002-anchor-status",
+  "generated_at": "2026-04-02T12:45:18Z",
+  "artifact": {
+    "name": "cycle-002-crm-snapshot.json",
+    "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-002-crm-snapshot.json",
+    "present": true,
+    "parseable": true,
+    "readable": true
+  },
+  "documentary_anchor_assessment": {
+    "anchor_type": "snapshot",
+    "anchors_live_crm_surface": false,
+    "anchor_strength": "partial",
+    "reason": "The official cycle 2 artifact explicitly says sqlite_generic_bound_to = crm-snapshot, crm_live_not_consulted = true, and identifies a snapshot_source under .openclaw\\snapshots. This anchors an aggregated CRM snapshot, not a live CRM surface."
+  },
+  "key_evidence": [
+    {
+      "field": "context_binding.sqlite_generic_bound_to",
+      "value": "crm-snapshot"
+    },
+    {
+      "field": "context_binding.crm_live_not_consulted",
+      "value": true
+    },
+    {
+      "field": "crm_snapshot_state.snapshot_source",
+      "value": "C:\\Users\\User\\.openclaw\\snapshots\\20260329-021916-cycle2-prep\\crm_operacional.snapshot.sqlite"
+    },
+    {
+      "field": "crm_snapshot_state.crm_note",
+      "value": "Snapshot agregado e sem PII"
+    }
+  ],
+  "fit_for_future_evaluation": {
+    "usable_in_cycle14": true,
+    "usable_as_live_anchor": false,
+    "usable_as_snapshot_evidence": true
+  },
+  "open_questions_for_cycle14": [
+    "Is snapshot evidence sufficient to resolve the open restriction on R2 progression?",
+    "If not, what documentary condition would be required before a live CRM surface can be treated as valid?"
+  ]
+}

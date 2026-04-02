@@ -1,0 +1,53 @@
+﻿{
+    "cycle":  8,
+    "selected_item":  "R6",
+    "authorized_scope":  {
+                             "authorized_item":  "R6",
+                             "authorized_application_order":  1,
+                             "authorized_real_file_read_only":  "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\router_runtime.sqlite",
+                             "authorized_sandbox_path":  "C:\\Users\\User\\.openclaw\\workspace-integration\\sandbox\\cycle6\\router_runtime.sqlite",
+                             "authorized_change_description":  "A mudanÃ§a pretendida Ã© nÃ£o funcional e descritiva: adicionar observabilidade agregada ao fluxo jÃ¡ existente de cache e roteamento, sem alterar a semÃ¢ntica das decisÃµes atuais.",
+                             "write_restriction":  "somente dentro de C:\\Users\\User\\.openclaw\\workspace-integration\\sandbox\\"
+                         },
+    "observed_scope":  {
+                           "processed_item":  "R6",
+                           "mirror_path_used":  "C:\\Users\\User\\.openclaw\\workspace-integration\\sandbox\\cycle6\\router_runtime.sqlite",
+                           "real_file_untouched":  true,
+                           "change_description_used":  "A mudanÃ§a pretendida Ã© nÃ£o funcional e descritiva: adicionar observabilidade agregada ao fluxo jÃ¡ existente de cache e roteamento, sem alterar a semÃ¢ntica das decisÃµes atuais.",
+                           "applied":  true,
+                           "result_status":  "success"
+                       },
+    "integrity_checks":  [
+                             {
+                                 "check":  "item_unico_autorizado",
+                                 "expected":  "R6",
+                                 "observed":  "R6",
+                                 "match":  true
+                             },
+                             {
+                                 "check":  "sandbox_path_autorizado",
+                                 "expected":  "C:\\Users\\User\\.openclaw\\workspace-integration\\sandbox\\cycle6\\router_runtime.sqlite",
+                                 "observed":  "C:\\Users\\User\\.openclaw\\workspace-integration\\sandbox\\cycle6\\router_runtime.sqlite",
+                                 "match":  true
+                             },
+                             {
+                                 "check":  "mudanca_corresponde_ao_plano",
+                                 "expected":  "A mudanÃ§a pretendida Ã© nÃ£o funcional e descritiva: adicionar observabilidade agregada ao fluxo jÃ¡ existente de cache e roteamento, sem alterar a semÃ¢ntica das decisÃµes atuais.",
+                                 "observed":  "A mudanÃ§a pretendida Ã© nÃ£o funcional e descritiva: adicionar observabilidade agregada ao fluxo jÃ¡ existente de cache e roteamento, sem alterar a semÃ¢ntica das decisÃµes atuais.",
+                                 "match":  true
+                             },
+                             {
+                                 "check":  "arquivo_real_permaneceu_intacto",
+                                 "expected":  true,
+                                 "observed":  true,
+                                 "match":  true
+                             },
+                             {
+                                 "check":  "somente_um_item_processado",
+                                 "expected":  1,
+                                 "observed":  1,
+                                 "match":  true
+                             }
+                         ],
+    "overall_scope_integrity":  "prepared-for-review"
+}

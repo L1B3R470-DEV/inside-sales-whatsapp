@@ -1,0 +1,157 @@
+{
+  "cycle_id": "15A",
+  "mode": "r2-snapshot-documentary-analysis",
+  "agent": "manual-orchestrated",
+  "generated_at": "2026-04-02T13:09:11Z",
+  "source_precedence": [
+    "cycle-002-crm-snapshot.json",
+    "cycle-014B-r2-restriction-resolution-review.json",
+    "cycle-014A-restriction-resolution-classification.json",
+    "cycle-013B-r2-readonly-specification-review.json",
+    "cycle-013A-r2-readonly-specification.json",
+    "cycle-012B-next-item-reopen-decision.json",
+    "cycle-011-stability-report.json",
+    "cycle-010-real-write-evidence.json",
+    "cycle-005-write-proposals.json",
+    "cycle-004-execution-plan.json",
+    "cycle-003-improvement-plan.json"
+  ],
+  "inherited_constraints": {
+    "session_write_policy": "RESSALVA_OPERACIONAL",
+    "session_write_binding_from": "14A",
+    "conditions": [
+      "Prefer manual-orchestrated documentary production when zero-write cleanliness matters.",
+      "Do not treat session-file side effects as acceptable by default.",
+      "If a future phase proposes agent-assisted execution, the contract must state whether ~/.openclaw/agents session writes are tolerated or blocking."
+    ],
+    "crm_scope": "snapshot-bound",
+    "live_crm_authorized": false,
+    "sandbox_authorized": false,
+    "write_authorized": false,
+    "r6_inheritance_prohibited": true
+  },
+  "r2_documentary_analysis": {
+    "rec_id": "R2",
+    "analysis_scope": "aggregated CRM coverage, snapshot-bound",
+    "snapshot_source": "cycle-002-crm-snapshot.json",
+    "data_basis": "snapshot-only",
+    "pii_absent": true,
+    "findings": {
+      "total_leads": "The approved snapshot documents 12 total leads, which is a small aggregated base suitable for documentary funnel-coverage reading without row-level interpretation.",
+      "stage_distribution": {
+        "novo": 3,
+        "qualificando": 9
+      },
+      "funnel_concentration_hypothesis": "The snapshot supports a documentary hypothesis of concentration in the intermediate qualifying stage because 9 of 12 leads are in qualifying while only 3 remain in new. This matches the historical R2 framing that the funnel needs coverage monitoring to understand whether intermediate concentration is stable or growing.",
+      "coverage_gaps_identified": [
+        "The snapshot shows low top-of-funnel representation relative to qualifying, which limits visibility into replenishment of new leads.",
+        "The snapshot is a single approved aggregate and does not provide documentary trend continuity by itself.",
+        "The approved chain does not anchor a live CRM surface, so coverage findings must remain historical and snapshot-bound."
+      ],
+      "monitoring_recommendations": [
+        "Keep future documentary reporting focused on aggregated counts by stage, especially the balance between new and qualifying.",
+        "Frame any future R2 review as comparison of approved aggregate stage distributions rather than as live operational diagnosis.",
+        "Carry forward the absence of PII and the snapshot-only boundary as explicit clauses in any later R2 contract."
+      ]
+    },
+    "snapshot_limitations": [
+      "The snapshot does not represent current live CRM state.",
+      "The snapshot is a historical aggregate and cannot establish temporal trend by itself.",
+      "The snapshot cannot justify row-level interpretation, identifiable lead analysis, or live CRM claims.",
+      "Bridge and router references in the official chain are contextual only and do not expand R2 beyond snapshot-bound CRM coverage."
+    ]
+  },
+  "post_r6_baseline_verification": {
+    "status": "preserved",
+    "evidence_source": "cycle-011-stability-report.json e cycle-010-real-write-evidence.json",
+    "no_r6_artifact_touched": true
+  },
+  "readiness_classification": "ANALISE_DOCUMENTAL_COMPLETA",
+  "readiness_justification": "The official chain is sufficient to produce a complete documentary analysis of R2 within the snapshot-only boundary. The approved snapshot provides concrete aggregated counts and stage distribution, cycles 13 and 14 lock the scope to documentary monitoring, and cycles 11 and 10 preserve the post-R6 baseline without reopening R6. The result remains complete only for snapshot-bound analysis and does not authorize live CRM, sandbox, or writes.",
+  "authorization_reset": {
+    "authorization_inheritance": false,
+    "scope_reused": false,
+    "premises_reused": false,
+    "note": "No authorization, scope, or operative premise is inherited from R6, 13A, or 14A. This cycle only materializes documentary analysis inside the approved snapshot-bound scope."
+  },
+  "blockers": [],
+  "violations": [],
+  "prohibitions": [
+    "Do not claim live CRM anchoring from cycle-002-crm-snapshot.json.",
+    "Do not use row-level data or introduce PII.",
+    "Do not treat this documentary analysis as authorization for sandbox, write, SQL, DDL, DML, patch, or production action."
+  ],
+  "anomalies": [
+    "cycle-011-stability-report.json remains an approved textual report stored under .json extension.",
+    "cycle-003-improvement-plan.json requires utf-8-sig decoding because the approved file includes UTF-8 BOM."
+  ],
+  "evidence_trace": [
+    {
+      "claim": "R2 remains the reopened item under analysis.",
+      "source": "cycle-012B-next-item-reopen-decision.json",
+      "evidence": "next_eligible_item = R2 and post_r6_compatibility.status = compatible"
+    },
+    {
+      "claim": "R2 must remain documentary, read-only, analytical, and monitoring-oriented.",
+      "source": "cycle-013B-r2-readonly-specification-review.json",
+      "evidence": "r2_scope.nature and r2_scope.description restrict R2 to documentary comparison, aggregated metrics, and baseline preservation"
+    },
+    {
+      "claim": "Session writes remain an operational caveat and are not acceptable by default in zero-write-sensitive phases.",
+      "source": "cycle-014B-r2-restriction-resolution-review.json",
+      "evidence": "session_write_decision.decision = RESSALVA_OPERACIONAL with explicit conditions"
+    },
+    {
+      "claim": "The CRM evidence is snapshot-only and not a live CRM anchor.",
+      "source": "cycle-014A-restriction-resolution-classification.json",
+      "evidence": "cycle002_assessment.anchors_crm_live_surface = false and status_in_official_chain declares snapshot-only evidence"
+    },
+    {
+      "claim": "The approved snapshot contains 12 total leads and a stage split of 3 new versus 9 qualifying.",
+      "source": "cycle-002-crm-snapshot.json",
+      "evidence": "crm_snapshot_state.total_leads = 12 and crm_snapshot_state.leads_by_status = {novo: 3, qualificando: 9}"
+    },
+    {
+      "claim": "The concentration hypothesis is historically aligned with the original R2 rationale.",
+      "source": "cycle-005-write-proposals.json",
+      "evidence": "write_scope.current_state states that 12 total leads with 3 new and 9 qualifying indicate concentration in the middle of the funnel"
+    },
+    {
+      "claim": "R2 remains low-risk analysis-and-monitoring based on approved snapshot metrics and no identifiable data.",
+      "source": "cycle-004-execution-plan.json",
+      "evidence": "technical_spec.change_type = analysis-and-monitoring, dependencies include approved CRM snapshot and aggregated stage metrics, pre_conditions include no identifiable data"
+    },
+    {
+      "claim": "The broader CRM coverage diagnosis in the official chain is consistent with a qualifying-heavy funnel snapshot.",
+      "source": "cycle-003-improvement-plan.json",
+      "evidence": "diagnosis.crm_coverage.summary and key_metric describe 12 leads, 210 interactions, and stage concentration in qualifying"
+    },
+    {
+      "claim": "The post-R6 baseline remains preserved and no R6 artifact was reopened for this analysis.",
+      "source": "cycle-010-real-write-evidence.json",
+      "evidence": "verification.table_empty_confirmed = true, verification.schema_identical = true, verification.no_other_tables_altered = true"
+    },
+    {
+      "claim": "The preserved baseline stayed isolated and no production-side expansion is needed for this cycle.",
+      "source": "cycle-011-stability-report.json",
+      "evidence": "report states nenhuma escrita ocorreu = sim, .mcp.json permaneceu intocado = sim, bridge local permaneceu intocada = sim, produção continua isolada = sim"
+    }
+  ],
+  "meta": {
+    "workspace": "C:\\Users\\User\\.openclaw\\workspace-integration",
+    "context_files_read": [
+      "output/cycle-014B-r2-restriction-resolution-review.json",
+      "cycle14-input/cycle-014A-restriction-resolution-classification.json",
+      "output/cycle-013B-r2-readonly-specification-review.json",
+      "cycle13-input/cycle-013A-r2-readonly-specification.json",
+      "output/cycle-012B-next-item-reopen-decision.json",
+      "output/cycle-011-stability-report.json",
+      "output/cycle-010-real-write-evidence.json",
+      "output/cycle-005-write-proposals.json",
+      "output/cycle-004-execution-plan.json",
+      "output/cycle-003-improvement-plan.json",
+      "output/cycle-002-crm-snapshot.json"
+    ],
+    "output_file": "cycle15-input/cycle-015A-r2-snapshot-documentary-analysis.json"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "cycle": 7,
+  "rec_id": "R6",
+  "source_path": "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\router_runtime.sqlite",
+  "mirror_path_planned": "C:\\Users\\User\\.openclaw\\workspace-integration\\sandbox\\cycle6\\router_runtime.sqlite",
+  "isolation_type": "planned file mirror in workspace-integration sandbox",
+  "sandbox_copy_allowed_now": false,
+  "real_project_write_allowed_now": false,
+  "rule_note": "Nesta rodada o espelhamento ? apenas planejado. Nenhuma c?pia ou escrita no arquivo real deve ocorrer."
+}

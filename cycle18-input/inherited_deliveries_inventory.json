@@ -1,0 +1,43 @@
+{
+  "cycle": 18,
+  "phase": "inherited-deliveries-inventory",
+  "generated_at": "2026-04-02T18:13:18Z",
+  "inventory": [
+    {
+      "segment": "12A-S → 12B",
+      "delivery": "R2 was formally reopened after the stable closure of R6 under a preserved post-R6 baseline.",
+      "source": "cycle-017A-r2-snapshot-scope-decision.json"
+    },
+    {
+      "segment": "13A → 13B",
+      "delivery": "R2 was specified as documentary, read-only, analytical, and monitoring-oriented, with aggregate and no-PII limits preserved.",
+      "source": "cycle-017A-r2-snapshot-scope-decision.json"
+    },
+    {
+      "segment": "14A → 14B",
+      "delivery": "The CRM-anchor ambiguity was resolved in the negative by confirming cycle-002 as snapshot-only evidence, while session_write_policy remained RESSALVA_OPERACIONAL.",
+      "source": "cycle-017A-r2-snapshot-scope-decision.json"
+    },
+    {
+      "segment": "15A → 15B",
+      "delivery": "Concrete snapshot-bound documentary findings were produced and homologated for R2, including total leads, stage distribution, concentration hypothesis, coverage gaps, monitoring recommendations, and snapshot limitations.",
+      "source": "cycle-017A-r2-snapshot-scope-decision.json"
+    },
+    {
+      "segment": "16A → 16B",
+      "delivery": "Those findings were transformed into a governance reading through GO1–GO4, OQ1–OQ4, and a documentary monitoring framework, while preserving the post-R6 baseline and inherited restrictions.",
+      "source": "cycle-017A-r2-snapshot-scope-decision.json"
+    },
+    {
+      "segment": "17A → 17B",
+      "delivery": "The chain formally recognized that the approved snapshot-bound scope of R2 has reached its natural documentary limit for now.",
+      "source": "cycle-017B-r2-snapshot-scope-decision-review.json"
+    }
+  ],
+  "baseline_bindings": [
+    "No live CRM claim is authorized.",
+    "No trend certainty is authorized from the single approved snapshot.",
+    "No open question is resolved or turned into permission.",
+    "No sandbox, write, patch, SQL, DDL, DML, or production action is authorized."
+  ]
+}

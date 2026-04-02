@@ -1,0 +1,37 @@
+{
+  "cycle": 11,
+  "selected_item": "R6",
+  "stability_gates": [
+    {
+      "gate": "table_exists_and_empty",
+      "status": "passed",
+      "source": "cycle-010-real-write-evidence.json",
+      "note": "A tabela cache_observability_windows foi criada e permaneceu vazia apos a operacao DDL-only."
+    },
+    {
+      "gate": "schema_matches_approved",
+      "status": "passed",
+      "source": "cycle-010-real-write-evidence.json",
+      "note": "PRAGMA table_info corresponde ao schema aprovado no ciclo 7/9."
+    },
+    {
+      "gate": "no_other_tables_altered",
+      "status": "passed",
+      "source": "cycle-010-real-write-evidence.json",
+      "note": "O baseline pos-DDL corresponde ao baseline anterior mais a nova tabela."
+    },
+    {
+      "gate": "no_rollback_needed",
+      "status": "passed",
+      "source": "cycle-010-real-write-evidence.json",
+      "note": "A operacao terminou com success e sem rollback."
+    },
+    {
+      "gate": "r6_operational_closure_candidate",
+      "status": "pending_review",
+      "source": "cycle11-input/refreshed_baseline_scope.json",
+      "note": "Depende da observacao analitica do ciclo 11 para encerrar R6 operacionalmente sem reabrir risco."
+    }
+  ],
+  "gate_note": "Este checklist prepara a observacao pos-escrita. Nao encerra R6 automaticamente nesta rodada."
+}

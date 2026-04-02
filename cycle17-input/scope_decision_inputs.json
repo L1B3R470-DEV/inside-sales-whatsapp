@@ -1,0 +1,38 @@
+{
+  "cycle": 17,
+  "phase": "scope-decision-inputs",
+  "generated_at": "2026-04-02T17:35:03Z",
+  "decision_options": [
+    {
+      "option": "FORMALIZAR_RECOMENDACAO",
+      "supporting_elements": [
+        "GO1 frames R2 as a bounded coverage-watch item.",
+        "GO2 preserves a documentary monitoring focus on aggregate movement between new and qualifying.",
+        "15A/15B already homologated aggregate findings and monitoring recommendations.",
+        "14A/14B classify progression as PROGREDIR_COM_CONDICAO under snapshot-only evidence."
+      ],
+      "risk_of_option": "may overstate prescriptive confidence if recommendation is written as if trend or live CRM were known"
+    },
+    {
+      "option": "RECONHECER_LIMITE_NATURAL",
+      "supporting_elements": [
+        "GO3 states that one approved snapshot is not enough for directionality certainty.",
+        "GO4 requires strict separation between snapshot evidence and any live operational claim.",
+        "OQ1 and OQ2 remain unresolved because the snapshot cannot explain trend or cause.",
+        "OQ3 keeps live CRM anchoring unresolved and OQ4 keeps session-write tolerance unresolved."
+      ],
+      "risk_of_option": "may stop too early and lose the chance to formalize a bounded documentary recommendation already supported by the approved chain"
+    }
+  ],
+  "shared_constraints_for_both_options": [
+    "No live CRM anchoring may be presumed.",
+    "No open question can be treated as implicit authorization.",
+    "Any recommendation must remain documentary, aggregate, and non-operational.",
+    "The post-R6 baseline and no-write boundaries remain binding."
+  ],
+  "cycle_17_must_decide": [
+    "Whether GO1–GO4 together are sufficient to state a bounded documentary recommendation.",
+    "Whether OQ1–OQ4 mean the snapshot-bound scope has reached its natural analytical limit for now.",
+    "How to preserve inherited restrictions without turning uncertainty into authorization."
+  ]
+}

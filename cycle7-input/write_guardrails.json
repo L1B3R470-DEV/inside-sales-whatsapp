@@ -1,0 +1,16 @@
+{
+  "cycle": 7,
+  "rec_id": "R6",
+  "allowed_paths_future_write": [
+    "C:\\Users\\User\\.openclaw\\workspace-integration\\sandbox",
+    "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle7-input"
+  ],
+  "forbidden_paths": [
+    "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES",
+    "C:\\AUTOMACAO\\cowork",
+    "C:\\Users\\User\\.openclaw\\workspace-integration\\.mcp.json"
+  ],
+  "write_scope_limit": "A futura escrita supervisionada deve se limitar ao ?nico arquivo espelhado do item selecionado, sem ampliar escopo para outros arquivos ou sistemas.",
+  "sandbox_only_this_round": true,
+  "real_project_write_allowed_now": false
+}

@@ -1,0 +1,89 @@
+{
+  "cycle": 15,
+  "phase": "input-preparation",
+  "generated_at": "2026-04-02T13:04:28Z",
+  "artifacts": [
+    {
+      "name": "cycle-014B-r2-restriction-resolution-review.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-014B-r2-restriction-resolution-review.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle15-input\\artifacts\\cycle-014B-r2-restriction-resolution-review.json",
+      "purpose": "revisao homologada da classificacao de restricao de R2",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-014A-restriction-resolution-classification.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle14-input\\cycle-014A-restriction-resolution-classification.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle15-input\\artifacts\\cycle-014A-restriction-resolution-classification.json",
+      "purpose": "payload homologado do 14A preservado como origem documental da decisao do 14B",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-013B-r2-readonly-specification-review.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-013B-r2-readonly-specification-review.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle15-input\\artifacts\\cycle-013B-r2-readonly-specification-review.json",
+      "purpose": "revisao homologada da especificacao read-only de R2",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-013A-r2-readonly-specification.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle13-input\\cycle-013A-r2-readonly-specification.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle15-input\\artifacts\\cycle-013A-r2-readonly-specification.json",
+      "purpose": "payload homologado do 13A preservado como origem documental da revisao do 13B",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-012B-next-item-reopen-decision.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-012B-next-item-reopen-decision.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle15-input\\artifacts\\cycle-012B-next-item-reopen-decision.json",
+      "purpose": "decisao homologada de reabertura de R2 apos o fechamento estavel de R6",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-011-stability-report.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-011-stability-report.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle15-input\\artifacts\\cycle-011-stability-report.json",
+      "purpose": "evidencia do baseline pos-R6 preservado e isolado",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-010-real-write-evidence.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-010-real-write-evidence.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle15-input\\artifacts\\cycle-010-real-write-evidence.json",
+      "purpose": "evidencia formal da escrita aprovada de R6 e de sua preservacao estrutural",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-005-write-proposals.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-005-write-proposals.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle15-input\\artifacts\\cycle-005-write-proposals.json",
+      "purpose": "ordem de aplicacao historica e enquadramento analitico agregado de R2",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-004-execution-plan.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-004-execution-plan.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle15-input\\artifacts\\cycle-004-execution-plan.json",
+      "purpose": "elegibilidade tecnica, dependencia de snapshot agregado e risco baixo de R2",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-003-improvement-plan.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-003-improvement-plan.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle15-input\\artifacts\\cycle-003-improvement-plan.json",
+      "purpose": "origem historica da priorizacao de R2 como melhoria de cobertura do funil em agregados",
+      "status": "approved"
+    },
+    {
+      "name": "cycle-002-crm-snapshot.json",
+      "path": "C:\\Users\\User\\.openclaw\\workspace-integration\\output\\cycle-002-crm-snapshot.json",
+      "copied_to": "C:\\Users\\User\\.openclaw\\workspace-integration\\cycle15-input\\artifacts\\cycle-002-crm-snapshot.json",
+      "purpose": "evidencia snapshot-bound do CRM usada como ancora documental agregada de R2",
+      "status": "approved"
+    }
+  ],
+  "observations": [
+    "O artefato homologado do 14A permanece preservado em cycle14-input e foi reutilizado como origem documental para este preparo.",
+    "O ciclo 11 permanece no conjunto oficial mesmo com formato textual de relatorio sob extensao .json.",
+    "O ciclo 3 exige leitura com utf-8-sig por conter BOM UTF-8 no arquivo aprovado."
+  ]
+}

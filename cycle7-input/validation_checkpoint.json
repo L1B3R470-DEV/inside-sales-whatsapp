@@ -1,0 +1,136 @@
+{
+  "cycle": 7,
+  "rec_id": "R6",
+  "title": "Aumentar a observabilidade da eficiência do cache por amostragem contínua",
+  "pre_condition_check": [
+    {
+      "condition": "produção continua isolada",
+      "verified": true,
+      "verification_source": "context:cycle6_contract_json_strict.md + bridge state approved baseline",
+      "blocking": true,
+      "notes": "A rodada permanece restrita a leitura e planejamento, sem escrita no projeto real."
+    },
+    {
+      "condition": "cycle6-input existe",
+      "verified": true,
+      "verification_source": "cycle6-input/artifact_index.json",
+      "blocking": true,
+      "notes": "Artefatos consolidados do ciclo 6 foram localizados e lidos."
+    },
+    {
+      "condition": "artifact_index.json existe",
+      "verified": true,
+      "verification_source": "cycle6-input/artifact_index.json",
+      "blocking": true,
+      "notes": "Índice de artefatos do ciclo 6 presente."
+    },
+    {
+      "condition": "first_write_candidate.json existe",
+      "verified": true,
+      "verification_source": "cycle6-input/first_write_candidate.json",
+      "blocking": true,
+      "notes": "Candidato único de escrita lido com sucesso."
+    },
+    {
+      "condition": "isolated_write_scope.json existe",
+      "verified": true,
+      "verification_source": "cycle6-input/isolated_write_scope.json",
+      "blocking": true,
+      "notes": "Escopo isolado lido com sucesso."
+    },
+    {
+      "condition": "validation_and_rollback.json existe",
+      "verified": true,
+      "verification_source": "cycle6-input/validation_and_rollback.json",
+      "blocking": true,
+      "notes": "Plano de validação e rollback lido com sucesso."
+    },
+    {
+      "condition": "cycle-005-write-proposals.json existe",
+      "verified": true,
+      "verification_source": "output/cycle-005-write-proposals.json",
+      "blocking": true,
+      "notes": "Arquivo de entrada principal presente e lido."
+    },
+    {
+      "condition": "cycle-004-execution-plan.json existe",
+      "verified": true,
+      "verification_source": "output/cycle-004-execution-plan.json",
+      "blocking": true,
+      "notes": "Baseline de execução do ciclo 4 presente e lido."
+    },
+    {
+      "condition": "cycle-003-improvement-plan.json existe",
+      "verified": true,
+      "verification_source": "output/cycle-003-improvement-plan.json",
+      "blocking": true,
+      "notes": "Origem analítica do item selecionado lida com sucesso."
+    },
+    {
+      "condition": "cycle6_contract_json_strict.md existe",
+      "verified": true,
+      "verification_source": "context:cycle6_contract_json_strict.md",
+      "blocking": true,
+      "notes": "Contrato rígido do ciclo 6 lido com sucesso."
+    },
+    {
+      "condition": "Invoke-OpenClawSafe.ps1 existe",
+      "verified": false,
+      "verification_source": "context and input artifacts do not expose file presence evidence",
+      "blocking": false,
+      "notes": "Não houve evidência direta de arquivo, mas o ciclo prosseguiu com a execução read-only autorizada."
+    },
+    {
+      "condition": "o launcher seguro continua validado",
+      "verified": false,
+      "verification_source": "cycle6-input/validation_and_rollback.json",
+      "blocking": false,
+      "notes": "Há referência a revisão humana antes de qualquer escrita futura, mas não validação material do launcher nesta rodada."
+    },
+    {
+      "condition": "embedded/local está pronto",
+      "verified": true,
+      "verification_source": "context:cycle6_contract_json_strict.md",
+      "blocking": true,
+      "notes": "A rodada foi executada no caminho local/isolado previsto pelo contrato."
+    },
+    {
+      "condition": "gateway não será usado",
+      "verified": true,
+      "verification_source": "context:cycle6_contract_json_strict.md",
+      "blocking": true,
+      "notes": "Nenhuma operação de gateway foi solicitada ou usada."
+    },
+    {
+      "condition": "o item selecionado é application_order = 1",
+      "verified": true,
+      "verification_source": "output/cycle-005-write-proposals.json + cycle6-input/first_write_candidate.json",
+      "blocking": true,
+      "notes": "O item R6 foi o primeiro candidato ready selecionado."
+    },
+    {
+      "condition": "o arquivo-alvo real do item selecionado foi resolvido para leitura read-only",
+      "verified": true,
+      "verification_source": "read:router_runtime.sqlite:binary-snapshot",
+      "blocking": true,
+      "notes": "Arquivo real localizado e lido em modo read-only; a leitura foi limitada pelo tamanho da linha 99, mas suficiente para identificar schema e tabelas."
+    }
+  ],
+  "validation_plan": {
+    "method": "observação agregada e comparação entre entradas cacheadas e hits no espelho isolado",
+    "success_criteria": "cache hit rate > 40% em 100 interações observadas",
+    "observation_window": "100 interações ou 24h, o que ocorrer primeiro",
+    "test_steps": [
+      "espelhar o arquivo real em sandbox isolada",
+      "executar leitura agregada sobre o espelho",
+      "comparar entradas cacheadas com cache_hit por janela",
+      "confirmar ausência de PII nas amostras e nos relatórios"
+    ]
+  },
+  "rollback_plan": {
+    "procedure": "descartar o espelho isolado e retornar ao arquivo original sem qualquer escrita persistida; se uma escrita futura já tiver ocorrido no espelho, remover apenas o artefato espelhado e preservar o original",
+    "estimated_effort": "baixo",
+    "risk_if_rollback_fails": "perda temporária de visibilidade adicional, sem impacto funcional no atendente nem no arquivo real"
+  },
+  "checkpoint_note": "Os checkpoints consolidados aqui devem acompanhar qualquer futura escrita isolada antes de execu??o e ap?s valida??o supervisionada."
+}

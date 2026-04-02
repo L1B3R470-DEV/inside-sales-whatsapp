@@ -1,0 +1,44 @@
+﻿{
+    "cycle":  8,
+    "selected_item":  "R6",
+    "decision_scope":  "inspecao formal do artefato de sandbox para decidir aptidao de promocao futura, sem autorizar promocao nesta rodada",
+    "preliminary_criteria":  [
+                                 {
+                                     "id":  "fidelity_to_cycle6",
+                                     "description":  "o artefato sandbox deve refletir a descricao de mudanca aprovada no ciclo 6",
+                                     "source":  "cycle-006-isolated-write-plan.json",
+                                     "required":  true
+                                 },
+                                 {
+                                     "id":  "scope_containment",
+                                     "description":  "a mudanca deve estar contida no unico arquivo e no unico item autorizados",
+                                     "source":  "cycle-007-sandbox-write-evidence.json",
+                                     "required":  true
+                                 },
+                                 {
+                                     "id":  "before_after_coherence",
+                                     "description":  "before e after devem ser distintos e coerentes com o mesmo componente",
+                                     "source":  "cycle-007-sandbox-write-evidence.json",
+                                     "required":  true
+                                 },
+                                 {
+                                     "id":  "validation_passed",
+                                     "description":  "os test_steps locais devem permanecer objetivos e aprovados",
+                                     "source":  "cycle-007-sandbox-write-evidence.json",
+                                     "required":  true
+                                 },
+                                 {
+                                     "id":  "rollback_specificity",
+                                     "description":  "o rollback deve continuar restrito a sandbox e nao exigir acao no arquivo real",
+                                     "source":  "cycle-006-isolated-write-plan.json",
+                                     "required":  true
+                                 },
+                                 {
+                                     "id":  "promotion_readiness_review",
+                                     "description":  "qualquer promocao futura depende de revisao humana explicita apos a inspecao do ciclo 8",
+                                     "source":  "current cycle 8 review",
+                                     "required":  true
+                                 }
+                             ],
+    "non_authorization_note":  "Estes criterios apenas preparam a decisao de promocao futura. Nao autorizam escrita no projeto real."
+}

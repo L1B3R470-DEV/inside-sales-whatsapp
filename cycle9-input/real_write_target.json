@@ -1,0 +1,13 @@
+﻿{
+    "cycle":  9,
+    "selected_item":  "R6",
+    "title":  "Aumentar a observabilidade da eficiÃªncia do cache por amostragem contÃ­nua",
+    "target_file":  "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\router_runtime.sqlite",
+    "target_component":  "observabilidade do cache / mÃ©tricas do router",
+    "change_type":  "instrumentation-analysis",
+    "current_sha256":  "305B7F640A7D825D6EE4C9AF09FC35AD0F40ED09936BEF28E73DCF8AA4691A40",
+    "current_size_bytes":  225280,
+    "last_modified":  "2026-03-27T17:50:35.8687406Z",
+    "read_only_confirmation":  true,
+    "read_only_note":  "Arquivo real identificado e inspecionado apenas por metadados e hash nesta rodada, sem qualquer edicao."
+}

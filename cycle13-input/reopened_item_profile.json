@@ -1,0 +1,73 @@
+{
+  "cycle": 13,
+  "phase": "reopened-item-profile",
+  "generated_at": "2026-04-02T12:27:07Z",
+  "item": {
+    "rec_id": "R2",
+    "title": "Aprimorar cobertura do funil para reduzir concentracao no estagio intermediario",
+    "category": "crm_coverage",
+    "reopened_by": "cycle-012B-next-item-reopen-decision.json",
+    "current_status": "reopened_readonly",
+    "readiness_classification": "PRONTO_PARA_REABERTURA_CONTROLADA"
+  },
+  "historical_trace": {
+    "cycle_003": {
+      "priority": 2,
+      "implementation_risk": "low",
+      "validation_required": false,
+      "analytical_character": "analitica e de monitoramento"
+    },
+    "cycle_004": {
+      "eligible_for_execution": true,
+      "status": "ready_for_execution",
+      "execution_order": 2,
+      "risk_level": "low",
+      "change_type": "analysis-and-monitoring"
+    },
+    "cycle_005": {
+      "readiness_level": "ready",
+      "application_order": 2,
+      "change_type": "analysis-and-monitoring",
+      "target_component": "pipeline de qualificacao / cobertura de funil"
+    },
+    "cycle_012B": {
+      "next_eligible_item": "R2",
+      "authorization_inheritance": false,
+      "scope_reused": false,
+      "premises_reused": false
+    }
+  },
+  "approved_sources_still_supporting_r2": [
+    {
+      "source": "cycle-003-improvement-plan.json",
+      "support": "R2 remains priority 2 and is framed as aggregated funnel coverage analysis."
+    },
+    {
+      "source": "cycle-004-execution-plan.json",
+      "support": "R2 remains low risk, ready_for_execution, and bounded to aggregated CRM stage monitoring."
+    },
+    {
+      "source": "cycle-005-write-proposals.json",
+      "support": "R2 remains ready with application_order 2 and no dependency on reopening the R6 artifact."
+    },
+    {
+      "source": "cycle-012B-next-item-reopen-decision.json",
+      "support": "R2 is the formally reopened next eligible item under the preserved post-R6 baseline."
+    }
+  ],
+  "baseline_dependencies": [
+    "R6 remains stable_closed.",
+    "cache_observability_windows remains present and empty.",
+    "No other pre-existing tables were altered by the approved R6 write.",
+    "Project MCP, bridge, and production isolation remain part of the baseline contract."
+  ],
+  "not_authorized_in_this_phase": [
+    "no production write",
+    "no sandbox write",
+    "no real write",
+    "no DDL",
+    "no DML",
+    "no patch",
+    "no project edit"
+  ]
+}
