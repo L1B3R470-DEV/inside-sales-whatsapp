@@ -1,7 +1,7 @@
 # poller-autonomous.ps1
 # Monitora o branch master por novos task files na coordination/.
-# Aciona Claude Code (via CLI) e notifica CODEX LOCAL quando tasks chegam.
-# Fazer push dos outputs de volta ao repositório automaticamente.
+# Aciona Claude Code (via CLI) para inbox_claude E inbox_codex_local.
+# Push dos outputs de volta ao repositorio automaticamente.
 #
 # Iniciar:  .\poller-autonomous.ps1
 # Parar:    Ctrl+C ou fechar a janela
@@ -16,16 +16,19 @@ $CoordDir     = Join-Path $WorkDir "coordination"
 $InboxClaude  = Join-Path $CoordDir "inbox_claude"
 $InboxCodex   = Join-Path $CoordDir "inbox_codex_local"
 $OutboxClaude = Join-Path $CoordDir "outbox_claude"
+$OutboxCodex  = Join-Path $CoordDir "outbox_codex_local"
 $LogFile      = Join-Path $WorkDir "poller-autonomous.log"
 $ProcessedFile= Join-Path $WorkDir "processed_tasks.txt"
+$PromptFile   = Join-Path $WorkDir "temp_prompt.txt"
 
-# Diretório do projeto real — onde claude CLI carrega CLAUDE.md
-$ProjectDir   = "C:\Users\User\Desktop\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES"
+# Diretorio do projeto real onde claude CLI carrega CLAUDE.md
+$ProjectDir = "C:\Users\User\Desktop\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES"
 
 function Write-Log {
     param([string]$Msg, [string]$Level = "INFO")
     $line = "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] [$Level] $Msg"
-    Write-Host $line -ForegroundColor $(if ($Level -eq "ERROR") { "Red" } elseif ($Level -eq "WARN") { "Yellow" } else { "Cyan" })
+    $color = switch ($Level) { "ERROR" { "Red" } "WARN" { "Yellow" } default { "Cyan" } }
+    Write-Host $line -ForegroundColor $color
     Add-Content -Path $LogFile -Value $line -ErrorAction SilentlyContinue
 }
 
@@ -43,16 +46,14 @@ function Mark-Processed {
 }
 
 function Git-Pull {
-    $result = git -C $WorkDir pull origin master 2>&1
+    git -C $WorkDir pull origin master 2>&1 | Out-Null
     return $LASTEXITCODE -eq 0
 }
 
 function Git-CommitPush {
     param([string]$Message, [string[]]$Files)
-    foreach ($f in $Files) {
-        git -C $WorkDir add $f 2>&1 | Out-Null
-    }
-    $staged = git -C $WorkDir diff --cached --name-only
+    foreach ($f in $Files) { git -C $WorkDir add $f 2>&1 | Out-Null }
+    $staged = git -C $WorkDir diff --cached --name-only 2>&1
     if ($staged) {
         git -C $WorkDir commit -m $Message 2>&1 | Out-Null
         git -C $WorkDir push origin master 2>&1 | Out-Null
@@ -69,189 +70,114 @@ function Update-TaskStatus {
     return $data
 }
 
-function Process-ClaudeTask {
-    param([string]$TaskFilePath)
-
-    $data = Get-Content $TaskFilePath -Raw | ConvertFrom-Json
-    $taskId = $data.task_id
-    $cycle  = $data.cycle
-
-    if (Is-Processed $taskId) { return }
-    if ($data.status -ne "pending") { return }
-
-    Write-Log "Claude task detectada: $taskId (ciclo $cycle)"
-
-    # Marcar como accepted antes de processar
-    $data = Update-TaskStatus $TaskFilePath "accepted"
-    Git-CommitPush "accepted: $taskId" @($TaskFilePath)
-
-    # Montar instrução — instrução já vem completa no campo instruction
-    $instruction = $data.instruction
-
-    # Adicionar contexto obrigatório de red_lines ao prompt
-    $fullPrompt = @"
-[OPENLAW AUTONOMOUS MODE — CICLO $cycle]
-
-RED LINES (invioláveis):
-- Não escrever fora de C:\Users\User\.openclaw\workspace-integration\
-- Não tocar em produção (Evolution API, n8n, bridge local)
-- Não tocar em .mcp.json do projeto real
-- Não reabrir R2 nem R6
-
-INSTRUÇÃO:
-$instruction
-
-OUTPUT: Escreva seu relatório como texto estruturado. O poller capturará o stdout.
-"@
-
-    Write-Log "Invocando claude CLI para $taskId..."
-
-    # Invocar Claude Code em modo não-interativo a partir do diretório do projeto
-    $outputRaw = ""
+function Invoke-ClaudeCLI {
+    param([string]$Prompt, [string]$Label)
+    $Prompt | Set-Content $PromptFile -Encoding UTF8
+    Write-Log "Invocando claude CLI para $Label..."
+    $output = ""
     try {
         Push-Location $ProjectDir
-        $outputRaw = & claude -p $fullPrompt 2>&1 | Out-String
+        $output = & claude -p (Get-Content $PromptFile -Raw) 2>&1 | Out-String
         Pop-Location
     } catch {
         Pop-Location
         Write-Log "Erro ao invocar claude CLI: $_" "ERROR"
-        $outputRaw = "ERRO: $_"
+        $output = "ERRO: $_"
     }
-
-    # Determinar status do output
-    $outputStatus = "complete"
-    if ($outputRaw -match "BLOCKED|ERRO|ERROR") {
-        $outputStatus = "BLOCKED"
-        Write-Log "Output retornou BLOCKED para $taskId" "WARN"
-    }
-
-    # Escrever reply file
-    $replyId   = "reply-$cycle-$(Get-Date -Format 'yyyyMMddTHHmmssZ')"
-    $replyPath = Join-Path $OutboxClaude "$replyId.json"
-
-    $reply = [ordered]@{
-        reply_id       = $replyId
-        source_task_id = $taskId
-        actor          = "claude_local"
-        cycle          = $cycle
-        output         = $outputRaw.Trim()
-        status         = $outputStatus
-        produced_at    = (Get-Date -Format 'o')
-    }
-    $reply | ConvertTo-Json -Depth 20 | Set-Content $replyPath -Encoding UTF8
-
-    # Push reply
-    Git-CommitPush "claude-local: output $cycle" @($replyPath)
-
-    Mark-Processed $taskId
-    Write-Log "Claude output commitado: $replyId (status: $outputStatus)"
+    return $output
 }
 
-function Process-CodexLocalTask {
-    param([string]$TaskFilePath)
+function Build-Prompt {
+    param([string]$Actor, [string]$Cycle, [string]$Instruction)
+    $lines = @(
+        "[OPENLAW AUTONOMOUS MODE -- $Actor -- CICLO $Cycle]",
+        "",
+        "RED LINES (inviolaveis):",
+        "- Nao escrever fora de workspace-integration\",
+        "- Nao tocar em producao (Evolution API, n8n, bridge local)",
+        "- Nao tocar em .mcp.json do projeto real",
+        "- Nao reabrir R2 nem R6",
+        "",
+        "INSTRUCAO:",
+        $Instruction,
+        "",
+        "OUTPUT: Escreva seu relatorio como texto estruturado. O poller capturara o stdout."
+    )
+    return $lines -join "`n"
+}
 
-    $data = Get-Content $TaskFilePath -Raw | ConvertFrom-Json
+function Process-Task {
+    param(
+        [string]$TaskFilePath,
+        [string]$Actor,
+        [string]$OutboxDir
+    )
+
+    $data   = Get-Content $TaskFilePath -Raw | ConvertFrom-Json
     $taskId = $data.task_id
     $cycle  = $data.cycle
 
     if (Is-Processed $taskId) { return }
     if ($data.status -ne "pending") { return }
 
-    Write-Log "CODEX LOCAL task detectada: $taskId (ciclo $cycle)"
+    Write-Log "$Actor task detectada: $taskId (ciclo $cycle)"
 
-    # Marcar como accepted
     $data = Update-TaskStatus $TaskFilePath "accepted"
     Git-CommitPush "accepted: $taskId" @($TaskFilePath)
 
-    # Invocar Claude Code em modo não-interativo (mesmo mecanismo do inbox_claude)
-    $outboxCodex = Join-Path $CoordDir "outbox_codex_local"
-    $fullPrompt = @"
-[OPENLAW AUTONOMOUS MODE — CODEX LOCAL — CICLO $cycle]
-
-RED LINES (invioláveis):
-- Não escrever fora de C:\Users\User\.openclaw\workspace-integration\
-- Não tocar em produção (Evolution API, n8n, bridge local)
-- Não tocar em .mcp.json do projeto real
-- Não reabrir R2 nem R6
-
-INSTRUÇÃO:
-$($data.instruction)
-
-OUTPUT: Escreva seu relatório como texto estruturado. O poller capturará o stdout.
-"@
-
-    Write-Log "Invocando claude CLI para CODEX LOCAL $taskId..."
-
-    $outputRaw = ""
-    try {
-        Push-Location $ProjectDir
-        $outputRaw = & claude -p $fullPrompt 2>&1 | Out-String
-        Pop-Location
-    } catch {
-        Pop-Location
-        Write-Log "Erro ao invocar claude CLI (codex-local): $_" "ERROR"
-        $outputRaw = "ERRO: $_"
-    }
+    $prompt    = Build-Prompt -Actor $Actor -Cycle $cycle -Instruction $data.instruction
+    $outputRaw = Invoke-ClaudeCLI -Prompt $prompt -Label $taskId
 
     $outputStatus = "complete"
-    if ($outputRaw -match "BLOCKED|ERRO|ERROR") {
+    if ($outputRaw -match "BLOCKED") {
         $outputStatus = "BLOCKED"
         Write-Log "Output retornou BLOCKED para $taskId" "WARN"
+    } elseif ($outputRaw -match "^ERRO") {
+        $outputStatus = "BLOCKED"
+        Write-Log "Erro CLI para $taskId" "ERROR"
     }
 
     $replyId   = "reply-$cycle-$(Get-Date -Format 'yyyyMMddTHHmmssZ')"
-    $replyPath = Join-Path $outboxCodex "$replyId.json"
+    $replyPath = Join-Path $OutboxDir "$replyId.json"
 
     $reply = [ordered]@{
         reply_id       = $replyId
         source_task_id = $taskId
-        actor          = "codex_local"
+        actor          = $Actor.ToLower() -replace " ", "_"
         cycle          = $cycle
         output         = $outputRaw.Trim()
         status         = $outputStatus
-        produced_at    = (Get-Date -Format 'o')
+        produced_at    = (Get-Date -Format "o")
     }
     $reply | ConvertTo-Json -Depth 20 | Set-Content $replyPath -Encoding UTF8
 
-    Git-CommitPush "codex-local: output $cycle" @($replyPath)
-
+    Git-CommitPush "$($Actor.ToLower()): output $cycle" @($replyPath)
     Mark-Processed $taskId
-    Write-Log "Codex-local output commitado: $replyId (status: $outputStatus)"
+    Write-Log "Output commitado: $replyId (status: $outputStatus)"
 }
 
-# ─── MAIN LOOP ────────────────────────────────────────────────────────────────
+# --- MAIN LOOP ---
 
 Write-Log "=== poller-autonomous iniciado (intervalo: ${PollIntervalSeconds}s) ==="
-Write-Log "WorkDir:     $WorkDir"
-Write-Log "Inbox Claude:      $InboxClaude"
-Write-Log "Inbox Codex Local: $InboxCodex"
+Write-Log "WorkDir: $WorkDir"
 
 try {
     while ($true) {
-        # Pull do repositório remoto
         $pulled = Git-Pull
         if (-not $pulled) {
-            Write-Log "git pull falhou — tentando novamente no proximo ciclo" "WARN"
+            Write-Log "git pull falhou -- tentando novamente no proximo ciclo" "WARN"
         }
 
-        # Processar tasks do Claude
         $claudeTasks = Get-ChildItem "$InboxClaude\*.json" -ErrorAction SilentlyContinue
-        foreach ($taskFile in $claudeTasks) {
-            try {
-                Process-ClaudeTask $taskFile.FullName
-            } catch {
-                Write-Log "Erro ao processar Claude task $($taskFile.Name): $_" "ERROR"
-            }
+        foreach ($f in $claudeTasks) {
+            try { Process-Task -TaskFilePath $f.FullName -Actor "CLAUDE_LOCAL" -OutboxDir $OutboxClaude }
+            catch { Write-Log "Erro em $($f.Name): $_" "ERROR" }
         }
 
-        # Processar tasks do CODEX LOCAL
         $codexTasks = Get-ChildItem "$InboxCodex\*.json" -ErrorAction SilentlyContinue
-        foreach ($taskFile in $codexTasks) {
-            try {
-                Process-CodexLocalTask $taskFile.FullName
-            } catch {
-                Write-Log "Erro ao processar Codex task $($taskFile.Name): $_" "ERROR"
-            }
+        foreach ($f in $codexTasks) {
+            try { Process-Task -TaskFilePath $f.FullName -Actor "CODEX_LOCAL" -OutboxDir $OutboxCodex }
+            catch { Write-Log "Erro em $($f.Name): $_" "ERROR" }
         }
 
         Start-Sleep -Seconds $PollIntervalSeconds
