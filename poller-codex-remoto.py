@@ -3,7 +3,7 @@
 poller-codex-remoto.py
 Roda na máquina remota (Account B / CODEX REMOTO).
 Monitora o branch master por novos outputs de Claude e CODEX LOCAL.
-Alimenta o CODEX REMOTO (Windsurf) automaticamente quando há resultado novo.
+Aciona Claude Code CLI como orquestrador autônomo quando há resultado novo.
 
 Uso:
   python poller-codex-remoto.py
@@ -132,40 +132,35 @@ Após escrever o arquivo JSON do próximo task, faça commit e push:
   git push origin master
 """.strip()
 
-def invoke_windsurf(prompt: str, prompt_file: Path) -> bool:
+def invoke_claude(prompt: str, prompt_file: Path, repo: Path) -> tuple[bool, str]:
     """
-    Tenta acionar Windsurf/CODEX com o prompt.
-    Se CLI disponível: windsurf -p "..."
-    Caso contrário: salva em arquivo e notifica.
+    Aciona Claude Code CLI em modo não-interativo.
+    Retorna (sucesso, output).
     """
     prompt_file.write_text(prompt, encoding="utf-8")
     log.info(f"Prompt salvo em: {prompt_file}")
 
-    # Tentar CLI do Windsurf
     try:
         result = subprocess.run(
-            ["windsurf", "-p", prompt],
-            capture_output=True, text=True, timeout=300
+            ["claude", "-p", prompt],
+            capture_output=True, text=True, timeout=600,
+            cwd=str(repo)
         )
         if result.returncode == 0:
-            log.info("Windsurf CLI acionado com sucesso.")
-            return True
+            log.info("Claude CLI concluiu com sucesso.")
+            return True, result.stdout.strip()
         else:
-            log.warning(f"Windsurf CLI retornou erro: {result.stderr[:200]}")
+            log.warning(f"Claude CLI retornou erro (code {result.returncode}): {result.stderr[:300]}")
+            return False, f"ERRO: {result.stderr[:300]}"
     except FileNotFoundError:
-        log.info("Windsurf CLI não encontrado no PATH.")
+        log.error("Claude CLI não encontrado no PATH. Instale: npm install -g @anthropic-ai/claude-code")
+        return False, "BLOCKED: claude CLI não encontrado"
     except subprocess.TimeoutExpired:
-        log.warning("Windsurf CLI timeout (>5min).")
+        log.error("Claude CLI timeout (>10min).")
+        return False, "BLOCKED: timeout"
     except Exception as e:
-        log.warning(f"Erro ao acionar Windsurf CLI: {e}")
-
-    # Fallback: notificação manual
-    log.warning("=" * 50)
-    log.warning("ACAO NECESSARIA — CODEX REMOTO")
-    log.warning(f"Novo output disponível para análise.")
-    log.warning(f"Abra Windsurf e cole o conteúdo de: {prompt_file}")
-    log.warning("=" * 50)
-    return False
+        log.error(f"Erro ao acionar Claude CLI: {e}")
+        return False, f"ERRO: {e}"
 
 def process_reply(
     reply_file: Path,
@@ -201,15 +196,23 @@ def process_reply(
         processed.add(reply_id)
         return False
 
-    # Construir prompt de análise
+    # Construir prompt de análise + orquestração
     prompt_file = repo / PROMPT_FILE
     prompt = build_analysis_prompt(data, state_md, bootstrap_md)
 
-    # Acionar CODEX REMOTO (Windsurf)
-    invoke_windsurf(prompt, prompt_file)
+    # Acionar Claude CLI como CODEX REMOTO
+    success, claude_output = invoke_claude(prompt, prompt_file, repo)
 
-    # Marcar reply como processed
-    data["status"] = "processed"
+    if not success or "BLOCKED" in claude_output or "ERRO" in claude_output:
+        log.error(f"Claude CLI falhou para {reply_id}: {claude_output[:200]}")
+        data["status"] = "processed_error"
+        data["error"] = claude_output[:500]
+    else:
+        log.info(f"Claude CLI produziu output para {reply_id} ({len(claude_output)} chars)")
+        # Salvar output do orquestrador para referência
+        output_log = repo / f"orq-output-{reply_id}.txt"
+        output_log.write_text(claude_output, encoding="utf-8")
+        data["status"] = "processed"
     reply_file.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     git_commit_push(repo, f"orq: processado {reply_id}", [reply_file])
     mark_processed(repo / PROCESSED_FILE, reply_id)
@@ -252,7 +255,7 @@ def main():
             state_md = ""
             bootstrap_md = ""
             state_path     = repo / "STATE.md"
-            bootstrap_path = repo / "BOOTSTRAP_REMOTE.md"
+            bootstrap_path = repo / "BOOTSTRAP_REMOTE_v2.md"
             if state_path.exists():
                 state_md = state_path.read_text(encoding="utf-8", errors="replace")
             if bootstrap_path.exists():

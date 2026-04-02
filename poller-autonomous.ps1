@@ -159,41 +159,64 @@ function Process-CodexLocalTask {
 
     Write-Log "CODEX LOCAL task detectada: $taskId (ciclo $cycle)"
 
-    # Salvar instrução em arquivo para Windsurf
-    $promptFile = Join-Path $WorkDir "current_task_codex_local.txt"
-    $taskJson   = Join-Path $WorkDir "current_task_codex_local.json"
-
-    $data.instruction | Set-Content $promptFile -Encoding UTF8
-    $data | ConvertTo-Json -Depth 20 | Set-Content $taskJson -Encoding UTF8
-
     # Marcar como accepted
     $data = Update-TaskStatus $TaskFilePath "accepted"
     Git-CommitPush "accepted: $taskId" @($TaskFilePath)
 
-    Mark-Processed $taskId
+    # Invocar Claude Code em modo não-interativo (mesmo mecanismo do inbox_claude)
+    $outboxCodex = Join-Path $CoordDir "outbox_codex_local"
+    $fullPrompt = @"
+[OPENLAW AUTONOMOUS MODE — CODEX LOCAL — CICLO $cycle]
 
-    # Notificação visual
-    Write-Log "========================================" "WARN"
-    Write-Log "ACAO NECESSARIA — CODEX LOCAL" "WARN"
-    Write-Log "Task: $taskId | Ciclo: $cycle" "WARN"
-    Write-Log "Instrucao em: $promptFile" "WARN"
-    Write-Log "JSON completo em: $taskJson" "WARN"
-    Write-Log "Abra o Windsurf e cole o conteudo de current_task_codex_local.txt" "WARN"
-    Write-Log "Output deve ir para: coordination/outbox_codex_local/" "WARN"
-    Write-Log "========================================" "WARN"
+RED LINES (invioláveis):
+- Não escrever fora de C:\Users\User\.openclaw\workspace-integration\
+- Não tocar em produção (Evolution API, n8n, bridge local)
+- Não tocar em .mcp.json do projeto real
+- Não reabrir R2 nem R6
 
-    # Tentar acionar Windsurf via CLI se disponível
-    $windsurfCli = Get-Command "windsurf" -ErrorAction SilentlyContinue
-    if ($windsurfCli) {
-        Write-Log "Windsurf CLI detectado — acionando automaticamente..."
-        try {
-            Start-Process "windsurf" -ArgumentList "-p `"$(Get-Content $promptFile -Raw)`""
-        } catch {
-            Write-Log "Falha ao acionar Windsurf CLI: $_" "ERROR"
-        }
-    } else {
-        Write-Log "Windsurf CLI nao encontrado — acao manual necessaria" "WARN"
+INSTRUÇÃO:
+$($data.instruction)
+
+OUTPUT: Escreva seu relatório como texto estruturado. O poller capturará o stdout.
+"@
+
+    Write-Log "Invocando claude CLI para CODEX LOCAL $taskId..."
+
+    $outputRaw = ""
+    try {
+        Push-Location $ProjectDir
+        $outputRaw = & claude -p $fullPrompt 2>&1 | Out-String
+        Pop-Location
+    } catch {
+        Pop-Location
+        Write-Log "Erro ao invocar claude CLI (codex-local): $_" "ERROR"
+        $outputRaw = "ERRO: $_"
     }
+
+    $outputStatus = "complete"
+    if ($outputRaw -match "BLOCKED|ERRO|ERROR") {
+        $outputStatus = "BLOCKED"
+        Write-Log "Output retornou BLOCKED para $taskId" "WARN"
+    }
+
+    $replyId   = "reply-$cycle-$(Get-Date -Format 'yyyyMMddTHHmmssZ')"
+    $replyPath = Join-Path $outboxCodex "$replyId.json"
+
+    $reply = [ordered]@{
+        reply_id       = $replyId
+        source_task_id = $taskId
+        actor          = "codex_local"
+        cycle          = $cycle
+        output         = $outputRaw.Trim()
+        status         = $outputStatus
+        produced_at    = (Get-Date -Format 'o')
+    }
+    $reply | ConvertTo-Json -Depth 20 | Set-Content $replyPath -Encoding UTF8
+
+    Git-CommitPush "codex-local: output $cycle" @($replyPath)
+
+    Mark-Processed $taskId
+    Write-Log "Codex-local output commitado: $replyId (status: $outputStatus)"
 }
 
 # ─── MAIN LOOP ────────────────────────────────────────────────────────────────
