@@ -9,6 +9,6 @@
     "next_eligible_item": null,
     "note": "Payload produzido antes do task file ser formalizado. Conteudo ja homologado por Claude Code."
   },
-  "status": "complete",
+  "status": "processed",
   "produced_at": "2026-04-02T22:52:28Z"
 }
