@@ -1,0 +1,7 @@
+# Sessões do agente — efêmeras, não sincronizar
+../agents/*/sessions/
+../agents/*/auth-profiles.json
+
+# Arquivos temporários
+*.tmp
+*.log
