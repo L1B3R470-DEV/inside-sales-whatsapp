@@ -1,26 +1,26 @@
-{
-  "task_id": "task-019A-20260402T232410Z",
-  "target_actor": "codex_local",
-  "cycle": "019A",
-  "instruction": "Executar UMA tentativa unica do ciclo 19A em modo manual-orchestrated, documental, read-only e sem runner stateful. Objetivo: varrer a fila remanescente dos ciclos 3/4/5, excluindo R2 e R6, classificar cada item remanescente como ELEGIVEL, ELEGIVEL_COM_CONDICAO ou NAO_ELEGIVEL_AGORA, registrar divergencias documentais e decidir entre PROXIMO_ITEM_IDENTIFICADO, TODOS_CONDICIONAIS ou FILA_ESGOTADA. Usar exclusivamente as fontes oficiais informadas em context_files. Nao incluir R2 ou R6 como candidatos. Nao iniciar analise de conteudo do proximo item. Nao tocar em producao, .mcp.json, bridge local, projeto real, sandbox ou bancos live. Nao executar SQL, DDL, DML, patch ou escrita fora do payload final. Salvar o payload em cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json. O JSON deve conter: cycle_id=19A; mode=post-r2-closure-queue-assessment; agent=manual-orchestrated; source_precedence; closure_reference com R2 encerrado pelo 18B e R6 stable_closed pelo 11; inherited_constraints com live_crm_authorized=false, sandbox_authorized=false, write_authorized=false, r2_reopen_prohibited=true, r6_reopen_prohibited=true; queue_assessment com r2_excluded=true, r6_excluded=true, items_surveyed cobrindo no minimo R1, R3, R4 e R5, total_items_surveyed e total_eligible; divergence_log registrando explicitamente a divergencia de R3 e R4 entre ciclo 4 e ciclo 5; queue_decision com queue_status em PROXIMO_ITEM_IDENTIFICADO, TODOS_CONDICIONAIS ou FILA_ESGOTADA, next_eligible_item apenas se houver ancoragem documental suficiente, justification e opening_requires terminando com 'Novo contrato explicito antes de qualquer analise do item'; authorization_reset com todos os tres flags false; blockers, violations, prohibitions, anomalies, evidence_trace e meta. O relatorio de saida deve seguir exatamente este formato em texto simples: INICIO DO RELATORIO; STATUS GERAL; PRODUCAO DO 19A; VALIDACAO DO PAYLOAD; DECISAO DE FILA; ISOLAMENTO PRESERVADO; CONCLUSAO; ARTEFATOS; FIM DO RELATORIO. Red lines absolutas: no_production_write, no_bridge_write, no_mcp_json_write. Se houver duvida material sobre elegibilidade, prefira TODOS_CONDICIONAIS ou FILA_ESGOTADA a forcar PROXIMO_ITEM_IDENTIFICADO.",
-  "context_files": [
-    "output/cycle-018B-r2-iteration-closure-or-reopen-conditions-review.json",
-    "cycle18-input/cycle-018A-r2-iteration-closure-or-reopen-conditions.json",
-    "output/cycle-005-write-proposals.json",
-    "output/cycle-004-execution-plan.json",
-    "output/cycle-003-improvement-plan.json",
-    "output/cycle-002-crm-snapshot.json",
-    "cycle19-input/closed_items_registry.json",
-    "cycle19-input/remaining_queue_registry.json",
-    "cycle19-input/queue_source_map.json",
-    "cycle19-input/cycle19_scope_draft.json"
-  ],
-  "output_path": "coordination/outbox_codex_local/reply-019A-20260402T232410Z.json",
-  "red_lines": [
-    "no_production_write",
-    "no_bridge_write",
-    "no_mcp_json_write"
-  ],
-  "status": "pending",
-  "created_at": "2026-04-02T23:24:10Z"
+﻿{
+    "task_id":  "task-019A-20260402T232410Z",
+    "target_actor":  "codex_local",
+    "cycle":  "019A",
+    "instruction":  "Executar UMA tentativa unica do ciclo 19A em modo manual-orchestrated, documental, read-only e sem runner stateful. Objetivo: varrer a fila remanescente dos ciclos 3/4/5, excluindo R2 e R6, classificar cada item remanescente como ELEGIVEL, ELEGIVEL_COM_CONDICAO ou NAO_ELEGIVEL_AGORA, registrar divergencias documentais e decidir entre PROXIMO_ITEM_IDENTIFICADO, TODOS_CONDICIONAIS ou FILA_ESGOTADA. Usar exclusivamente as fontes oficiais informadas em context_files. Nao incluir R2 ou R6 como candidatos. Nao iniciar analise de conteudo do proximo item. Nao tocar em producao, .mcp.json, bridge local, projeto real, sandbox ou bancos live. Nao executar SQL, DDL, DML, patch ou escrita fora do payload final. Salvar o payload em cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json. O JSON deve conter: cycle_id=19A; mode=post-r2-closure-queue-assessment; agent=manual-orchestrated; source_precedence; closure_reference com R2 encerrado pelo 18B e R6 stable_closed pelo 11; inherited_constraints com live_crm_authorized=false, sandbox_authorized=false, write_authorized=false, r2_reopen_prohibited=true, r6_reopen_prohibited=true; queue_assessment com r2_excluded=true, r6_excluded=true, items_surveyed cobrindo no minimo R1, R3, R4 e R5, total_items_surveyed e total_eligible; divergence_log registrando explicitamente a divergencia de R3 e R4 entre ciclo 4 e ciclo 5; queue_decision com queue_status em PROXIMO_ITEM_IDENTIFICADO, TODOS_CONDICIONAIS ou FILA_ESGOTADA, next_eligible_item apenas se houver ancoragem documental suficiente, justification e opening_requires terminando com \u0027Novo contrato explicito antes de qualquer analise do item\u0027; authorization_reset com todos os tres flags false; blockers, violations, prohibitions, anomalies, evidence_trace e meta. O relatorio de saida deve seguir exatamente este formato em texto simples: INICIO DO RELATORIO; STATUS GERAL; PRODUCAO DO 19A; VALIDACAO DO PAYLOAD; DECISAO DE FILA; ISOLAMENTO PRESERVADO; CONCLUSAO; ARTEFATOS; FIM DO RELATORIO. Red lines absolutas: no_production_write, no_bridge_write, no_mcp_json_write. Se houver duvida material sobre elegibilidade, prefira TODOS_CONDICIONAIS ou FILA_ESGOTADA a forcar PROXIMO_ITEM_IDENTIFICADO.",
+    "context_files":  [
+                          "output/cycle-018B-r2-iteration-closure-or-reopen-conditions-review.json",
+                          "cycle18-input/cycle-018A-r2-iteration-closure-or-reopen-conditions.json",
+                          "output/cycle-005-write-proposals.json",
+                          "output/cycle-004-execution-plan.json",
+                          "output/cycle-003-improvement-plan.json",
+                          "output/cycle-002-crm-snapshot.json",
+                          "cycle19-input/closed_items_registry.json",
+                          "cycle19-input/remaining_queue_registry.json",
+                          "cycle19-input/queue_source_map.json",
+                          "cycle19-input/cycle19_scope_draft.json"
+                      ],
+    "output_path":  "coordination/outbox_codex_local/reply-019A-20260402T232410Z.json",
+    "red_lines":  [
+                      "no_production_write",
+                      "no_bridge_write",
+                      "no_mcp_json_write"
+                  ],
+    "status":  "accepted",
+    "created_at":  "2026-04-02T23:24:10Z"
 }
