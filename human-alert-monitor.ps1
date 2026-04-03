@@ -81,7 +81,7 @@ foreach ($ticket in $pending) {
   }
 
   try {
-    powershell -NoLogo -ExecutionPolicy Bypass -File (Join-Path $ProjectDir 'flash-whatsapp-window.ps1') | Out-Null
+    powershell -NoLogo -WindowStyle Hidden -ExecutionPolicy Bypass -File (Join-Path $ProjectDir 'flash-whatsapp-window.ps1') | Out-Null
   } catch {}
 
   $ticketCreatedAt = (($ticket.createdAt | Out-String).Trim())
