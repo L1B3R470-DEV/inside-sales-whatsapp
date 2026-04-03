@@ -1,9 +1,10 @@
-﻿{
-    "reply_id":  "reply-019B-20260402T213630Z",
-    "source_task_id":  "task-019B-20260402T233530Z",
-    "actor":  "claude_local",
-    "cycle":  "019B",
-    "output":  "You\u0027re out of extra usage ┬À resets 12am (America/Bahia)",
-    "status":  "complete",
-    "produced_at":  "2026-04-02T21:36:30.8980214-03:00"
+{
+  "reply_id": "reply-019B-20260402T213630Z",
+  "source_task_id": "task-019B-20260402T233530Z",
+  "actor": "claude_local",
+  "cycle": "019B",
+  "output": "You're out of extra usage ┬À resets 12am (America/Bahia)",
+  "status": "processed_error",
+  "produced_at": "2026-04-02T21:36:30.8980214-03:00",
+  "error": "ERRO: "
 }
