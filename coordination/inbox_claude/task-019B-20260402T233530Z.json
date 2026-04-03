@@ -1,17 +1,17 @@
-﻿{
-    "task_id":  "task-019B-20260402T233530Z",
-    "target_actor":  "claude_local",
-    "cycle":  "019B",
-    "instruction":  "Executar UMA tentativa unica do ciclo 19B em modo estritamente documental, read-only e sem runner stateful. Seu papel neste ciclo e revisar o payload do 19A e confirmar ou corrigir a decisao de fila. O payload sob revisao esta em cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json. Objetivo: confirmar se TODOS_CONDICIONAIS e a classificacao correta dado o estado documental atual da fila; confirmar que nenhum item foi promovido indevidamente; confirmar que as divergencias de R3 e R4 estao registradas sem suavizacao; confirmar que opening_requires esta completo, especifico e acionavel; e emitir resultado final como CONFIRMADO ou CORRECAO_NECESSARIA. Nao modificar nada. Nao tocar em producao, .mcp.json, bridge local, projeto real ou bancos. Nao reabrir R2 nem R6. Nao iniciar analise de conteudo de novo item. Sua saida deve ser um reply JSON valido no output_path, com o campo output contendo um relatorio textual completo e autocontido neste formato exato: INICIO DO RELATORIO; VEREDITO; EVIDENCIAS OBRIGATORIAS RECEBIDAS; CLASSIFICACAO DO RESULTADO; AVALIACAO DA REVISAO DA FILA; DECISAO SOBRE A PROGRESSAO; CRITERIO OBJETIVO QUE DECIDIU O CASO; O QUE NAO DEVE MUDAR; RESUMO EXECUTIVO; FIM DO RELATORIO. Na avaliacao, responder explicitamente: fila completamente coberta [sim/nao], R2 corretamente excluido [sim/nao], R6 corretamente excluido [sim/nao], TODOS_CONDICIONAIS corretamente sustentado [sim/nao], divergencias R3/R4 corretamente registradas [sim/nao], opening_requires completo e acionavel [sim/nao], promocao indevida detectada [sim/nao]. Na decisao, responder se 19B confirma o 19A ou se exige correcao. Se houver qualquer antecipacao indevida de elegibilidade, qualquer omissao de item, qualquer suavizacao de divergencia ou opening_requires vago, o resultado deve ser CORRECAO_NECESSARIA. Se tudo estiver correto e rastreavel, o resultado deve ser CONFIRMADO.",
-    "context_files":  [
-                          "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json"
-                      ],
-    "output_path":  "coordination/outbox_claude/reply-019B-20260402T233530Z.json",
-    "red_lines":  [
-                      "no_production_write",
-                      "no_bridge_write",
-                      "no_mcp_json_write"
-                  ],
-    "status":  "accepted",
-    "created_at":  "2026-04-02T23:35:30Z"
+{
+  "task_id": "task-019B-20260402T233530Z",
+  "target_actor": "claude_local",
+  "cycle": "019B",
+  "instruction": "Executar UMA tentativa unica do ciclo 19B em modo estritamente documental, read-only e sem runner stateful. Seu papel neste ciclo e revisar o payload do 19A e confirmar ou corrigir a decisao de fila. O payload sob revisao esta em cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json. Objetivo: confirmar se TODOS_CONDICIONAIS e a classificacao correta dado o estado documental atual da fila; confirmar que nenhum item foi promovido indevidamente; confirmar que as divergencias de R3 e R4 estao registradas sem suavizacao; confirmar que opening_requires esta completo, especifico e acionavel; e emitir resultado final como CONFIRMADO ou CORRECAO_NECESSARIA. Nao modificar nada. Nao tocar em producao, .mcp.json, bridge local, projeto real ou bancos. Nao reabrir R2 nem R6. Nao iniciar analise de conteudo de novo item. Sua saida deve ser um reply JSON valido no output_path, com o campo output contendo um relatorio textual completo e autocontido neste formato exato: INICIO DO RELATORIO; VEREDITO; EVIDENCIAS OBRIGATORIAS RECEBIDAS; CLASSIFICACAO DO RESULTADO; AVALIACAO DA REVISAO DA FILA; DECISAO SOBRE A PROGRESSAO; CRITERIO OBJETIVO QUE DECIDIU O CASO; O QUE NAO DEVE MUDAR; RESUMO EXECUTIVO; FIM DO RELATORIO. Na avaliacao, responder explicitamente: fila completamente coberta [sim/nao], R2 corretamente excluido [sim/nao], R6 corretamente excluido [sim/nao], TODOS_CONDICIONAIS corretamente sustentado [sim/nao], divergencias R3/R4 corretamente registradas [sim/nao], opening_requires completo e acionavel [sim/nao], promocao indevida detectada [sim/nao]. Na decisao, responder se 19B confirma o 19A ou se exige correcao. Se houver qualquer antecipacao indevida de elegibilidade, qualquer omissao de item, qualquer suavizacao de divergencia ou opening_requires vago, o resultado deve ser CORRECAO_NECESSARIA. Se tudo estiver correto e rastreavel, o resultado deve ser CONFIRMADO.",
+  "context_files": [
+    "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json"
+  ],
+  "output_path": "coordination/outbox_claude/reply-019B-20260402T233530Z.json",
+  "red_lines": [
+    "no_production_write",
+    "no_bridge_write",
+    "no_mcp_json_write"
+  ],
+  "status": "accepted",
+  "created_at": "2026-04-02T23:35:30Z"
 }
