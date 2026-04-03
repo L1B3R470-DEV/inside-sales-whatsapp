@@ -4,6 +4,7 @@
     "actor":  "codex_local",
     "cycle":  "019SYNC",
     "output":  "You\u0027re out of extra usage ┬À resets 5am (America/Bahia)",
-    "status":  "complete",
-    "produced_at":  "2026-04-03T03:07:45.5213708-03:00"
+    "status":  "processed",
+    "produced_at":  "2026-04-03T03:07:45.5213708-03:00",
+    "orchestrator_note":  "reply lido; retry sera disparado apos 05:00 local devido limite de uso informado pelo CODEX LOCAL"
 }

@@ -7,9 +7,9 @@
 | Campo | Valor |
 |---|---|
 | Ciclo ativo | 20 |
-| Fase em andamento | preflight de integridade — saneamento do `cycle19-input` |
-| Próxima etapa | CODEX LOCAL materializar os artefatos faltantes do ciclo 19; após isso, definir/autorizar o 20A |
-| Status task CODEX LOCAL | task-019SYNC-20260403T060625Z.json — pendente de reply no outbox |
+| Fase em andamento | preflight de integridade — retry do `019SYNC` agendado para 05:01 local |
+| Próxima etapa | após o retry do `019SYNC`, validar a materialização do `cycle19-input` e então definir/autorizar o 20A |
+| Status task CODEX LOCAL | task-019SYNC-20260403T060625Z.json — retry agendado após janela de uso |
 
 ## Resultado consolidado do ciclo 19
 
@@ -51,6 +51,7 @@ Qualquer abertura futura ainda exige:
 - Os replies de `19A` e `19B` foram materialmente válidos, mas os wrappers em `coordination/outbox_*` ficaram com `status = processed_error` por resíduo do poller remoto antigo em `relay=false`
 - O poller remoto já foi corrigido para `relay=true`
 - Os artefatos esperados em `cycle19-input/` não estão materializados neste clone e precisam ser sincronizados antes do `20A`
+- O primeiro reply do `019SYNC` indicou limite de uso do CODEX LOCAL antes de 05:00 (`America/Bahia`); retry agendado para 05:01 local
 
 ## Restrições ativas
 
@@ -85,9 +86,9 @@ Qualquer abertura futura ainda exige:
 | poller-codex-remoto.py (PC remoto) | ativo em `relay=true` |
 | poller-autonomous.ps1 (PC local) | responsável por `inbox_claude/` e `inbox_codex_local/` |
 | coordination/inbox_claude/ | sem task nova pendente |
-| coordination/inbox_codex_local/ | task de saneamento 19 pendente |
+| coordination/inbox_codex_local/ | retry do `019SYNC` será disparado às 05:01 local |
 | coordination/outbox_claude/ | contém reply 19B válido com wrapper legado |
-| coordination/outbox_codex_local/ | contém reply 19A válido com wrapper legado |
+| coordination/outbox_codex_local/ | contém reply 19A válido com wrapper legado e reply 019SYNC tratado |
 
 ## Último commit relevante
 
