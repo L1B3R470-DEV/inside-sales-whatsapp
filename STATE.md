@@ -1,5 +1,5 @@
 # OpenClaw — Estado do Processo
-> Atualizado em: 2026-04-03 (reconciliacao pos-019SYNC)
+> Atualizado em: 2026-04-03 (020A bloqueado por reply generico; aguardando diagnostico do Claude Local)
 > Fonte de verdade para todos os atores.
 
 ## Ciclo atual
@@ -7,10 +7,10 @@
 | Campo | Valor |
 |---|---|
 | Ciclo ativo | 20 |
-| Fase em andamento | 020A autorizado — aguardando payload do CODEX LOCAL |
-| Próxima etapa | CODEX LOCAL produz avaliacao documental de priorizacao da fila condicional |
-| Status inbox_claude | vazio (task-019B arquivada) |
-| Status inbox_codex_local | task-020A pendente |
+| Fase em andamento | 020A bloqueado — reply generico do CODEX LOCAL processado; aguardando diagnostico do Claude Local |
+| Próxima etapa | Claude Local investiga regressao de framing/execucao do CODEX LOCAL antes de novo retry do 020A |
+| Status inbox_claude | task-020A-DIAG pendente |
+| Status inbox_codex_local | task-020A aceita; ultimo reply invalido processado |
 
 ## Resultado consolidado do ciclo 19
 
@@ -77,14 +77,22 @@ Qualquer abertura exige:
 | Componente | Status |
 |---|---|
 | poller-codex-remoto.py (PC remoto) | ativo em relay=true |
-| poller-autonomous.ps1 (PC local) | ativo — Build-Prompt corrigido (sem OPENLAW AUTONOMOUS framing) |
+| poller-autonomous.ps1 (PC local) | ativo — regressao funcional em 020A ainda nao explicada |
 | CLAUDE.md workspace-integration | criado — contexto neutro para CODEX_LOCAL |
-| coordination/inbox_claude/ | vazio |
-| coordination/inbox_codex_local/ | vazio |
+| coordination/inbox_claude/ | task diagnostica do 020A pendente |
+| coordination/inbox_codex_local/ | task-020A ainda aceita; nenhum retry adicional autorizado |
 | cycle19-input/ | commitado e pushado |
 
 ## Ultimo commit relevante
 
 ```
-reconciliacao-019SYNC: cycle19-input commitado + inboxes arquivados + STATE.md atualizado
+orq: instrucao 020A para codex local
 ```
+
+## Bloqueio atual do ciclo 20
+
+| Item | Estado |
+|---|---|
+| task-020A-20260403T063556Z | accepted pelo CODEX LOCAL |
+| reply-020A-20260403T063700Z | processed — resposta generica, sem payload |
+| Acao em curso | diagnostico do Claude Local para identificar regressao no caminho de execucao do CODEX LOCAL |

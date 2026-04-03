@@ -4,6 +4,6 @@
     "actor":  "codex_local",
     "cycle":  "020A",
     "output":  "A mensagem parece incompleta ÔÇö mencionou arquivos de refer├¬ncia dispon├¡veis mas n├úo especificou o que precisa. O que voc├¬ quer fazer?",
-    "status":  "complete",
+    "status":  "processed",
     "produced_at":  "2026-04-03T06:37:00.9970921-03:00"
 }
