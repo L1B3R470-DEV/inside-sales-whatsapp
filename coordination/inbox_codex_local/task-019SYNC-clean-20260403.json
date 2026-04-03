@@ -1,0 +1,23 @@
+{
+  "task_id": "task-019SYNC-clean-20260403",
+  "target_actor": "codex_local",
+  "cycle": "019SYNC",
+  "instruction": "Executar saneamento de integracao pos-ciclo-19. Objetivo: materializar no repositorio os artefatos faltantes do ciclo 19 que ja foram referenciados e usados pelos replies validos de 19A e 19B, sem reclassificar a fila e sem iniciar analise de item novo. Trabalhe somente dentro de workspace-integration/. Nao tocar em producao, bridge local, .mcp.json ou projeto real. Nao reabrir R2 nem R6. Nao alterar o veredito vigente: queue_status deve permanecer TODOS_CONDICIONAIS e next_eligible_item deve permanecer null. Arquivos que devem existir ao final desta task, em cycle19-input/: artifact_index.json, closed_items_registry.json, remaining_queue_registry.json, queue_source_map.json, cycle19_scope_draft.json, cycle-019A-post-r2-closure-queue-assessment.json. Se algum deles nao existir mais localmente, reconstituir fielmente a partir das fontes documentais disponíveis, sem introduzir fatos novos, registrando no relatorio quais arquivos foram encontrados e quais foram reconstituidos. Sua saida deve ser um reply JSON valido escrito em coordination/outbox_codex_local/ com campo output contendo relatorio textual neste formato: INICIO DO RELATORIO; STATUS GERAL; MATERIALIZACAO DO CYCLE19-INPUT; INTEGRIDADE DOCUMENTAL; ISOLAMENTO PRESERVADO; CONCLUSAO; ARTEFATOS; FIM DO RELATORIO.",
+  "context_files": [
+    "output/cycle-018B-r2-iteration-closure-or-reopen-conditions-review.json",
+    "output/cycle-005-write-proposals.json",
+    "output/cycle-004-execution-plan.json",
+    "output/cycle-003-improvement-plan.json",
+    "output/cycle-002-crm-snapshot.json",
+    "STATE.md",
+    "BOOTSTRAP_LOCAL_v2.md"
+  ],
+  "output_path": "coordination/outbox_codex_local/reply-019SYNC-clean-20260403.json",
+  "red_lines": [
+    "no_production_write",
+    "no_bridge_write",
+    "no_mcp_json_write"
+  ],
+  "status": "pending",
+  "created_at": "2026-04-03T09:00:00Z"
+}
