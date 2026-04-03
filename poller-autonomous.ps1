@@ -133,7 +133,7 @@ function Build-Prompt {
             "Arquivos de contexto: nenhum"
         }
         $lines = @(
-            "Tarefa OpenClaw — ciclo $Cycle",
+            "Tarefa OpenClaw - ciclo $Cycle",
             "Consulte BOOTSTRAP_CLAUDE_v2.md em: $BootstrapClaude",
             $contextBlock,
             "",
