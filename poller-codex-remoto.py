@@ -170,7 +170,7 @@ def process_reply(
     bootstrap_md: str,
 ) -> bool:
     try:
-        data = json.loads(reply_file.read_text(encoding="utf-8"))
+        data = json.loads(reply_file.read_text(encoding="utf-8-sig"))
     except Exception as e:
         log.error(f"Falha ao ler {reply_file.name}: {e}")
         return False
@@ -190,7 +190,7 @@ def process_reply(
         log.error(f"BLOCKED detectado em {reply_id} — ciclo {cycle} suspenso. Notificar Rodrigo.")
         # Não processar automaticamente — marcar como processed para não lopar
         data["status"] = "processed_blocked"
-        reply_file.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+        reply_file.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8-sig")
         git_commit_push(repo, f"orq: BLOCKED {reply_id}", [reply_file])
         mark_processed(repo / PROCESSED_FILE, reply_id)
         processed.add(reply_id)
@@ -211,7 +211,7 @@ def process_reply(
         log.info(f"Claude CLI produziu output para {reply_id} ({len(claude_output)} chars)")
         # Salvar output do orquestrador para referência
         output_log = repo / f"orq-output-{reply_id}.txt"
-        output_log.write_text(claude_output, encoding="utf-8")
+        output_log.write_text(claude_output, encoding="utf-8-sig")
         data["status"] = "processed"
     reply_file.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
     git_commit_push(repo, f"orq: processado {reply_id}", [reply_file])
@@ -257,9 +257,9 @@ def main():
             state_path     = repo / "STATE.md"
             bootstrap_path = repo / "BOOTSTRAP_REMOTE_v2.md"
             if state_path.exists():
-                state_md = state_path.read_text(encoding="utf-8", errors="replace")
+                state_md = state_path.read_text(encoding="utf-8-sig", errors="replace")
             if bootstrap_path.exists():
-                bootstrap_md = bootstrap_path.read_text(encoding="utf-8", errors="replace")
+                bootstrap_md = bootstrap_path.read_text(encoding="utf-8-sig", errors="replace")
 
             # Checar outbox_claude
             outbox_claude = coord / OUTBOX_CLAUDE
