@@ -1,22 +1,22 @@
-{
-  "task_id": "task-020A-DIAG-20260403T071335Z",
-  "target_actor": "claude_local",
-  "cycle": "020A-DIAG",
-  "instruction": "Voce deve diagnosticar por que o CODEX LOCAL aceitou a task 020A mas devolveu apenas uma resposta generica de incompletude, sem produzir o payload solicitado. O objetivo desta rodada nao e reexecutar o 020A, e sim localizar a regressao no caminho de execucao do CODEX LOCAL apos o 019SYNC-v4 ter funcionado. Fatos confirmados: 1) task aceita: coordination/inbox_codex_local/task-020A-20260403T063556Z.json; 2) reply invalido: coordination/outbox_codex_local/reply-020A-20260403T063700Z.json com output generico; 3) 019SYNC-v4 funcionou antes; 4) o poller-autonomous ja havia sido corrigido contra o framing OPENLAW AUTONOMOUS. Sua missao: identificar o ponto exato onde o prompt do 020A perdeu materialidade suficiente para o CODEX LOCAL, comparar o caminho do 019SYNC-v4 bem-sucedido com o do 020A falho, corrigir apenas o minimo necessario e dizer se o 020A pode ser reenviado sem repetir a falha. Verifique obrigatoriamente: poller-autonomous.ps1, qualquer funcao Build-Prompt ou equivalente, current_task_codex_local.txt/json, temp_prompt.txt se existir, coordination/inbox_codex_local/task-020A-20260403T063556Z.json, coordination/outbox_codex_local/reply-020A-20260403T063700Z.json, reply-019SYNC-v4-20260403.json, logs relevantes do poller local. Red lines absolutas: nao tocar em producao, bridge, .mcp.json do projeto real, projeto real, R2, R6. Se precisar editar algo, faca a menor correcao segura. Se precisar reiniciar tarefa agendada/processo local, faca de modo controlado. Nao crie novo retry do 020A sem concluir o diagnostico. Formato obrigatorio da resposta: INICIO DO RELATORIO / STATUS GERAL / DIAGNOSTICO / CORRECOES APLICADAS / VALIDACAO / GIT / CONCLUSAO / FIM DO RELATORIO. Campos minimos: concluido, risco_operacional_atual, causa_raiz_identificada, ponto_exato_da_regressao, evidencias_objetivas, arquivos_logs_inspecionados, arquivos_alterados, processos_reiniciados, texto_contaminante_reapareceu_sim_nao, prompt_final_do_020A_esta_materialmente_completo_sim_nao, 020A_apto_para_retry_valido_sim_nao, mudancas_commitadas_sim_nao, commit_hash, push_realizado_sim_nao, bloqueio_remanescente, proximo_passo_sugerido. Nao responda com hipotese vaga; eu preciso do ponto exato da regressao entre 019SYNC-v4 e 020A.",
-  "context_files": [
-    "STATE.md",
-    "coordination/inbox_codex_local/task-020A-20260403T063556Z.json",
-    "coordination/outbox_codex_local/reply-020A-20260403T063700Z.json",
-    "coordination/outbox_codex_local/reply-019SYNC-v4-20260403.json"
-  ],
-  "output_path": "coordination/outbox_claude/reply-020A-DIAG-20260403T071335Z.json",
-  "red_lines": [
-    "no_production_write",
-    "no_bridge_write",
-    "no_mcp_json_write",
-    "no_r2_reopen",
-    "no_r6_reopen"
-  ],
-  "status": "pending",
-  "created_at": "2026-04-03T07:13:35Z"
+﻿{
+    "task_id":  "task-020A-DIAG-20260403T071335Z",
+    "target_actor":  "claude_local",
+    "cycle":  "020A-DIAG",
+    "instruction":  "Voce deve diagnosticar por que o CODEX LOCAL aceitou a task 020A mas devolveu apenas uma resposta generica de incompletude, sem produzir o payload solicitado. O objetivo desta rodada nao e reexecutar o 020A, e sim localizar a regressao no caminho de execucao do CODEX LOCAL apos o 019SYNC-v4 ter funcionado. Fatos confirmados: 1) task aceita: coordination/inbox_codex_local/task-020A-20260403T063556Z.json; 2) reply invalido: coordination/outbox_codex_local/reply-020A-20260403T063700Z.json com output generico; 3) 019SYNC-v4 funcionou antes; 4) o poller-autonomous ja havia sido corrigido contra o framing OPENLAW AUTONOMOUS. Sua missao: identificar o ponto exato onde o prompt do 020A perdeu materialidade suficiente para o CODEX LOCAL, comparar o caminho do 019SYNC-v4 bem-sucedido com o do 020A falho, corrigir apenas o minimo necessario e dizer se o 020A pode ser reenviado sem repetir a falha. Verifique obrigatoriamente: poller-autonomous.ps1, qualquer funcao Build-Prompt ou equivalente, current_task_codex_local.txt/json, temp_prompt.txt se existir, coordination/inbox_codex_local/task-020A-20260403T063556Z.json, coordination/outbox_codex_local/reply-020A-20260403T063700Z.json, reply-019SYNC-v4-20260403.json, logs relevantes do poller local. Red lines absolutas: nao tocar em producao, bridge, .mcp.json do projeto real, projeto real, R2, R6. Se precisar editar algo, faca a menor correcao segura. Se precisar reiniciar tarefa agendada/processo local, faca de modo controlado. Nao crie novo retry do 020A sem concluir o diagnostico. Formato obrigatorio da resposta: INICIO DO RELATORIO / STATUS GERAL / DIAGNOSTICO / CORRECOES APLICADAS / VALIDACAO / GIT / CONCLUSAO / FIM DO RELATORIO. Campos minimos: concluido, risco_operacional_atual, causa_raiz_identificada, ponto_exato_da_regressao, evidencias_objetivas, arquivos_logs_inspecionados, arquivos_alterados, processos_reiniciados, texto_contaminante_reapareceu_sim_nao, prompt_final_do_020A_esta_materialmente_completo_sim_nao, 020A_apto_para_retry_valido_sim_nao, mudancas_commitadas_sim_nao, commit_hash, push_realizado_sim_nao, bloqueio_remanescente, proximo_passo_sugerido. Nao responda com hipotese vaga; eu preciso do ponto exato da regressao entre 019SYNC-v4 e 020A.",
+    "context_files":  [
+                          "STATE.md",
+                          "coordination/inbox_codex_local/task-020A-20260403T063556Z.json",
+                          "coordination/outbox_codex_local/reply-020A-20260403T063700Z.json",
+                          "coordination/outbox_codex_local/reply-019SYNC-v4-20260403.json"
+                      ],
+    "output_path":  "coordination/outbox_claude/reply-020A-DIAG-20260403T071335Z.json",
+    "red_lines":  [
+                      "no_production_write",
+                      "no_bridge_write",
+                      "no_mcp_json_write",
+                      "no_r2_reopen",
+                      "no_r6_reopen"
+                  ],
+    "status":  "accepted",
+    "created_at":  "2026-04-03T07:13:35Z"
 }
