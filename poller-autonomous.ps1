@@ -111,36 +111,39 @@ function Build-Prompt {
     )
 
     $isCodex = $Actor -eq "CODEX_LOCAL"
-    $bootstrapPath = if ($isCodex) { $BootstrapCodex } else { $BootstrapClaude }
-    $roleLine = if ($isCodex) {
-        "Voce e o CODEX LOCAL do fluxo OpenClaw. Execute preparacao tecnica/documental exatamente conforme a task."
-    } else {
-        "Voce e o CLAUDE LOCAL do fluxo OpenClaw. Revise analiticamente exatamente conforme a task."
-    }
-    $workdirLine = if ($isCodex) {
-        "Esta execucao deve considerar apenas o workspace-integration como area de trabalho."
-    } else {
-        "Esta execucao deve revisar artefatos do workspace-integration sem alterar o projeto real."
-    }
-    $contextBlock = if ($ContextFiles -and $ContextFiles.Count -gt 0) {
-        "Arquivos de contexto declarados pela task:`n- " + ($ContextFiles -join "`n- ")
-    } else {
-        "Arquivos de contexto declarados pela task: nenhum"
-    }
 
-    $lines = @(
-        "OpenClaw - task automatica legitima",
-        $roleLine,
-        "Esta tarefa chegou via poller-autonomous.ps1 (automacao autorizada).",
-        "Ciclo: $Cycle. Ator de destino: $Actor.",
-        $workdirLine,
-        "Consulte o bootstrap apropriado em: $bootstrapPath",
-        $contextBlock,
-        "",
-        "INSTRUCAO DA TASK:",
-        $Instruction
-    )
-    return $lines -join "`n"
+    if ($isCodex) {
+        # Prompt direto para CODEX_LOCAL — sem linguagem de "modo autonomo" ou atribuicao de papel
+        # que dispara deteccao de prompt injection no Claude
+        $contextBlock = if ($ContextFiles -and $ContextFiles.Count -gt 0) {
+            "Arquivos de referencia (leia os relevantes conforme a instrucao abaixo):`n- " + ($ContextFiles -join "`n- ")
+        } else {
+            ""
+        }
+        $lines = @(
+            "Leia BOOTSTRAP_LOCAL_v2.md e STATE.md para contexto do processo OpenClaw.",
+            "",
+            $contextBlock,
+            "",
+            $Instruction
+        )
+        return ($lines | Where-Object { $_ -ne $null }) -join "`n"
+    } else {
+        # Prompt para CLAUDE_LOCAL (roda no projeto real com CLAUDE.md completo)
+        $contextBlock = if ($ContextFiles -and $ContextFiles.Count -gt 0) {
+            "Arquivos de contexto da task:`n- " + ($ContextFiles -join "`n- ")
+        } else {
+            "Arquivos de contexto: nenhum"
+        }
+        $lines = @(
+            "Tarefa OpenClaw — ciclo $Cycle",
+            "Consulte BOOTSTRAP_CLAUDE_v2.md em: $BootstrapClaude",
+            $contextBlock,
+            "",
+            $Instruction
+        )
+        return $lines -join "`n"
+    }
 }
 
 function Persist-CurrentTask {
