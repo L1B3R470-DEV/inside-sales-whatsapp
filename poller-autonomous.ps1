@@ -24,6 +24,9 @@ $PromptFile   = Join-Path $WorkDir "temp_prompt.txt"
 # Diretorio do projeto real onde claude CLI carrega CLAUDE.md
 $ProjectDir = "C:\Users\User\Desktop\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES"
 
+# Caminho completo do claude CLI (necessario para tarefa agendada sem PATH do usuario)
+$ClaudeCLI = "C:\Users\User\AppData\Roaming\npm\claude.cmd"
+
 function Write-Log {
     param([string]$Msg, [string]$Level = "INFO")
     $line = "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] [$Level] $Msg"
@@ -77,7 +80,7 @@ function Invoke-ClaudeCLI {
     $output = ""
     try {
         Push-Location $ProjectDir
-        $output = & claude -p (Get-Content $PromptFile -Raw) 2>&1 | Out-String
+        $output = & $ClaudeCLI -p (Get-Content $PromptFile -Raw) 2>&1 | Out-String
         Pop-Location
     } catch {
         Pop-Location
