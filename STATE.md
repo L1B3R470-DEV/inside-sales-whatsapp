@@ -7,9 +7,9 @@
 | Campo | Valor |
 |---|---|
 | Ciclo ativo | 20 |
-| Fase em andamento | preflight de integridade — retry manual do `019SYNC` em andamento |
-| Próxima etapa | aguardar reply do novo retry do `019SYNC`; se os artefatos forem materializados, então definir/autorizar o 20A |
-| Status task CODEX LOCAL | task-019SYNC-20260403T081729Z.json — pendente de reply no outbox |
+| Fase em andamento | preflight de integridade — retry do `019SYNC` apos correção do poller local |
+| Próxima etapa | aguardar reply do retry corrigido do `019SYNC`; se os artefatos forem materializados, então definir/autorizar o 20A |
+| Status task CODEX LOCAL | task-019SYNC-20260403T082420Z.json — pendente de reply no outbox |
 
 ## Resultado consolidado do ciclo 19
 
@@ -53,6 +53,7 @@ Qualquer abertura futura ainda exige:
 - Os artefatos esperados em `cycle19-input/` não estão materializados neste clone e precisam ser sincronizados antes do `20A`
 - O primeiro reply do `019SYNC` indicou limite de uso do CODEX LOCAL antes de 05:00 (`America/Bahia`)
 - O segundo reply do `019SYNC` retornou falsa detecção de prompt injection; retry manual foi reenviado com framing mais explícito do fluxo OpenClaw
+- O terceiro reply do `019SYNC` mostrou que o consumidor local ainda estava recebendo framing incorreto para `CODEX_LOCAL`; `poller-autonomous.ps1` foi corrigido para usar bootstrap e diretório de execução próprios do CODEX LOCAL antes de novo retry
 
 ## Restrições ativas
 
@@ -87,12 +88,12 @@ Qualquer abertura futura ainda exige:
 | poller-codex-remoto.py (PC remoto) | ativo em `relay=true` |
 | poller-autonomous.ps1 (PC local) | responsável por `inbox_claude/` e `inbox_codex_local/` |
 | coordination/inbox_claude/ | sem task nova pendente |
-| coordination/inbox_codex_local/ | retry manual do `019SYNC` pendente |
+| coordination/inbox_codex_local/ | retry corrigido do `019SYNC` pendente |
 | coordination/outbox_claude/ | contém reply 19B válido com wrapper legado |
 | coordination/outbox_codex_local/ | contém reply 19A válido com wrapper legado e replies 019SYNC tratados |
 
 ## Último commit relevante
 
 ```
-3188eda — fix: habilita poller remoto em modo relay
+aa29ce2 — orq: retry manual 019SYNC para codex local
 ```

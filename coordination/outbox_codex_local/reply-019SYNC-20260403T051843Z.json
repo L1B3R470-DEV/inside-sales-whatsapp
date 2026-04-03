@@ -4,6 +4,7 @@
     "actor":  "codex_local",
     "cycle":  "019SYNC",
     "output":  "N├úo reconhe├ºo esse comando. O que voc├¬ precisa?",
-    "status":  "complete",
-    "produced_at":  "2026-04-03T05:18:43.0657510-03:00"
+    "status":  "processed",
+    "produced_at":  "2026-04-03T05:18:43.0657510-03:00",
+    "orchestrator_note":  "reply tratado; o fluxo local estava usando framing incorreto para CODEX_LOCAL e foi corrigido no poller-autonomous antes de novo retry"
 }

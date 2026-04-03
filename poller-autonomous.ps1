@@ -20,9 +20,17 @@ $OutboxCodex  = Join-Path $CoordDir "outbox_codex_local"
 $LogFile      = Join-Path $WorkDir "poller-autonomous.log"
 $ProcessedFile= Join-Path $WorkDir "processed_tasks.txt"
 $PromptFile   = Join-Path $WorkDir "temp_prompt.txt"
+$CurrentTaskClaudeTxt = Join-Path $WorkDir "current_task_claude_local.txt"
+$CurrentTaskClaudeJson = Join-Path $WorkDir "current_task_claude_local.json"
+$CurrentTaskCodexTxt = Join-Path $WorkDir "current_task_codex_local.txt"
+$CurrentTaskCodexJson = Join-Path $WorkDir "current_task_codex_local.json"
 
 # Diretorio do projeto real onde claude CLI carrega CLAUDE.md
 $ProjectDir = "C:\Users\User\Desktop\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES"
+$WorkspaceDir = $WorkDir
+
+$BootstrapClaude = Join-Path $WorkDir "BOOTSTRAP_CLAUDE_v2.md"
+$BootstrapCodex  = Join-Path $WorkDir "BOOTSTRAP_LOCAL_v2.md"
 
 # Caminho completo do claude CLI (necessario para tarefa agendada sem PATH do usuario)
 $ClaudeCLI = "C:\Users\User\AppData\Roaming\npm\claude.cmd"
@@ -74,12 +82,16 @@ function Update-TaskStatus {
 }
 
 function Invoke-ClaudeCLI {
-    param([string]$Prompt, [string]$Label)
+    param(
+        [string]$Prompt,
+        [string]$Label,
+        [string]$WorkingDir
+    )
     $Prompt | Set-Content $PromptFile -Encoding UTF8
     Write-Log "Invocando claude CLI para $Label..."
     $output = ""
     try {
-        Push-Location $ProjectDir
+        Push-Location $WorkingDir
         $output = & $ClaudeCLI -p (Get-Content $PromptFile -Raw) 2>&1 | Out-String
         Pop-Location
     } catch {
@@ -91,15 +103,62 @@ function Invoke-ClaudeCLI {
 }
 
 function Build-Prompt {
-    param([string]$Actor, [string]$Cycle, [string]$Instruction)
+    param(
+        [string]$Actor,
+        [string]$Cycle,
+        [string]$Instruction,
+        [string[]]$ContextFiles
+    )
+
+    $isCodex = $Actor -eq "CODEX_LOCAL"
+    $bootstrapPath = if ($isCodex) { $BootstrapCodex } else { $BootstrapClaude }
+    $roleLine = if ($isCodex) {
+        "Voce e o CODEX LOCAL do fluxo OpenClaw. Execute preparacao tecnica/documental exatamente conforme a task."
+    } else {
+        "Voce e o CLAUDE LOCAL do fluxo OpenClaw. Revise analiticamente exatamente conforme a task."
+    }
+    $workdirLine = if ($isCodex) {
+        "Esta execucao deve considerar apenas o workspace-integration como area de trabalho."
+    } else {
+        "Esta execucao deve revisar artefatos do workspace-integration sem alterar o projeto real."
+    }
+    $contextBlock = if ($ContextFiles -and $ContextFiles.Count -gt 0) {
+        "Arquivos de contexto declarados pela task:`n- " + ($ContextFiles -join "`n- ")
+    } else {
+        "Arquivos de contexto declarados pela task: nenhum"
+    }
+
     $lines = @(
-        "Voce esta atuando no processo OpenClaw de melhoria continua do projeto WhatsApp B2B Inside Sales (Classe Couro).",
-        "Esta tarefa chegou via poller-autonomous.ps1 (automacao autorizada). Ciclo: $Cycle. Ator: $Actor.",
-        "Consulte BOOTSTRAP_CLAUDE_v2.md em C:\Users\User\.openclaw\workspace-integration\ para contexto completo.",
+        "OpenClaw - task automatica legitima",
+        $roleLine,
+        "Esta tarefa chegou via poller-autonomous.ps1 (automacao autorizada).",
+        "Ciclo: $Cycle. Ator de destino: $Actor.",
+        $workdirLine,
+        "Consulte o bootstrap apropriado em: $bootstrapPath",
+        $contextBlock,
         "",
+        "INSTRUCAO DA TASK:",
         $Instruction
     )
     return $lines -join "`n"
+}
+
+function Persist-CurrentTask {
+    param(
+        [pscustomobject]$TaskData,
+        [string]$Actor
+    )
+
+    if ($Actor -eq "CODEX_LOCAL") {
+        $txtPath = $CurrentTaskCodexTxt
+        $jsonPath = $CurrentTaskCodexJson
+    } else {
+        $txtPath = $CurrentTaskClaudeTxt
+        $jsonPath = $CurrentTaskClaudeJson
+    }
+
+    $TaskData.instruction | Set-Content $txtPath -Encoding UTF8
+    $TaskData | ConvertTo-Json -Depth 20 | Set-Content $jsonPath -Encoding UTF8
 }
 
 function Process-Task {
@@ -121,8 +180,11 @@ function Process-Task {
     $data = Update-TaskStatus $TaskFilePath "accepted"
     Git-CommitPush "accepted: $taskId" @($TaskFilePath)
 
-    $prompt    = Build-Prompt -Actor $Actor -Cycle $cycle -Instruction $data.instruction
-    $outputRaw = Invoke-ClaudeCLI -Prompt $prompt -Label $taskId
+    Persist-CurrentTask -TaskData $data -Actor $Actor
+
+    $workingDir = if ($Actor -eq "CODEX_LOCAL") { $WorkspaceDir } else { $ProjectDir }
+    $prompt    = Build-Prompt -Actor $Actor -Cycle $cycle -Instruction $data.instruction -ContextFiles $data.context_files
+    $outputRaw = Invoke-ClaudeCLI -Prompt $prompt -Label $taskId -WorkingDir $workingDir
 
     $outputStatus = "complete"
     if ($outputRaw -match "BLOCKED") {
