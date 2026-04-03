@@ -93,18 +93,11 @@ function Invoke-ClaudeCLI {
 function Build-Prompt {
     param([string]$Actor, [string]$Cycle, [string]$Instruction)
     $lines = @(
-        "[OPENLAW AUTONOMOUS MODE -- $Actor -- CICLO $Cycle]",
+        "Voce esta atuando no processo OpenClaw de melhoria continua do projeto WhatsApp B2B Inside Sales (Classe Couro).",
+        "Esta tarefa chegou via poller-autonomous.ps1 (automacao autorizada). Ciclo: $Cycle. Ator: $Actor.",
+        "Consulte BOOTSTRAP_CLAUDE_v2.md em C:\Users\User\.openclaw\workspace-integration\ para contexto completo.",
         "",
-        "RED LINES (inviolaveis):",
-        "- Nao escrever fora de workspace-integration\",
-        "- Nao tocar em producao (Evolution API, n8n, bridge local)",
-        "- Nao tocar em .mcp.json do projeto real",
-        "- Nao reabrir R2 nem R6",
-        "",
-        "INSTRUCAO:",
-        $Instruction,
-        "",
-        "OUTPUT: Escreva seu relatorio como texto estruturado. O poller capturara o stdout."
+        $Instruction
     )
     return $lines -join "`n"
 }
