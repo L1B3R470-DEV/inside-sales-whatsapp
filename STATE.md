@@ -1,5 +1,5 @@
 # OpenClaw — Estado do Processo
-> Atualizado automaticamente pelo orquestrador.
+> Atualizado em: 2026-04-03 (reconciliacao pos-019SYNC)
 > Fonte de verdade para todos os atores.
 
 ## Ciclo atual
@@ -7,57 +7,63 @@
 | Campo | Valor |
 |---|---|
 | Ciclo ativo | 20 |
-| Fase em andamento | preflight de integridade — retry do `019SYNC` apos correção do poller local |
-| Próxima etapa | aguardar reply do retry corrigido do `019SYNC`; se os artefatos forem materializados, então definir/autorizar o 20A |
-| Status task CODEX LOCAL | task-019SYNC-20260403T082420Z.json — pendente de reply no outbox |
+| Fase em andamento | aguardando task 020A do Codex Remoto |
+| Próxima etapa | Codex Remoto emite task de abertura do proximo item da fila (contrato explicito) |
+| Status inbox_claude | vazio (task-019B arquivada) |
+| Status inbox_codex_local | vazio (todos os 019SYNC arquivados) |
 
 ## Resultado consolidado do ciclo 19
 
-| Microfase | Veredito | Observação |
+| Microfase | Veredito | Observacao |
 |---|---|---|
-| 19A | HOMOLOGADO | `TODOS_CONDICIONAIS` / `next_eligible_item = null` |
-| 19B | CONFIRMADO | sem correção; divergências `R3`/`R4` preservadas |
+| 19A | HOMOLOGADO | TODOS_CONDICIONAIS / next_eligible_item = null |
+| 19B | CONFIRMADO | sem correcao; divergencias R3/R4 preservadas |
+| 019SYNC | COMPLETO | todos os 6 arquivos de cycle19-input confirmados presentes |
+
+## Artefatos materializados (commitados em 2026-04-03)
+
+```
+cycle19-input/
+- artifact_index.json (13 artefatos, todos approved)
+- closed_items_registry.json (R2 e R6 excluidos)
+- remaining_queue_registry.json (R1, R3, R4, R5)
+- queue_source_map.json (cruzamento ciclos 3/4/5)
+- cycle19_scope_draft.json (escopo e guardrails 19A)
+- cycle-019A-post-r2-closure-queue-assessment.json (payload homologado)
+cycle19-input/artifacts/ (14 artefatos ciclos 2-18B)
+```
 
 ## Fila remanescente
 
-| Item | Categoria | Classificação 19A | Observação |
+| Item | Categoria | Classificacao 19A | Observacao |
 |---|---|---|---|
-| R1 | routing | ELEGIVEL_COM_CONDICAO | `pending_validation` no ciclo 4; ausente no ciclo 5 |
-| R3 | guardrails | ELEGIVEL_COM_CONDICAO | `ready_for_execution` no ciclo 4; ausente no ciclo 5 — divergência |
-| R4 | persona | ELEGIVEL_COM_CONDICAO | `ready_for_execution` no ciclo 4; ausente no ciclo 5 — divergência |
-| R5 | fallback | ELEGIVEL_COM_CONDICAO | `pending_validation` no ciclo 4; apenas observação no ciclo 5 |
+| R1 | routing | ELEGIVEL_COM_CONDICAO | pending_validation no ciclo 4; ausente no ciclo 5 |
+| R3 | guardrails | ELEGIVEL_COM_CONDICAO | ready_for_execution no ciclo 4; ausente no ciclo 5 — divergencia |
+| R4 | persona | ELEGIVEL_COM_CONDICAO | ready_for_execution no ciclo 4; ausente no ciclo 5 — divergencia |
+| R5 | fallback | ELEGIVEL_COM_CONDICAO | pending_validation no ciclo 4; apenas observacao no ciclo 5 |
 
-## Itens excluídos permanentemente
+## Itens excluidos permanentemente
 
 | Item | Status | Fechado por |
 |---|---|---|
 | R2 | ITERACAO_SNAPSHOT_BOUND_ENCERRADA | ciclo 18B |
 | R6 | stable_closed | ciclo 11 |
 
-## Decisão de fila vigente
+## Decisao de fila vigente
 
 ```
 queue_status:       TODOS_CONDICIONAIS
 next_eligible_item: null
 ```
 
-Qualquer abertura futura ainda exige:
-1. Resolver documentalmente a coerência entre `execution_order` (ciclo 4) e a ausência no ciclo 5
+Qualquer abertura exige:
+1. Resolver documentalmente a coerencia entre execution_order (ciclo 4) e ausencia no ciclo 5
 2. Confirmar escopo dentro da fila autorizada
-3. Novo contrato explícito antes de qualquer análise de item
+3. Novo contrato explicito antes de qualquer analise de item
 
-## Ressalva de integração
+## Restricoes ativas
 
-- Os replies de `19A` e `19B` foram materialmente válidos, mas os wrappers em `coordination/outbox_*` ficaram com `status = processed_error` por resíduo do poller remoto antigo em `relay=false`
-- O poller remoto já foi corrigido para `relay=true`
-- Os artefatos esperados em `cycle19-input/` não estão materializados neste clone e precisam ser sincronizados antes do `20A`
-- O primeiro reply do `019SYNC` indicou limite de uso do CODEX LOCAL antes de 05:00 (`America/Bahia`)
-- O segundo reply do `019SYNC` retornou falsa detecção de prompt injection; retry manual foi reenviado com framing mais explícito do fluxo OpenClaw
-- O terceiro reply do `019SYNC` mostrou que o consumidor local ainda estava recebendo framing incorreto para `CODEX_LOCAL`; `poller-autonomous.ps1` foi corrigido para usar bootstrap e diretório de execução próprios do CODEX LOCAL antes de novo retry
-
-## Restrições ativas
-
-| Restrição | Origem |
+| Restricao | Origem |
 |---|---|
 | session_write_policy = RESSALVA_OPERACIONAL | ciclo 14A |
 | live_crm_authorized = false | herdado |
@@ -66,34 +72,19 @@ Qualquer abertura futura ainda exige:
 | r2_reopen_prohibited = true | ciclo 18B |
 | r6_reopen_prohibited = true | ciclo 11 |
 
-## Cadeia de homologação
-
-| Ciclo | Veredito | Observação |
-|---|---|---|
-| 12A | REJEITADO | 3 defeitos |
-| 12A-S | HOMOLOGADO | versão corrigida |
-| 13A | HOMOLOGADO | com restrição |
-| 14A | HOMOLOGADO | `session_write_policy` ativa |
-| 15A | HOMOLOGADO | |
-| 16A | HOMOLOGADO | |
-| 17A | HOMOLOGADO | `RECONHECER_LIMITE_NATURAL` |
-| 18A | HOMOLOGADO | `ENCERRAR_ITERACAO_ATUAL` |
-| 19A | HOMOLOGADO | `TODOS_CONDICIONAIS` |
-| 19B | CONFIRMADO | revisão documental sem correção |
-
-## Infraestrutura de coordenação
+## Infraestrutura de coordenacao
 
 | Componente | Status |
 |---|---|
-| poller-codex-remoto.py (PC remoto) | ativo em `relay=true` |
-| poller-autonomous.ps1 (PC local) | responsável por `inbox_claude/` e `inbox_codex_local/` |
-| coordination/inbox_claude/ | sem task nova pendente |
-| coordination/inbox_codex_local/ | retry corrigido do `019SYNC` pendente |
-| coordination/outbox_claude/ | contém reply 19B válido com wrapper legado |
-| coordination/outbox_codex_local/ | contém reply 19A válido com wrapper legado e replies 019SYNC tratados |
+| poller-codex-remoto.py (PC remoto) | ativo em relay=true |
+| poller-autonomous.ps1 (PC local) | ativo — Build-Prompt corrigido (sem OPENLAW AUTONOMOUS framing) |
+| CLAUDE.md workspace-integration | criado — contexto neutro para CODEX_LOCAL |
+| coordination/inbox_claude/ | vazio |
+| coordination/inbox_codex_local/ | vazio |
+| cycle19-input/ | commitado e pushado |
 
-## Último commit relevante
+## Ultimo commit relevante
 
 ```
-aa29ce2 — orq: retry manual 019SYNC para codex local
+reconciliacao-019SYNC: cycle19-input commitado + inboxes arquivados + STATE.md atualizado
 ```

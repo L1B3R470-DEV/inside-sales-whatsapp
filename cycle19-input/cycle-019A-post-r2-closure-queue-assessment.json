@@ -1,0 +1,199 @@
+{
+  "cycle_id": "19A",
+  "mode": "post-r2-closure-queue-assessment",
+  "agent": "manual-orchestrated",
+  "generated_at": "2026-04-02T22:52:28Z",
+  "source_precedence": [
+    "cycle-018B-r2-iteration-closure-or-reopen-conditions-review.json",
+    "cycle-005-write-proposals.json",
+    "cycle-004-execution-plan.json",
+    "cycle-003-improvement-plan.json",
+    "cycle-002-crm-snapshot.json"
+  ],
+  "closure_reference": {
+    "r2_status": "ITERACAO_SNAPSHOT_BOUND_ENCERRADA",
+    "r2_closed_by": "cycle-018B",
+    "r6_status": "stable_closed",
+    "r6_closed_by": "cycle-011"
+  },
+  "inherited_constraints": {
+    "session_write_policy": "RESSALVA_OPERACIONAL",
+    "session_write_binding_from": "14A",
+    "conditions": [
+      "Prefer manual-orchestrated documentary production when zero-write cleanliness matters.",
+      "Do not treat session-file side effects as acceptable by default.",
+      "Any future item-specific phase still requires explicit authorization before analysis."
+    ],
+    "live_crm_authorized": false,
+    "sandbox_authorized": false,
+    "write_authorized": false,
+    "r2_reopen_prohibited": true,
+    "r6_reopen_prohibited": true
+  },
+  "queue_assessment": {
+    "r2_excluded": true,
+    "r2_excluded_reason": "ITERACAO_SNAPSHOT_BOUND_ENCERRADA pelo ciclo 18B",
+    "r6_excluded": true,
+    "r6_excluded_reason": "stable_closed pelo ciclo 11",
+    "items_surveyed": [
+      {
+        "rec_id": "R1",
+        "category": "routing",
+        "historical_priority": 1,
+        "historical_execution_order": 6,
+        "historical_application_order": null,
+        "historical_status": {
+          "cycle3": "priority_1",
+          "cycle4": "pending_validation",
+          "cycle5": "not_present_in_write_proposals"
+        },
+        "classification": "ELEGIVEL_COM_CONDICAO",
+        "justification": "O item segue no topo da fila historica, mas no ciclo 4 permaneceu pending_validation e no ciclo 5 nao foi promovido a proposta de escrita. A abertura do item depende de esclarecer essa lacuna documental antes de qualquer analise especifica."
+      },
+      {
+        "rec_id": "R3",
+        "category": "guardrails",
+        "historical_priority": 3,
+        "historical_execution_order": 4,
+        "historical_application_order": null,
+        "historical_status": {
+          "cycle3": "priority_3",
+          "cycle4": "ready_for_execution",
+          "cycle5": "not_present_in_write_proposals"
+        },
+        "classification": "ELEGIVEL_COM_CONDICAO",
+        "justification": "O ciclo 4 o marcou como ready_for_execution, mas o ciclo 5 nao o incluiu entre as propostas preparadas. A divergencia impede trata-lo como proximo item identificado sem condicao documental adicional."
+      },
+      {
+        "rec_id": "R4",
+        "category": "persona",
+        "historical_priority": 4,
+        "historical_execution_order": 5,
+        "historical_application_order": null,
+        "historical_status": {
+          "cycle3": "priority_4",
+          "cycle4": "ready_for_execution",
+          "cycle5": "not_present_in_write_proposals"
+        },
+        "classification": "ELEGIVEL_COM_CONDICAO",
+        "justification": "O ciclo 4 o marcou como ready_for_execution, mas o ciclo 5 nao o incluiu na preparacao de escrita. A fila oficial ainda o preserva, porem sem base limpa para promocao imediata."
+      },
+      {
+        "rec_id": "R5",
+        "category": "fallback",
+        "historical_priority": 5,
+        "historical_execution_order": 3,
+        "historical_application_order": null,
+        "historical_status": {
+          "cycle3": "priority_5",
+          "cycle4": "pending_validation",
+          "cycle5": "not_present_in_write_proposals"
+        },
+        "classification": "ELEGIVEL_COM_CONDICAO",
+        "justification": "Mesmo com risco baixo, o item permaneceu pending_validation no ciclo 4 e foi mantido apenas em observacao no ciclo 5. Isso o deixa remanescente, mas nao pronto para abertura sem condicao."
+      }
+    ],
+    "total_items_surveyed": 4,
+    "total_eligible": 0
+  },
+  "divergence_log": [
+    {
+      "rec_id": "R3",
+      "type": "ready_in_cycle4_but_absent_in_cycle5",
+      "description": "R3 aparece como ready_for_execution no ciclo 4, com execution_order 4, mas nao aparece nas write_proposals do ciclo 5.",
+      "implication": "A fila preserva o item, mas nao permite promovê-lo como proximo identificado sem resolver a lacuna documental."
+    },
+    {
+      "rec_id": "R4",
+      "type": "ready_in_cycle4_but_absent_in_cycle5",
+      "description": "R4 aparece como ready_for_execution no ciclo 4, com execution_order 5, mas nao aparece nas write_proposals do ciclo 5.",
+      "implication": "A fila preserva o item, mas nao permite promovê-lo como proximo identificado sem resolver a lacuna documental."
+    }
+  ],
+  "queue_decision": {
+    "queue_status": "TODOS_CONDICIONAIS",
+    "next_eligible_item": null,
+    "justification": "A fila remanescente continua existente e cobre R1, R3, R4 e R5, mas nenhum desses itens manteve trilha documental suficientemente limpa para ser promovido como proximo item identificado apos o encerramento de R2. R1 e R5 ficaram pending_validation no ciclo 4 e nao foram promovidos no ciclo 5; R3 e R4 tiveram divergencia entre prontidao no ciclo 4 e ausencia nas propostas do ciclo 5. O resultado documental mais defensavel e tratar todos os remanescentes como condicionais nesta rodada.",
+    "opening_requires": [
+      "Resolver documentalmente a coerencia entre prioridade, execution_order e ausencia no ciclo 5 para cada item remanescente.",
+      "Confirmar se o item escolhido continua dentro do escopo autorizado da fila remanescente sem reabrir R2 ou R6.",
+      "Novo contrato explícito antes de qualquer análise do item"
+    ]
+  },
+  "authorization_reset": {
+    "authorization_inheritance": false,
+    "scope_reused": false,
+    "premises_reused": false,
+    "note": "Nenhum item remanescente herda autorização operacional. Esta rodada apenas classifica elegibilidade documental da fila."
+  },
+  "blockers": [],
+  "violations": [],
+  "prohibitions": [
+    "Nao interpretar este payload como autorizacao para analisar o conteudo de qualquer novo item.",
+    "Nao reabrir R2 ou R6 a partir desta avaliacao.",
+    "Nao tratar divergencia documental como equivalencia resolvida sem novo contrato explicito."
+  ],
+  "anomalies": [
+    "cycle-003-improvement-plan.json permanece com caracteres UTF-8 degradados em alguns trechos, sem impedir leitura das prioridades e categorias.",
+    "cycle-005-write-proposals.json preparou apenas R6 e R2, deixando os demais itens remanescentes sem application_order formal."
+  ],
+  "evidence_trace": [
+    {
+      "claim": "R2 esta encerrado e excluido da fila atual.",
+      "source": "cycle-018B-r2-iteration-closure-or-reopen-conditions-review.json",
+      "evidence": "closure_decision.decision = ENCERRAR_ITERACAO_ATUAL e formal_closure registra a iteracao snapshot-bound de R2 como encerrada"
+    },
+    {
+      "claim": "R6 ja estava fora da fila remanescente por fechamento estavel anterior.",
+      "source": "cycle-018B-r2-iteration-closure-or-reopen-conditions-review.json",
+      "evidence": "o payload herda r6_inheritance_prohibited = true e reconhece retorno futuro apenas via novo contrato explicito"
+    },
+    {
+      "claim": "No ciclo 5 apenas R6 e R2 foram promovidos a write_proposals.",
+      "source": "cycle-005-write-proposals.json",
+      "evidence": "write_proposals contem somente R6 e R2"
+    },
+    {
+      "claim": "R1 permaneceu pending_validation no ciclo 4.",
+      "source": "cycle-004-execution-plan.json",
+      "evidence": "execution_candidates R1 status = pending_validation, execution_order = 6"
+    },
+    {
+      "claim": "R3 apareceu como ready_for_execution no ciclo 4.",
+      "source": "cycle-004-execution-plan.json",
+      "evidence": "execution_candidates R3 status = ready_for_execution, execution_order = 4"
+    },
+    {
+      "claim": "R4 apareceu como ready_for_execution no ciclo 4.",
+      "source": "cycle-004-execution-plan.json",
+      "evidence": "execution_candidates R4 status = ready_for_execution, execution_order = 5"
+    },
+    {
+      "claim": "R5 permaneceu pending_validation no ciclo 4.",
+      "source": "cycle-004-execution-plan.json",
+      "evidence": "execution_candidates R5 status = pending_validation, execution_order = 3"
+    },
+    {
+      "claim": "A prioridade historica remanescente apos excluir R2 e R6 preserva R1, R3, R4 e R5 na fila.",
+      "source": "cycle-003-improvement-plan.json",
+      "evidence": "recommendations mostram prioridades: R1=1, R3=3, R4=4, R5=5, enquanto R2=2 e R6=6"
+    },
+    {
+      "claim": "R3 continua CRM-dependent apenas em nivel documental herdado, sem autorizacao live.",
+      "source": "cycle-002-crm-snapshot.json",
+      "evidence": "context_binding.crm_live_not_consulted = true e crm_snapshot_state apresenta somente agregado snapshot-bound"
+    }
+  ],
+  "meta": {
+    "workspace": "C:\\Users\\User\\.openclaw\\workspace-integration",
+    "context_files_read": [
+      "output/cycle-018B-r2-iteration-closure-or-reopen-conditions-review.json",
+      "cycle18-input/cycle-018A-r2-iteration-closure-or-reopen-conditions.json",
+      "output/cycle-005-write-proposals.json",
+      "output/cycle-004-execution-plan.json",
+      "output/cycle-003-improvement-plan.json",
+      "output/cycle-002-crm-snapshot.json"
+    ],
+    "output_file": "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json"
+  }
+}

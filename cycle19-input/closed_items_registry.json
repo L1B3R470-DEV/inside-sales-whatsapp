@@ -1,0 +1,27 @@
+{
+  "cycle": 19,
+  "phase": "closed-items-registry",
+  "generated_at": "2026-04-02T22:44:56Z",
+  "items_excluded_from_current_queue": [
+    {
+      "rec_id": "R6",
+      "status": "stable_closed",
+      "exclusion_basis": "R6 foi o item fechado de forma estavel antes da cadeia de reabertura de R2 e nao retorna para a fila atual.",
+      "documentary_sources": [
+        "cycle-011-stability-report.json",
+        "cycle-012B-next-item-reopen-decision.json"
+      ]
+    },
+    {
+      "rec_id": "R2",
+      "status": "iteration_closed",
+      "exclusion_basis": "A iteracao snapshot-bound de R2 foi formalmente encerrada e o item foi explicitamente excluido da fila do ciclo 19.",
+      "documentary_sources": [
+        "cycle-017B-r2-snapshot-scope-decision-review.json",
+        "cycle-018A-r2-iteration-closure-or-reopen-conditions.json",
+        "cycle-018B-r2-iteration-closure-or-reopen-conditions-review.json"
+      ]
+    }
+  ],
+  "registry_note": "Este registro documenta apenas os itens fora da fila atual. Ele nao promove nenhum item remanescente como proximo elegivel."
+}

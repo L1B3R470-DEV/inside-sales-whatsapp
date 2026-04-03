@@ -1,0 +1,96 @@
+{
+  "cycle": 19,
+  "phase": "queue-source-map",
+  "generated_at": "2026-04-02T22:44:56Z",
+  "items": [
+    {
+      "rec_id": "R1",
+      "title": "Reduzir o desalinhamento entre cache ativo e uso efetivo na decisao de rota",
+      "cycle3": {
+        "priority": 1,
+        "category": "routing",
+        "implementation_risk": "medium",
+        "validation_required": true
+      },
+      "cycle4": {
+        "execution_order": 6,
+        "status": "pending_validation",
+        "eligible_for_execution": true,
+        "risk_level": "medium"
+      },
+      "cycle5": {
+        "application_order": null,
+        "status": "not_present_in_write_proposals",
+        "note": "cycle 5 preparou apenas R6 e R2 como propostas ready"
+      },
+      "cross_source_note": "O maior ranking no ciclo 3 nao se converteu em prontidao de escrita no ciclo 5."
+    },
+    {
+      "rec_id": "R3",
+      "title": "Reavaliar o volume de contatos ignorados em relacao ao perfil atual da operacao",
+      "cycle3": {
+        "priority": 3,
+        "category": "guardrails",
+        "implementation_risk": "medium",
+        "validation_required": true
+      },
+      "cycle4": {
+        "execution_order": 4,
+        "status": "ready_for_execution",
+        "eligible_for_execution": true,
+        "risk_level": "medium"
+      },
+      "cycle5": {
+        "application_order": null,
+        "status": "not_present_in_write_proposals",
+        "note": "apesar de ready_for_execution no ciclo 4, nao entrou na preparacao de escrita do ciclo 5"
+      },
+      "cross_source_note": "Ha divergencia documental entre prontidao tecnica no ciclo 4 e ausencia de proposta no ciclo 5."
+    },
+    {
+      "rec_id": "R4",
+      "title": "Padronizar a consistencia consultiva da persona em respostas de baixa complexidade",
+      "cycle3": {
+        "priority": 4,
+        "category": "persona",
+        "implementation_risk": "medium",
+        "validation_required": true
+      },
+      "cycle4": {
+        "execution_order": 5,
+        "status": "ready_for_execution",
+        "eligible_for_execution": true,
+        "risk_level": "medium"
+      },
+      "cycle5": {
+        "application_order": null,
+        "status": "not_present_in_write_proposals",
+        "note": "apesar de ready_for_execution no ciclo 4, nao entrou na preparacao de escrita do ciclo 5"
+      },
+      "cross_source_note": "Ha divergencia documental entre prontidao tecnica no ciclo 4 e ausencia de proposta no ciclo 5."
+    },
+    {
+      "rec_id": "R5",
+      "title": "Verificar se o fallback preserva utilidade comercial suficiente em mensagens recorrentes",
+      "cycle3": {
+        "priority": 5,
+        "category": "fallback",
+        "implementation_risk": "low",
+        "validation_required": false
+      },
+      "cycle4": {
+        "execution_order": 3,
+        "status": "pending_validation",
+        "eligible_for_execution": true,
+        "risk_level": "low"
+      },
+      "cycle5": {
+        "application_order": null,
+        "status": "not_present_in_write_proposals",
+        "note": "o ciclo 5 mencionou explicitamente R5 apenas como item mantido em observacao"
+      },
+      "cross_source_note": "Mesmo com baixo risco, o item nao foi promovido para proposta de escrita no ciclo 5 por evidencia insuficiente."
+    }
+  ],
+  "map_note": "Este mapa cruza apenas os campos documentados nos ciclos 3, 4 e 5. Ele nao decide elegibilidade nem proximo item do ciclo 19."
+}

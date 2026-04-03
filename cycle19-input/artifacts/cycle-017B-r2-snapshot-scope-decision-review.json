@@ -1,0 +1,256 @@
+{
+  "cycle_id": "17A",
+  "mode": "r2-snapshot-scope-decision",
+  "agent": "manual-orchestrated",
+  "generated_at": "2026-04-02T17:54:28Z",
+  "source_precedence": [
+    "cycle-016A-r2-governance-analytical-reading.json",
+    "cycle-016B-r2-governance-analytical-reading-review.json",
+    "cycle-015B-r2-snapshot-documentary-analysis-review.json",
+    "cycle-015A-r2-snapshot-documentary-analysis.json",
+    "cycle-014B-r2-restriction-resolution-review.json",
+    "cycle-014A-restriction-resolution-classification.json",
+    "cycle-013B-r2-readonly-specification-review.json",
+    "cycle-012B-next-item-reopen-decision.json",
+    "cycle-011-stability-report.json",
+    "cycle-010-real-write-evidence.json",
+    "cycle-005-write-proposals.json",
+    "cycle-004-execution-plan.json",
+    "cycle-003-improvement-plan.json",
+    "cycle-002-crm-snapshot.json"
+  ],
+  "inherited_constraints": {
+    "session_write_policy": "RESSALVA_OPERACIONAL",
+    "session_write_binding_from": "14A",
+    "conditions": [
+      "Prefer manual-orchestrated documentary production when zero-write cleanliness matters.",
+      "Do not treat session-file side effects as acceptable by default.",
+      "If a future phase proposes agent-assisted execution, the contract must state whether ~/.openclaw/agents session writes are tolerated or blocking."
+    ],
+    "crm_scope": "snapshot-bound",
+    "live_crm_authorized": false,
+    "sandbox_authorized": false,
+    "write_authorized": false,
+    "r6_inheritance_prohibited": true,
+    "governance_basis": "cycle-016A homologado como LEITURA_GOVERNANCA_COMPLETA"
+  },
+  "input_governance_reading": {
+    "source_cycle": "16A",
+    "source_file": "cycle-016A-r2-governance-analytical-reading.json",
+    "readiness_inherited": "LEITURA_GOVERNANCA_COMPLETA",
+    "data_basis": "snapshot-only",
+    "structural_patterns_inherited": [
+      {
+        "id": "SP1",
+        "pattern": "qualifying-heavy stage mix",
+        "governance_meaning": "The approved reading should treat the funnel as structurally concentrated in the intermediate qualifying stage within the available snapshot boundary."
+      },
+      {
+        "id": "SP2",
+        "pattern": "replenishment visibility is weaker than qualifying-stage visibility",
+        "governance_meaning": "Governance attention should emphasize whether future approved snapshots preserve enough visibility into inflow of new leads."
+      },
+      {
+        "id": "SP3",
+        "pattern": "single-snapshot evidence base",
+        "governance_meaning": "The current governance reading is structurally bounded and cannot be treated as trend confirmation."
+      },
+      {
+        "id": "SP4",
+        "pattern": "aggregate-only evidence frame",
+        "governance_meaning": "The approved governance scope is valid only as aggregate, non-identifiable, snapshot-bound reading."
+      }
+    ],
+    "governance_observations_inherited": [
+      {
+        "id": "GO1",
+        "observation": "R2 should be governed as a bounded coverage-watch item, not as a live operational diagnosis."
+      },
+      {
+        "id": "GO2",
+        "observation": "The main governance concern is preserving visibility of aggregate movement between new and qualifying in future approved snapshots."
+      },
+      {
+        "id": "GO3",
+        "observation": "A single approved snapshot is sufficient for governance signaling, but insufficient for governance certainty about directionality."
+      },
+      {
+        "id": "GO4",
+        "observation": "The governance layer must continue to separate snapshot evidence from any claim about current CRM or current operational performance."
+      }
+    ],
+    "open_questions_inherited": [
+      {
+        "id": "OQ1",
+        "question": "Is the observed concentration in qualifying stable, improving, or worsening across time?"
+      },
+      {
+        "id": "OQ2",
+        "question": "Is low representation of new leads seasonal, structural, or incidental?"
+      },
+      {
+        "id": "OQ3",
+        "question": "Can any future approved chain anchor a live CRM surface without ambiguity?"
+      },
+      {
+        "id": "OQ4",
+        "question": "Could a future agent-assisted phase ever be tolerated under the session-write caveat without violating zero-write-sensitive rules?"
+      }
+    ],
+    "open_questions_status": "abertos e não autorizados — permanecem como fronteira"
+  },
+  "scope_decision": {
+    "decision": "RECONHECER_LIMITE_NATURAL",
+    "justification": "The homologated governance reading delivers a useful and bounded interpretation of the snapshot evidence, but GO3 and GO4, together with OQ1–OQ4, show that the snapshot-only scope has reached its natural limit for further documentary expansion without either repeating the same recommendation at a higher level of abstraction or implying certainty that the approved chain does not support. The chain already delivered reopened eligibility, read-only specification, restriction resolution, snapshot documentary analysis, and governance reading. A further step should therefore recognize the limit rather than force a new recommendation.",
+    "basis": [
+      "GO1 and GO2 already delivered the bounded governance usefulness of R2 as a coverage-watch item with aggregate monitoring focus.",
+      "GO3 states that one approved snapshot is insufficient for certainty about directionality.",
+      "GO4 prohibits turning snapshot evidence into live CRM or current operational claims.",
+      "OQ1 and OQ2 remain open because the approved chain does not establish trend or causality.",
+      "OQ3 and OQ4 remain open because live CRM anchoring and session-write tolerance were not resolved by the official chain."
+    ]
+  },
+  "formal_recommendation": null,
+  "scope_limit_recognition": {
+    "recognition_statement": "The approved snapshot-bound scope of R2 has reached its natural documentary limit for now.",
+    "why_limit_is_natural": [
+      "The chain already extracted the aggregate funnel reading that the snapshot can support.",
+      "Further documentary expansion would mostly restate existing monitoring guidance without adding new approved evidence.",
+      "The unresolved open questions depend on evidence types that remain outside the authorized snapshot-bound scope."
+    ],
+    "what_was_delivered": [
+      "12A-S and 12B formally reopened R2 after the stable closure of R6 under a preserved post-R6 baseline.",
+      "13A and 13B defined R2 as documentary, read-only, analytical, and monitoring-oriented, while preserving aggregate and no-PII limits.",
+      "14A and 14B resolved the CRM-anchor ambiguity in the negative by confirming cycle-002 as snapshot-only evidence and preserving session_write_policy as RESSALVA_OPERACIONAL.",
+      "15A and 15B produced and homologated the concrete snapshot-bound documentary findings for R2, including total leads, stage distribution, concentration hypothesis, coverage gaps, monitoring recommendations, and snapshot limitations.",
+      "16A and 16B transformed those findings into a governance reading through GO1–GO4, open questions OQ1–OQ4, and a documentary monitoring framework, while preserving the post-R6 baseline and inherited restrictions."
+    ],
+    "remaining_boundary": [
+      "No live CRM claim is authorized.",
+      "No trend certainty is authorized from the single approved snapshot.",
+      "No open question is resolved or turned into permission.",
+      "No sandbox, write, patch, SQL, DDL, DML, or production action is authorized."
+    ]
+  },
+  "post_r6_baseline_verification": {
+    "status": "preserved",
+    "evidence_source": "cycle-011-stability-report.json e cycle-010-real-write-evidence.json",
+    "no_r6_artifact_touched": true
+  },
+  "readiness_classification": "DECISAO_DOCUMENTAL_COMPLETA",
+  "readiness_justification": "The official chain is sufficient to make a complete scope decision because the governance basis from 16A/16B is already fully homologated, the snapshot-only evidence boundary is explicit, and the unresolved questions are clearly identified as boundaries rather than missing formatting. The decision is complete as a documentary scope decision and does not authorize any operational next step.",
+  "authorization_reset": {
+    "authorization_inheritance": false,
+    "scope_reused": false,
+    "premises_reused": false,
+    "note": "No authorization, scope, or operative premise is inherited from R6 or from any previous cycle. This cycle only materializes a documentary scope decision from already homologated governance reading."
+  },
+  "blockers": [],
+  "violations": [],
+  "prohibitions": [
+    "Do not interpret this decision as authorization for live CRM, sandbox, write, patch, SQL, DDL, DML, or production action.",
+    "Do not treat open questions as resolved or as implicit permission.",
+    "Do not reinterpret the preserved post-R6 baseline as operational scope for R2."
+  ],
+  "anomalies": [
+    "cycle-011-stability-report.json remains an approved textual report stored under .json extension.",
+    "cycle-003-improvement-plan.json requires utf-8-sig decoding because the approved file includes UTF-8 BOM."
+  ],
+  "evidence_trace": [
+    {
+      "claim": "The governance basis inherited by this decision is complete and homologated.",
+      "source": "cycle-016B-r2-governance-analytical-reading-review.json",
+      "evidence": "cycle 16A was materialized and approved as LEITURA_GOVERNANCA_COMPLETA in the review chain"
+    },
+    {
+      "claim": "GO1–GO4 provide a useful but bounded governance reading.",
+      "source": "cycle-016A-r2-governance-analytical-reading.json",
+      "evidence": "governance_observations GO1–GO4 and structural_patterns SP1–SP4"
+    },
+    {
+      "claim": "OQ1–OQ4 remain open and define the current analytical frontier.",
+      "source": "cycle-016A-r2-governance-analytical-reading.json",
+      "evidence": "open_questions OQ1–OQ4 are present and reason_open states unresolved trend, causality, live CRM, and session-write tolerance"
+    },
+    {
+      "claim": "The underlying documentary findings are snapshot-only and already complete for aggregate funnel reading.",
+      "source": "cycle-015B-r2-snapshot-documentary-analysis-review.json",
+      "evidence": "ANALISE_DOCUMENTAL_COMPLETA with total leads, stage distribution, concentration hypothesis, coverage gaps, monitoring recommendations, and snapshot limitations"
+    },
+    {
+      "claim": "The original snapshot findings remain aggregate and bounded.",
+      "source": "cycle-015A-r2-snapshot-documentary-analysis.json",
+      "evidence": "snapshot_limitations prohibit live-state, trend certainty, row-level interpretation, and live CRM claims"
+    },
+    {
+      "claim": "The CRM anchor remains snapshot-only and not live.",
+      "source": "cycle-014B-r2-restriction-resolution-review.json",
+      "evidence": "cycle002_assessment.anchors_crm_live_surface = false and status_in_official_chain declares snapshot-only evidence"
+    },
+    {
+      "claim": "Session-file side effects remain a caveat and not an accepted default.",
+      "source": "cycle-014A-restriction-resolution-classification.json",
+      "evidence": "session_write_decision.decision = RESSALVA_OPERACIONAL and conditions require explicit tolerance if ever proposed"
+    },
+    {
+      "claim": "R2 remains a documentary, read-only, analytical, and monitoring-oriented item.",
+      "source": "cycle-013B-r2-readonly-specification-review.json",
+      "evidence": "r2_scope.nature and post_r6_constraints keep R2 documentary, aggregate, no-PII, and no-write"
+    },
+    {
+      "claim": "R2 remains compatible with the preserved post-R6 baseline.",
+      "source": "cycle-012B-next-item-reopen-decision.json",
+      "evidence": "next_eligible_item = R2 and post_r6_compatibility.status = compatible"
+    },
+    {
+      "claim": "The preserved baseline stayed isolated and no write occurred in the approved stability chain.",
+      "source": "cycle-011-stability-report.json",
+      "evidence": "report states nenhuma escrita ocorreu = sim, .mcp.json permaneceu intocado = sim, bridge local permaneceu intocada = sim, produção continua isolada = sim"
+    },
+    {
+      "claim": "No R6 artifact was reopened and the protected write artifact remained structurally stable.",
+      "source": "cycle-010-real-write-evidence.json",
+      "evidence": "verification.table_empty_confirmed = true, verification.schema_identical = true, verification.no_other_tables_altered = true"
+    },
+    {
+      "claim": "The historical R2 framing was always aggregate analysis-and-monitoring rather than production change.",
+      "source": "cycle-005-write-proposals.json",
+      "evidence": "write_scope.change_summary and validation_plan use aggregate stage comparison without identifiable data"
+    },
+    {
+      "claim": "The historical execution framing kept R2 low-risk and dependent on approved snapshot metrics.",
+      "source": "cycle-004-execution-plan.json",
+      "evidence": "technical_spec.change_type = analysis-and-monitoring and dependencies include approved CRM snapshot and aggregated stage metrics"
+    },
+    {
+      "claim": "The historical motivation for R2 was concentration in the intermediate funnel stage.",
+      "source": "cycle-003-improvement-plan.json",
+      "evidence": "diagnosis.crm_coverage summary and key_metric describe aggregate concentration in qualifying"
+    },
+    {
+      "claim": "The concrete evidence base remains the approved snapshot with 12 total leads and a 3-versus-9 stage split.",
+      "source": "cycle-002-crm-snapshot.json",
+      "evidence": "crm_snapshot_state.total_leads = 12 and crm_snapshot_state.leads_by_status = {novo: 3, qualificando: 9}"
+    }
+  ],
+  "meta": {
+    "workspace": "C:\\Users\\User\\.openclaw\\workspace-integration",
+    "context_files_read": [
+      "cycle16-input/cycle-016A-r2-governance-analytical-reading.json",
+      "output/cycle-016B-r2-governance-analytical-reading-review.json",
+      "output/cycle-015B-r2-snapshot-documentary-analysis-review.json",
+      "cycle15-input/cycle-015A-r2-snapshot-documentary-analysis.json",
+      "output/cycle-014B-r2-restriction-resolution-review.json",
+      "cycle14-input/cycle-014A-restriction-resolution-classification.json",
+      "output/cycle-013B-r2-readonly-specification-review.json",
+      "output/cycle-012B-next-item-reopen-decision.json",
+      "output/cycle-011-stability-report.json",
+      "output/cycle-010-real-write-evidence.json",
+      "output/cycle-005-write-proposals.json",
+      "output/cycle-004-execution-plan.json",
+      "output/cycle-003-improvement-plan.json",
+      "output/cycle-002-crm-snapshot.json"
+    ],
+    "output_file": "cycle17-input/cycle-017A-r2-snapshot-scope-decision.json"
+  }
+}

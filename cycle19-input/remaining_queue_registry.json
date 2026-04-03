@@ -1,0 +1,50 @@
+{
+  "cycle": 19,
+  "phase": "remaining-queue-registry",
+  "generated_at": "2026-04-02T22:44:56Z",
+  "queue_basis": "remanescente oficial herdado de cycle-003, cycle-004 e cycle-005, excluindo R2 e R6",
+  "remaining_items": [
+    {
+      "rec_id": "R1",
+      "title": "Reduzir o desalinhamento entre cache ativo e uso efetivo na decisao de rota",
+      "category": "routing",
+      "cycle3_priority": 1,
+      "cycle4_execution_order": 6,
+      "cycle4_status": "pending_validation",
+      "cycle5_status": "not_present_in_write_proposals",
+      "documentary_note": "Permanece na fila historica, mas sem classificacao antecipada de elegibilidade no ciclo 19."
+    },
+    {
+      "rec_id": "R3",
+      "title": "Reavaliar o volume de contatos ignorados em relacao ao perfil atual da operacao",
+      "category": "guardrails",
+      "cycle3_priority": 3,
+      "cycle4_execution_order": 4,
+      "cycle4_status": "ready_for_execution",
+      "cycle5_status": "not_present_in_write_proposals",
+      "documentary_note": "Permanece na fila historica, mas sem classificacao antecipada de elegibilidade no ciclo 19."
+    },
+    {
+      "rec_id": "R4",
+      "title": "Padronizar a consistencia consultiva da persona em respostas de baixa complexidade",
+      "category": "persona",
+      "cycle3_priority": 4,
+      "cycle4_execution_order": 5,
+      "cycle4_status": "ready_for_execution",
+      "cycle5_status": "not_present_in_write_proposals",
+      "documentary_note": "Permanece na fila historica, mas sem classificacao antecipada de elegibilidade no ciclo 19."
+    },
+    {
+      "rec_id": "R5",
+      "title": "Verificar se o fallback preserva utilidade comercial suficiente em mensagens recorrentes",
+      "category": "fallback",
+      "cycle3_priority": 5,
+      "cycle4_execution_order": 3,
+      "cycle4_status": "pending_validation",
+      "cycle5_status": "not_present_in_write_proposals",
+      "documentary_note": "Permanece na fila historica, mas sem classificacao antecipada de elegibilidade no ciclo 19."
+    }
+  ],
+  "ordering_note": "A lista preserva a ordem de prioridade remanescente herdada do ciclo 3, sem inferir proximo item.",
+  "eligibility_note": "A elegibilidade documental dos itens remanescentes sera tratada apenas no 19A."
+}

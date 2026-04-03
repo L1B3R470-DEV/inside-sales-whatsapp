@@ -1,0 +1,40 @@
+{
+  "cycle": 19,
+  "phase": "scope-draft",
+  "generated_at": "2026-04-02T22:44:56Z",
+  "objective": "Determinar documentalmente quais itens remanescentes ainda existem na fila oficial, quais podem ser elegiveis agora, quais permanecem condicionais e se a fila esta esgotada dentro do escopo atual, sempre excluindo R2 e R6.",
+  "inputs": [
+    "cycle-018B-r2-iteration-closure-or-reopen-conditions-review.json",
+    "cycle-018A-r2-iteration-closure-or-reopen-conditions.json",
+    "cycle-017B-r2-snapshot-scope-decision-review.json",
+    "cycle-017A-r2-snapshot-scope-decision.json",
+    "cycle-016B-r2-governance-analytical-reading-review.json",
+    "cycle-016A-r2-governance-analytical-reading.json",
+    "cycle-015B-r2-snapshot-documentary-analysis-review.json",
+    "cycle-015A-r2-snapshot-documentary-analysis.json",
+    "cycle-014B-r2-restriction-resolution-review.json",
+    "cycle-014A-restriction-resolution-classification.json",
+    "cycle-005-write-proposals.json",
+    "cycle-004-execution-plan.json",
+    "cycle-003-improvement-plan.json",
+    "cycle-002-crm-snapshot.json"
+  ],
+  "non_goals": [
+    "Nao iniciar analise de conteudo de novo item.",
+    "Nao reabrir R2 nem R6.",
+    "Nao inferir permissao operacional, sandbox, escrita ou CRM live.",
+    "Nao antecipar classificacao de elegibilidade quando houver divergencia documental."
+  ],
+  "expected_focus_for_19A": [
+    "identificar a fila remanescente oficial apos excluir R2 e R6",
+    "avaliar coerencia entre prioridade, execution_order, application_order e status nas fontes 3, 4 e 5",
+    "separar itens documentalmente elegiveis, condicionais ou indeterminados",
+    "declarar se a fila esta esgotada neste escopo sem inventar certeza"
+  ],
+  "guardrails": [
+    "Manual-orchestrated only.",
+    "No runner stateful.",
+    "No project-real write, no production touch, no .mcp.json touch, no bridge touch.",
+    "Any divergence between cycles 3, 4 and 5 must be recorded, not smoothed over."
+  ]
+}
