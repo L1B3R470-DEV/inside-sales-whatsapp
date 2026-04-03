@@ -20,7 +20,7 @@ echo.
 echo [2/2] Iniciando poller (Ctrl+C para parar)...
 echo.
 
-python "%~dp0poller-codex-remoto.py" --relay false --repo-dir "%~dp0" --interval 60
+python "%~dp0poller-codex-remoto.py" --relay false --repo-dir "." --interval 60
 
 echo.
 echo Poller encerrado com codigo: %ERRORLEVEL%
