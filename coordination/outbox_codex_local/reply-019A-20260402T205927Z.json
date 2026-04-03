@@ -1,9 +1,9 @@
 ﻿{
-    "reply_id":  "reply-019A-20260402T205927Z",
-    "source_task_id":  "task-019A-20260402T232410Z",
-    "actor":  "codex_local",
-    "cycle":  "019A",
-    "output":  "ERRO: O termo \u0027claude\u0027 não é reconhecido como nome de cmdlet, função, arquivo de script ou programa operável. Verifique a grafia do nome ou, se um caminho tiver sido incluído, veja se o caminho está correto e tente novamente.",
-    "status":  "BLOCKED",
-    "produced_at":  "2026-04-02T20:59:27.2683283-03:00"
+  "reply_id": "reply-019A-20260402T205927Z",
+  "source_task_id": "task-019A-20260402T232410Z",
+  "actor": "codex_local",
+  "cycle": "019A",
+  "output": "ERRO: O termo 'claude' não é reconhecido como nome de cmdlet, função, arquivo de script ou programa operável. Verifique a grafia do nome ou, se um caminho tiver sido incluído, veja se o caminho está correto e tente novamente.",
+  "status": "processed_blocked",
+  "produced_at": "2026-04-02T20:59:27.2683283-03:00"
 }
