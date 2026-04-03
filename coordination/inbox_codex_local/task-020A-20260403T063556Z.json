@@ -1,0 +1,22 @@
+{
+  "task_id": "task-020A-20260403T063556Z",
+  "target_actor": "codex_local",
+  "cycle": "020A",
+  "instruction": "Voce esta autorizado a executar UMA tentativa unica do ciclo 020A, em modo MANUAL/ORQUESTRADO, estritamente documental, read-only, sem runner stateful e sem analise de conteudo do item. O ciclo 19 encerrou com queue_status = TODOS_CONDICIONAIS e next_eligible_item = null. Sua missao e produzir o payload oficial do 020A para decidir, de forma administrativa/documental, se existe UMA prioridade condicional defensavel para orientar o proximo contrato de abertura de item, ou se a fila deve permanecer sem prioridade segura nesta rodada. Nao abra item. Nao reabra R2. Nao reabra R6. Nao execute live CRM. Nao use sandbox. Nao escreva fora do payload final. Fontes oficiais obrigatorias: cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json; cycle19-input/remaining_queue_registry.json; cycle19-input/queue_source_map.json; output/cycle-005-write-proposals.json; output/cycle-004-execution-plan.json; output/cycle-003-improvement-plan.json; output/cycle-002-crm-snapshot.json apenas se necessario; STATE.md apenas para coerencia de fase, nao como fonte de decisao. Arquivo a criar: cycle20-input/cycle-020A-conditional-queue-prioritization.json. O JSON deve ser parseavel e conter, no minimo: cycle_id=020A; mode=conditional-queue-prioritization; agent=manual-orchestrated; generated_at; source_precedence; closure_reference com R2/R6 fechados; inherited_constraints com write/live/sandbox=false e r2/r6 reopen prohibited=true; queue_input herdando queue_status=TODOS_CONDICIONAIS, next_eligible_item=null, items R1/R3/R4/R5 e suas classificacoes condicionais; prioritization_decision com decision = PRIORIZAR_CONDICAO ou MANTER_SEM_PRIORIDADE, selected_focus = R1|R3|R4|R5|null, selected_condition_family, justification e basis; priority_assessment cobrindo R1, R3, R4 e R5 sem omissoes, com documentary_strength, blocking_condition e rationale; next_cycle_contract_basis com opening_goal, required_sources, non_goals e authorization_status='nao autorizado neste ciclo'; authorization_reset com todos os flags false; blockers; violations=[]; prohibitions; anomalies; evidence_trace; meta.output_file. Readiness_classification so pode ser: PRIORIDADE_CONDICIONAL_DEFINIDA, FILA_CONDICIONAL_SEM_PRIORIDADE ou DECISAO_INCONCLUSIVA. Regra central: se a base documental nao permitir priorizar uma unica condicao de forma defensavel, prefira MANTER_SEM_PRIORIDADE e FILA_CONDICIONAL_SEM_PRIORIDADE. Divergencias de R3/R4 entre ciclo 4 e ciclo 5 devem permanecer explicitas, sem suavizacao. O payload nao pode conter analise de conteudo de item, SQL, DDL, DML, live CRM, escrita, patch, PII nem qualquer autorizacao implicita. Ao final, responda no formato: INICIO DO RELATORIO / STATUS GERAL / PRODUCAO DO 020A / VALIDACAO DO PAYLOAD / DECISAO DE PRIORIZACAO / ISOLAMENTO PRESERVADO / CONCLUSAO / ARTEFATOS / FIM DO RELATORIO. Campos minimos no relatorio: concluido, risco_operacional_atual, metodo_manual_orquestrado_usado, runner_embutido_nao_utilizado, fontes_oficiais_completas_usadas, payload_criado, caminho, json_parseavel, cycle_id=020A, queue_input_preenchido, prioritization_decision_preenchido, priority_assessment_cobriu_todos_os_itens, authorization_inheritance=false, scope_reused=false, premises_reused=false, generated_at_coerente, evidence_trace_presente, nenhuma_PII_detectada, decision, selected_focus, readiness_classification, priorizacao_suficientemente_ancorada, nenhuma_analise_de_conteudo_de_item, nenhuma_escrita_fora_do_payload, .mcp.json_intocado, bridge_local_intocada, producao_isolada, pronto_para_revisao, maior_risco_observado, pronto_para_discutir_020B, fontes_consultadas, payload_criado, configs_alteradas. Red lines absolutas: no_production_write, no_bridge_write, no_mcp_json_write, no_r2_reopen, no_r6_reopen.",
+  "context_files": [
+    "STATE.md",
+    "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json",
+    "cycle19-input/remaining_queue_registry.json",
+    "cycle19-input/queue_source_map.json"
+  ],
+  "output_path": "coordination/outbox_codex_local/reply-020A-20260403T063556Z.json",
+  "red_lines": [
+    "no_production_write",
+    "no_bridge_write",
+    "no_mcp_json_write",
+    "no_r2_reopen",
+    "no_r6_reopen"
+  ],
+  "status": "pending",
+  "created_at": "2026-04-03T06:35:56Z"
+}

@@ -7,10 +7,10 @@
 | Campo | Valor |
 |---|---|
 | Ciclo ativo | 20 |
-| Fase em andamento | aguardando task 020A do Codex Remoto |
-| Próxima etapa | Codex Remoto emite task de abertura do proximo item da fila (contrato explicito) |
+| Fase em andamento | 020A autorizado — aguardando payload do CODEX LOCAL |
+| Próxima etapa | CODEX LOCAL produz avaliacao documental de priorizacao da fila condicional |
 | Status inbox_claude | vazio (task-019B arquivada) |
-| Status inbox_codex_local | vazio (todos os 019SYNC arquivados) |
+| Status inbox_codex_local | task-020A pendente |
 
 ## Resultado consolidado do ciclo 19
 
