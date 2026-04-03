@@ -1,0 +1,21 @@
+﻿{
+    "task_id":  "task-019SYNC-v2-20260403",
+    "target_actor":  "codex_local",
+    "cycle":  "019SYNC",
+    "instruction":  "Verificar e materializar artefatos faltantes do ciclo 19 em cycle19-input/. Os arquivos que devem existir: artifact_index.json, closed_items_registry.json, remaining_queue_registry.json, queue_source_map.json, cycle19_scope_draft.json, cycle-019A-post-r2-closure-queue-assessment.json. Para cada arquivo: verificar se existe, e se nao existir, reconstituir fielmente a partir dos outputs/ disponiveis. Nao alterar queue_status (permanece TODOS_CONDICIONAIS) nem next_eligible_item (permanece null). Nao reabrir R2 nem R6. Trabalhar somente dentro de workspace-integration/. Escrever reply em coordination/outbox_codex_local/reply-019SYNC-v2-20260403.json com relatorio: quais arquivos existiam, quais foram criados, confirmacao de isolamento.",
+    "context_files":  [
+                          "output/cycle-018B-r2-iteration-closure-or-reopen-conditions-review.json",
+                          "output/cycle-005-write-proposals.json",
+                          "output/cycle-004-execution-plan.json",
+                          "STATE.md",
+                          "BOOTSTRAP_LOCAL_v2.md"
+                      ],
+    "output_path":  "coordination/outbox_codex_local/reply-019SYNC-v2-20260403.json",
+    "red_lines":  [
+                      "no_production_write",
+                      "no_bridge_write",
+                      "no_mcp_json_write"
+                  ],
+    "status":  "accepted",
+    "created_at":  "2026-04-03T09:10:00Z"
+}
