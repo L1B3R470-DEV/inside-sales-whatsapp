@@ -1,0 +1,102 @@
+================================================================================
+PROMPT — COLAR NO CLAUDE PARA CORRIGIR O CODEX WINDOWS (WSL NATIVO)
+================================================================================
+
+Preciso que você corrija o app Codex (Windows Store) para rodar em modo WSL-nativo.
+Execute tudo sem pedir confirmação e reporte o resultado.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CONTEXTO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+O Codex tem dois arquivos de configuração que controlam o modo WSL-nativo:
+
+1. %USERPROFILE%\.codex\config.toml
+   Chave: windows_wsl_setup_acknowledged = true
+
+2. %USERPROFILE%\.codex\.codex-global-state.json
+   Chave (dentro de "electron-persisted-atom-state"):
+   "runCodexInWindowsSubsystemForLinux": true
+
+   ← ESTA é a chave principal. Se estiver false ou ausente, o Codex roda em
+     modo Windows puro, sem acesso nativo ao WSL.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PASSOS QUE VOCÊ DEVE EXECUTAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PASSO 1 — Verificar WSL
+  wsl.exe -l -v
+  → Deve mostrar Ubuntu (ou outra distro) em estado Running.
+  → Se não tiver distro: wsl --install -d Ubuntu
+  → Se WSL falhar com E_ACCESSDENIED: net stop LxssManager && net start LxssManager
+
+PASSO 2 — Ler os arquivos atuais
+  Get-Content "$env:USERPROFILE\.codex\config.toml"
+  Get-Content "$env:USERPROFILE\.codex\.codex-global-state.json" |
+    ConvertFrom-Json | Select-Object -ExpandProperty 'electron-persisted-atom-state' |
+    Select-Object runCodexInWindowsSubsystemForLinux
+
+PASSO 3 — Corrigir config.toml
+  Garantir que o arquivo contenha:
+    windows_wsl_setup_acknowledged = true
+  Se estiver false, trocar para true.
+  Se não existir a linha, adicionar.
+
+PASSO 4 — Corrigir .codex-global-state.json  ← CRÍTICO
+  Fazer backup antes de editar.
+  Setar "runCodexInWindowsSubsystemForLinux": true dentro de
+  "electron-persisted-atom-state".
+  Usar substituição de string no JSON raw (não ConvertTo-Json, pois ele
+  reformata e pode corromper campos desconhecidos).
+
+  Exemplo PowerShell seguro:
+    $f = "$env:USERPROFILE\.codex\.codex-global-state.json"
+    Copy-Item $f "$f.bak"
+    $raw = Get-Content $f -Raw
+    $raw = $raw -replace '"runCodexInWindowsSubsystemForLinux"\s*:\s*false',
+                         '"runCodexInWindowsSubsystemForLinux":true'
+    $raw | Out-File $f -Encoding utf8 -NoNewline
+
+  Se a chave não existir no arquivo (primeira vez):
+    $raw = $raw -replace '("electron-persisted-atom-state"\s*:\s*\{)',
+                         '$1"runCodexInWindowsSubsystemForLinux":true,'
+    $raw | Out-File $f -Encoding utf8 -NoNewline
+
+PASSO 5 — Verificar binário Linux
+  Test-Path "$env:USERPROFILE\.codex\bin\wsl\codex"
+  → Se não existir: o Codex vai baixar automaticamente ao iniciar em modo WSL.
+    Sem ação necessária.
+
+PASSO 6 — Confirmar e reportar
+  Exibir o valor final de runCodexInWindowsSubsystemForLinux e
+  windows_wsl_setup_acknowledged.
+  Informar se é necessário reiniciar o Codex.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+RESULTADO ESPERADO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+config.toml:
+  windows_wsl_setup_acknowledged = true  ✓
+
+.codex-global-state.json:
+  "runCodexInWindowsSubsystemForLinux": true  ✓
+
+WSL:
+  Ubuntu Running (WSL 2)  ✓
+
+Após confirmar, fechar e reabrir o Codex. Ele deve iniciar usando o binário
+Linux nativo em ~/.codex/bin/wsl/codex via wsl.exe.
+
+================================================================================
+ALTERNATIVA: SCRIPT POWERSHELL AUTOMÁTICO
+================================================================================
+
+Se preferir rodar um script que faz tudo automaticamente, execute no PowerShell:
+
+  powershell -ExecutionPolicy Bypass -File fix-codex-wsl-native.ps1
+
+(O script fix-codex-wsl-native.ps1 já está disponível no repositório do projeto)
+
+================================================================================
