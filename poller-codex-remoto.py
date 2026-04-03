@@ -132,7 +132,7 @@ Após escrever o arquivo JSON do próximo task, faça commit e push:
   git push origin master
 """.strip()
 
-def invoke_claude(prompt: str, prompt_file: Path, repo: Path) -> tuple[bool, str]:
+def invoke_claude(prompt: str, prompt_file: Path, repo: Path, claude_path: str = "claude") -> tuple[bool, str]:
     """
     Aciona Claude Code CLI em modo não-interativo.
     Retorna (sucesso, output).
@@ -142,7 +142,7 @@ def invoke_claude(prompt: str, prompt_file: Path, repo: Path) -> tuple[bool, str
 
     try:
         result = subprocess.run(
-            ["claude", "-p", prompt],
+            [claude_path, "-p", prompt],
             capture_output=True, text=True, timeout=600,
             cwd=str(repo)
         )
@@ -168,6 +168,7 @@ def process_reply(
     processed: set,
     state_md: str,
     bootstrap_md: str,
+    claude_path: str = "claude",
 ) -> bool:
     try:
         data = json.loads(reply_file.read_text(encoding="utf-8-sig"))
@@ -201,7 +202,7 @@ def process_reply(
     prompt = build_analysis_prompt(data, state_md, bootstrap_md)
 
     # Acionar Claude CLI como CODEX REMOTO
-    success, claude_output = invoke_claude(prompt, prompt_file, repo)
+    success, claude_output = invoke_claude(prompt, prompt_file, repo, claude_path)
 
     if not success or "BLOCKED" in claude_output or "ERRO" in claude_output:
         log.error(f"Claude CLI falhou para {reply_id}: {claude_output[:200]}")
@@ -227,6 +228,7 @@ def main():
     parser = argparse.ArgumentParser(description="Poller CODEX REMOTO — OpenClaw")
     parser.add_argument("--interval", type=int, default=60, help="Intervalo de polling em segundos (default: 60)")
     parser.add_argument("--repo-dir", type=str, default=str(DEFAULT_REPO_DIR), help="Caminho local do repositório clonado")
+    parser.add_argument("--claude-path", type=str, default="claude", help="Caminho completo do claude CLI (default: claude)")
     args = parser.parse_args()
 
     repo = Path(args.repo_dir)
@@ -244,6 +246,7 @@ def main():
     log.info(f"Branch:   {REMOTE_BRANCH}")
     log.info("=" * 60)
 
+    claude_path = args.claude_path
     processed = load_processed(repo / PROCESSED_FILE)
 
     while True:
@@ -265,13 +268,13 @@ def main():
             outbox_claude = coord / OUTBOX_CLAUDE
             if outbox_claude.exists():
                 for f in sorted(outbox_claude.glob("*.json")):
-                    process_reply(f, repo, processed, state_md, bootstrap_md)
+                    process_reply(f, repo, processed, state_md, bootstrap_md, claude_path)
 
             # Checar outbox_codex_local
             outbox_codex = coord / OUTBOX_CODEX_LOCAL
             if outbox_codex.exists():
                 for f in sorted(outbox_codex.glob("*.json")):
-                    process_reply(f, repo, processed, state_md, bootstrap_md)
+                    process_reply(f, repo, processed, state_md, bootstrap_md, claude_path)
 
         except KeyboardInterrupt:
             log.info("Encerrado pelo usuário.")
