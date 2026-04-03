@@ -5,7 +5,7 @@ cd /d "%~dp0"
 echo.
 echo ============================================
 echo  OpenClaw - Poller Codex Remoto
-echo  Modo: AUTONOMO (relay=false)
+echo  Modo: RELAY (relay=true)
 echo  Repo: %~dp0
 echo ============================================
 echo.
@@ -20,8 +20,7 @@ echo.
 echo [2/2] Iniciando poller (Ctrl+C para parar)...
 echo.
 
-python "%~dp0poller-codex-remoto.py" --relay false --repo-dir "." --interval 60 --claude-path "C:\Users\murdo\AppData\Roaming\npm\claude.cmd"
+python "%~dp0poller-codex-remoto.py" --relay true --repo-dir "." --interval 60
 
 echo.
 echo Poller encerrado com codigo: %ERRORLEVEL%
-pause
