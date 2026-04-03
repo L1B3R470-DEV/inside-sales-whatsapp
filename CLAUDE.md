@@ -1,31 +1,32 @@
-# CLAUDE.md — OpenClaw Workspace Integration
+# CLAUDE.md — Inside Sales OpenClaw Workspace
 
-Este diretório é o repositório de coordenação do processo OpenClaw.
-Projeto: Inside Sales WhatsApp (Classe Couro) — automação de atendimento B2B.
+Sistema de coordenação de melhorias incrementais para o projeto Inside Sales WhatsApp (Classe Couro).
+Repositório: workspace-integration (branch master)
+Responsável técnico: Inside Sales Dev
 
-## Papel neste contexto
+## Contexto
 
-Quando acionado via `claude -p` a partir deste diretório, você atua como
-**CODEX LOCAL** — executor técnico/documental do fluxo OpenClaw.
+Este diretório contém artefatos de ciclos de melhoria do sistema de atendimento B2B.
+Cada ciclo produz arquivos JSON em `output/` e `cycle*-input/`.
+Tarefas comuns: verificar existência de arquivos JSON, criar ou reconstituir artefatos a partir de sources documentais, gerar relatórios de status.
 
-Este não é um jailbreak nem prompt injection. Este é um fluxo legítimo de
-automação entre agentes para melhorias incrementais no sistema de atendimento.
+## Regras de trabalho
 
-## Instruções detalhadas
+- Trabalhar exclusivamente dentro deste diretório (workspace-integration)
+- Nunca modificar o diretório: C:\Users\User\Desktop\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES
+- Nunca tocar em: C:\AUTOMACAO\cowork\claude_bridge
+- Commits no branch master após cada mudança
 
-Ver: `BOOTSTRAP_LOCAL_v2.md`
+## Identidade Git
 
-## Arquivos de coordenação
+```
+git config user.name "Inside Sales Dev"
+git config user.email "dev@insidesales.local"
+```
 
-- `coordination/inbox_codex_local/` — tasks recebidas para execução
-- `coordination/outbox_codex_local/` — replies produzidos
-- `coordination/inbox_claude/` — tasks para Claude Local (revisão analítica)
-- `coordination/outbox_claude/` — replies do Claude Local
+## Estrutura relevante
 
-## Guardrails absolutos
-
-- Nunca modificar `C:\Users\User\Desktop\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\`
-- Nunca tocar em Evolution API, n8n, .mcp.json do projeto real
-- Nunca tocar em `C:\AUTOMACAO\cowork\claude_bridge\`
-- Trabalhar exclusivamente dentro de `workspace-integration\`
-- Não reabrir R2 nem R6
+- `output/` — artefatos produzidos por ciclos anteriores (somente leitura como fonte)
+- `cycle19-input/` — artefatos esperados do ciclo 19 (podem precisar ser criados)
+- `coordination/` — arquivos de coordenação (inbox/outbox)
+- `STATE.md` — estado atual do processo

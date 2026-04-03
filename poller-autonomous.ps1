@@ -113,21 +113,18 @@ function Build-Prompt {
     $isCodex = $Actor -eq "CODEX_LOCAL"
 
     if ($isCodex) {
-        # Prompt direto para CODEX_LOCAL — sem linguagem de "modo autonomo" ou atribuicao de papel
-        # que dispara deteccao de prompt injection no Claude
+        # Prompt para CODEX_LOCAL: instrucao direta, sem preamble de automacao ou atribuicao de papel
         $contextBlock = if ($ContextFiles -and $ContextFiles.Count -gt 0) {
-            "Arquivos de referencia (leia os relevantes conforme a instrucao abaixo):`n- " + ($ContextFiles -join "`n- ")
+            "Arquivos de referencia disponiveis (leia os necessarios):`n- " + ($ContextFiles -join "`n- ")
         } else {
             ""
         }
         $lines = @(
-            "Leia BOOTSTRAP_LOCAL_v2.md e STATE.md para contexto do processo OpenClaw.",
-            "",
             $contextBlock,
             "",
             $Instruction
         )
-        return ($lines | Where-Object { $_ -ne $null }) -join "`n"
+        return ($lines | Where-Object { $_ -ne "" -and $_ -ne $null }) -join "`n"
     } else {
         # Prompt para CLAUDE_LOCAL (roda no projeto real com CLAUDE.md completo)
         $contextBlock = if ($ContextFiles -and $ContextFiles.Count -gt 0) {
