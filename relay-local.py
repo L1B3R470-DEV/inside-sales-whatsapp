@@ -117,12 +117,22 @@ IMPORTANTE:
 """.strip()
 
 def invoke_claude(prompt: str, repo: Path, claude_path: str) -> tuple[bool, str]:
+    import tempfile, os
+    tmp = None
     try:
-        result = subprocess.run(
-            [claude_path, "-p", prompt],
-            capture_output=True, text=True, timeout=600,
-            cwd=str(repo)
-        )
+        # Escreve prompt em arquivo temporário e passa via stdin
+        # Evita limite de 8191 chars da linha de comando do Windows
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt",
+                                         delete=False, encoding="utf-8") as f:
+            f.write(prompt)
+            tmp = f.name
+        with open(tmp, "r", encoding="utf-8") as stdin_f:
+            result = subprocess.run(
+                [claude_path, "-p"],
+                stdin=stdin_f,
+                capture_output=True, text=True, timeout=600,
+                cwd=str(repo)
+            )
         if result.returncode == 0:
             log.info("Claude CLI concluiu com sucesso.")
             return True, result.stdout.strip()
@@ -130,14 +140,17 @@ def invoke_claude(prompt: str, repo: Path, claude_path: str) -> tuple[bool, str]
             log.warning(f"Claude CLI erro (code {result.returncode}): {result.stderr[:300]}")
             return False, f"ERRO: {result.stderr[:300]}"
     except FileNotFoundError:
-        log.error("Claude CLI não encontrado. Verifique instalação e PATH.")
-        return False, "BLOCKED: claude CLI não encontrado"
+        log.error("Claude CLI nao encontrado. Verifique instalacao e PATH.")
+        return False, "BLOCKED: claude CLI nao encontrado"
     except subprocess.TimeoutExpired:
         log.error("Claude CLI timeout (>10min).")
         return False, "BLOCKED: timeout"
     except Exception as e:
         log.error(f"Erro ao acionar Claude CLI: {e}")
         return False, f"ERRO: {e}"
+    finally:
+        if tmp and os.path.exists(tmp):
+            os.unlink(tmp)
 
 def process_task(task_file: Path, repo: Path, processed: set, claude_path: str):
     try:
