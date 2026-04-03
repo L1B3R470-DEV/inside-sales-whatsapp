@@ -1,0 +1,10 @@
+{
+  "reply_id": "reply-019B-20260403T033908Z",
+  "source_task_id": "task-019B-20260402T233530Z",
+  "actor": "claude_local",
+  "cycle": "019B",
+  "output": "",
+  "status": "processed_error",
+  "produced_at": "2026-04-03T03:39:08.481967+00:00",
+  "error": "BLOCKED: claude CLI não encontrado"
+}
