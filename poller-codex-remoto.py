@@ -3,13 +3,19 @@
 poller-codex-remoto.py
 Roda na máquina remota (Account B / CODEX REMOTO).
 Monitora o branch master por novos outputs de Claude e CODEX LOCAL.
-Aciona Claude Code CLI como orquestrador autônomo quando há resultado novo.
+
+MODO RELAY (padrão e recomendado):
+  O poller NÃO chama claude -p localmente. Apenas detecta replies em
+  outbox_claude/ e outbox_codex_local/, registra como seen e aguarda
+  o CLAUDE LOCAL (relay-local.py na máquina local) processar via git.
+
+  Use --relay=false APENAS se claude CLI estiver autenticado localmente
+  e você quiser execução autônoma na máquina remota.
 
 Uso:
   python poller-codex-remoto.py
-  python poller-codex-remoto.py --interval 30 --repo-dir /caminho/do/repo
+  python poller-codex-remoto.py --interval 30 --repo-dir /caminho/do/repo --relay true
 
-Instalar como serviço (Linux):  systemctl / pm2 / nohup
 Instalar como tarefa (Windows): Task Scheduler apontando para este script
 """
 
@@ -229,6 +235,7 @@ def main():
     parser.add_argument("--interval", type=int, default=60, help="Intervalo de polling em segundos (default: 60)")
     parser.add_argument("--repo-dir", type=str, default=str(DEFAULT_REPO_DIR), help="Caminho local do repositório clonado")
     parser.add_argument("--claude-path", type=str, default="claude", help="Caminho completo do claude CLI (default: claude)")
+    parser.add_argument("--relay", type=str, default="true", help="Modo relay: não chama claude -p localmente (default: true). Use false para execução autônoma local.")
     args = parser.parse_args()
 
     repo = Path(args.repo_dir)
@@ -247,34 +254,52 @@ def main():
     log.info("=" * 60)
 
     claude_path = args.claude_path
-    processed = load_processed(repo / PROCESSED_FILE)
+    relay_mode  = args.relay.lower() != "false"
+    processed   = load_processed(repo / PROCESSED_FILE)
+
+    if relay_mode:
+        log.info("Modo RELAY ativo — respostas não serão processadas localmente.")
+        log.info("Claude LOCAL (relay-local.py) é responsável por processar inbox_claude/.")
 
     while True:
         try:
             # Pull
             git_pull(repo)
 
-            # Ler STATE.md e BOOTSTRAP_REMOTE.md para contexto
-            state_md = ""
-            bootstrap_md = ""
-            state_path     = repo / "STATE.md"
-            bootstrap_path = repo / "BOOTSTRAP_REMOTE_v2.md"
-            if state_path.exists():
-                state_md = state_path.read_text(encoding="utf-8-sig", errors="replace")
-            if bootstrap_path.exists():
-                bootstrap_md = bootstrap_path.read_text(encoding="utf-8-sig", errors="replace")
+            if relay_mode:
+                # Em modo relay: apenas registra replies como "seen" (não processa)
+                outbox_claude = coord / OUTBOX_CLAUDE
+                if outbox_claude.exists():
+                    for f in sorted(outbox_claude.glob("*.json")):
+                        try:
+                            data = json.loads(f.read_text(encoding="utf-8-sig"))
+                            rid = data.get("reply_id", "")
+                            if rid and rid not in processed and data.get("status") in ("complete",):
+                                log.info(f"[RELAY] Reply detectado (aguardando Claude LOCAL): {rid}")
+                                mark_processed(repo / PROCESSED_FILE, rid)
+                                processed.add(rid)
+                        except Exception:
+                            pass
+            else:
+                # Modo autônomo local (requer claude autenticado nesta máquina)
+                state_md = ""
+                bootstrap_md = ""
+                state_path     = repo / "STATE.md"
+                bootstrap_path = repo / "BOOTSTRAP_REMOTE_v2.md"
+                if state_path.exists():
+                    state_md = state_path.read_text(encoding="utf-8-sig", errors="replace")
+                if bootstrap_path.exists():
+                    bootstrap_md = bootstrap_path.read_text(encoding="utf-8-sig", errors="replace")
 
-            # Checar outbox_claude
-            outbox_claude = coord / OUTBOX_CLAUDE
-            if outbox_claude.exists():
-                for f in sorted(outbox_claude.glob("*.json")):
-                    process_reply(f, repo, processed, state_md, bootstrap_md, claude_path)
+                outbox_claude = coord / OUTBOX_CLAUDE
+                if outbox_claude.exists():
+                    for f in sorted(outbox_claude.glob("*.json")):
+                        process_reply(f, repo, processed, state_md, bootstrap_md, claude_path)
 
-            # Checar outbox_codex_local
-            outbox_codex = coord / OUTBOX_CODEX_LOCAL
-            if outbox_codex.exists():
-                for f in sorted(outbox_codex.glob("*.json")):
-                    process_reply(f, repo, processed, state_md, bootstrap_md, claude_path)
+                outbox_codex = coord / OUTBOX_CODEX_LOCAL
+                if outbox_codex.exists():
+                    for f in sorted(outbox_codex.glob("*.json")):
+                        process_reply(f, repo, processed, state_md, bootstrap_md, claude_path)
 
         except KeyboardInterrupt:
             log.info("Encerrado pelo usuário.")
