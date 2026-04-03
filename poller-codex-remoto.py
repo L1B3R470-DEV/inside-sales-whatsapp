@@ -150,7 +150,7 @@ def invoke_claude(prompt: str, prompt_file: Path, repo: Path, claude_path: str =
         result = subprocess.run(
             [claude_path, "-p", prompt],
             capture_output=True, text=True, timeout=600,
-            cwd=str(repo)
+            cwd=str(repo), shell=(claude_path.endswith(".cmd") or claude_path.endswith(".bat"))
         )
         if result.returncode == 0:
             log.info("Claude CLI concluiu com sucesso.")
