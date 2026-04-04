@@ -7,10 +7,10 @@
 | Campo | Valor |
 |---|---|
 | Ciclo ativo | 20 |
-| Fase em andamento | 020A retry emitido — aguardando payload do CODEX LOCAL com poller local corrigido |
-| Próxima etapa | CODEX LOCAL reprocesa o 020A usando o caminho corrigido do Invoke-ClaudeCLI |
-| Status inbox_claude | vazio (diagnosticos arquivados; replies processados) |
-| Status inbox_codex_local | task-020A-RETRY pendente |
+| Fase em andamento | 020A concluido — 020B pendente de revisao do Claude Local |
+| Próxima etapa | Claude Local revisa o payload do 020A e decide homologacao do 020B |
+| Status inbox_claude | task-020B-20260404T132226Z.json pendente |
+| Status inbox_codex_local | vazio (020A concluido; aguardando revisao 020B) |
 
 ## Resultado consolidado do ciclo 19
 
@@ -99,4 +99,12 @@ orq: retry limpo 020A + bootstrap remoto
 | reply-020A-20260403T063700Z | processed — resposta generica, sem payload |
 | reply-020A-DIAG-20260403T073016Z | processed — usage limit, sem diagnostico util |
 | reply-020A-DIAG-RETRY-20260404T005826Z | processed — diagnostico util com causa raiz e fix confirmado |
-| Acao em curso | CODEX LOCAL recebe retry limpo do 020A, com prompt sem pipes e poller local corrigido |
+| Acao em curso | Claude Local revisa o payload do 020A para confirmar ou corrigir a priorizacao condicional de R5 |
+
+
+## Resultado consolidado do ciclo 20
+
+| Microfase | Veredito | Observacao |
+|---|---|---|
+| 20A | PRODUZIDO | PRIORIZAR_CONDICAO / selected_focus = R5 |
+| 20B | PENDENTE | revisao do Claude Local ainda nao executada |

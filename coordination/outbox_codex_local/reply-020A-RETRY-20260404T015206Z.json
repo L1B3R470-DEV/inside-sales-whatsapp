@@ -3,7 +3,7 @@
   "task_id": "task-020A-RETRY-20260404T015206Z",
   "target_actor": "codex_local",
   "cycle": "020A",
-  "status": "complete",
+  "status": "processed",
   "generated_at": "2026-04-04T05:00:22Z",
   "report": {
     "section": "INICIO DO RELATORIO",
