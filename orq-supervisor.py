@@ -252,6 +252,41 @@ def valid_021a_diag(data: dict) -> bool:
     )
 
 
+def valid_022a_diag(data: dict) -> bool:
+    output = data.get("output")
+    if isinstance(output, dict):
+        status = output.get("STATUS_GERAL", {})
+        if status.get("022A_apto_para_retry") is True:
+            return True
+        validation = output.get("VALIDACAO", {})
+        if normalize_text(validation.get("022A_apto_para_retry_valido")) == "sim":
+            return True
+        conclusion = output.get("CONCLUSAO", {})
+        if "022a pronto para retry valido" in normalize_text(conclusion.get("resumo")):
+            return True
+    lowered = normalize_text(output)
+    return (
+        "022a apto para retry valido: sim" in lowered or
+        "022a apto para retry" in lowered or
+        "022a pronto para retry valido" in lowered or
+        "causa raiz identificada e corrigida" in lowered
+    )
+
+
+def is_invalid_claude_reply(data: dict) -> bool:
+    lowered = normalize_text(data.get("output"))
+    markers = [
+        "nao encontrei arquivos relacionados",
+        "pode me dar mais contexto",
+        "o que precisa ser feito",
+        "youre out of extra usage",
+        "you're out of extra usage",
+        "mensagem parece incompleta",
+        "nao reconheco esse comando"
+    ]
+    return any(marker in lowered for marker in markers)
+
+
 def create_020b_task(reply_path: Path):
     ts = now_compact()
     task_name = f"task-020B-{ts}.json"
@@ -458,6 +493,49 @@ def create_022a_task(reply_path: Path):
     return path
 
 
+def create_022a_retry_task(diag_reply_path: Path):
+    ts = now_compact()
+    task_name = f"task-022A-RETRY-{ts}.json"
+    reply_name = f"reply-022A-RETRY-{ts}.json"
+    task = {
+        "task_id": f"task-022A-RETRY-{ts}",
+        "target_actor": "codex_local",
+        "cycle": "022A",
+        "instruction": (
+            "Retry unico do 022A apos diagnostico conclusivo do Claude Local. Voce esta autorizado a executar UMA tentativa unica do ciclo 022A, em modo MANUAL/ORQUESTRADO, estritamente documental, read-only, sem runner stateful e sem coletar dados reais neste ciclo. "
+            "O ciclo 021B homologou a base de abertura condicional de R5 e o diagnostico do 022A liberou um retry valido. Sua missao continua a mesma: produzir o payload oficial do 022A para formalizar o CONTRATO DE ABERTURA de R5, definindo exatamente como um ciclo futuro podera coletar EV1, EV2 e EV3 e aplicar VC1, VC2, VC3 e VC4, sem autorizar essa coleta agora. "
+            "Este ciclo NAO executa a abertura de R5. Este ciclo NAO coleta amostras reais. Este ciclo NAO autoriza live CRM, sandbox, escrita, SQL, DDL, DML, producao, bridge, .mcp.json, R2 ou R6. "
+            "Fontes oficiais obrigatorias: cycle21-input/cycle-021A-r5-conditional-opening-basis.json; coordination/outbox_claude/reply-021B-20260404T143857Z.json; cycle20-input/cycle-020A-conditional-queue-prioritization.json; coordination/outbox_claude/reply-020B-20260404T132226Z.json; cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json. "
+            "Arquivo a criar: cycle22-input/cycle-022A-r5-opening-contract.json. "
+            "O JSON deve ser parseavel e conter no minimo: cycle_id=022A; mode=r5-opening-contract; agent=manual-orchestrated; generated_at; source_precedence; inherited_constraints; opening_reference com selected_focus=R5, readiness_inherited=OPENING_BASIS_DEFINED, homologation_basis=021B; contract_scope com objective, permitted_future_inputs (EV1, EV2, EV3), prohibited_actions_now, future_validation_protocol (VC1-VC4), acceptance_gates, execution_non_goals; collection_contract with collection_requirements, evidence_format_rules, pii_controls, isolation_requirements, future_authorization_dependencies; readiness_classification com um de OPENING_CONTRACT_DEFINED ou OPENING_CONTRACT_INCONCLUSIVO; authorization_reset com todos os flags false; blockers; violations=[]; prohibitions; anomalies; evidence_trace; meta.output_file. "
+            "Regra central: transformar a base de abertura do 021A em contrato operacional futuro, mas sem iniciar a abertura agora. Se a base nao bastar para definir gates objetivos do contrato, prefira OPENING_CONTRACT_INCONCLUSIVO. "
+            "Ao final, responda no formato: INICIO DO RELATORIO / STATUS GERAL / PRODUCAO DO 022A / VALIDACAO DO PAYLOAD / CONTRATO DE ABERTURA DE R5 / ISOLAMENTO PRESERVADO / CONCLUSAO / ARTEFATOS / FIM DO RELATORIO."
+        ),
+        "context_files": [
+            "STATE.md",
+            "cycle21-input/cycle-021A-r5-conditional-opening-basis.json",
+            str(diag_reply_path.relative_to(REPO)).replace("\\", "/"),
+            "coordination/outbox_claude/reply-021B-20260404T143857Z.json",
+            "cycle20-input/cycle-020A-conditional-queue-prioritization.json",
+            "coordination/outbox_claude/reply-020B-20260404T132226Z.json",
+            "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json"
+        ],
+        "output_path": f"coordination/outbox_codex_local/{reply_name}",
+        "red_lines": [
+            "no_production_write",
+            "no_bridge_write",
+            "no_mcp_json_write",
+            "no_r2_reopen",
+            "no_r6_reopen"
+        ],
+        "status": "pending",
+        "created_at": now_iso()
+    }
+    path = INBOX_CODEX / task_name
+    save_json(path, task)
+    return path
+
+
 def create_022a_diag_task(reply_path: Path):
     ts = now_compact()
     task_name = f"task-022A-DIAG-{ts}.json"
@@ -496,10 +574,72 @@ def create_022a_diag_task(reply_path: Path):
     return path
 
 
+def create_022a_diag_retry_task(invalid_diag_reply_path: Path):
+    ts = now_compact()
+    task_name = f"task-022A-DIAG-RETRY-{ts}.json"
+    reply_name = f"reply-022A-DIAG-RETRY-{ts}.json"
+    task = {
+        "task_id": f"task-022A-DIAG-RETRY-{ts}",
+        "target_actor": "claude_local",
+        "cycle": "022A-DIAG",
+        "instruction": (
+            "Retry unico do diagnostico do 022A. O reply anterior do diagnostico foi generico e nao investigou o caminho real do prompt. "
+            "Sua missao e identificar por que o CODEX LOCAL respondeu de forma incompleta ao 022A em vez de produzir o payload esperado do contrato de abertura de R5. "
+            "Compare o caminho bem-sucedido do 021A/021B com o 022A falho e localize o ponto exato da regressao no caminho local do CODEX LOCAL. "
+            "Verifique obrigatoriamente: poller-autonomous.ps1; qualquer funcao Build-Prompt ou equivalente; current_task_codex_local.txt/json; temp_prompt.txt se existir; "
+            "coordination/_archive/inbox_codex_local/task-022A-20260404T182446Z.json; coordination/outbox_codex_local/reply-022A-20260404T152521Z.json; "
+            "coordination/outbox_claude/reply-021B-20260404T143857Z.json; logs locais relevantes do poller. "
+            "Red lines absolutas: nao tocar em producao, bridge, .mcp.json do projeto real, projeto real, R2, R6. "
+            "Se precisar editar algo, faca a menor correcao segura. Se precisar reiniciar tarefa agendada/processo local, faca de modo controlado. "
+            "Nao crie novo retry do 022A sem concluir o diagnostico. "
+            "Formato obrigatorio da resposta: INICIO DO RELATORIO / STATUS GERAL / DIAGNOSTICO / CORRECOES APLICADAS / VALIDACAO / GIT / CONCLUSAO / FIM DO RELATORIO. "
+            "Campos minimos: concluido, risco_operacional_atual, causa_raiz_identificada, ponto_exato_da_regressao, evidencias_objetivas, arquivos_logs_inspecionados, "
+            "arquivos_alterados, processos_reiniciados, prompt_final_do_022A_esta_materialmente_completo_sim_nao, 022A_apto_para_retry_valido_sim_nao, "
+            "mudancas_commitadas_sim_nao, commit_hash, push_realizado_sim_nao, bloqueio_remanescente, proximo_passo_sugerido. "
+            "Nao responda com hipotese vaga; eu preciso do ponto exato da regressao do 022A."
+        ),
+        "context_files": [
+            "STATE.md",
+            "coordination/_archive/inbox_codex_local/task-022A-20260404T182446Z.json",
+            "coordination/outbox_codex_local/reply-022A-20260404T152521Z.json",
+            str(invalid_diag_reply_path.relative_to(REPO)).replace("\\", "/"),
+            "coordination/outbox_claude/reply-021B-20260404T143857Z.json",
+            "cycle21-input/cycle-021A-r5-conditional-opening-basis.json"
+        ],
+        "output_path": f"coordination/outbox_claude/{reply_name}",
+        "red_lines": [
+            "no_production_write",
+            "no_bridge_write",
+            "no_mcp_json_write",
+            "no_r2_reopen",
+            "no_r6_reopen"
+        ],
+        "status": "pending",
+        "created_at": now_iso()
+    }
+    path = INBOX_CLAUDE / task_name
+    save_json(path, task)
+    return path
+
+
 def archive_tasks(prefix: str, src: Path, dst: Path):
     dst.mkdir(parents=True, exist_ok=True)
     moved = []
     for candidate in src.glob(f"{prefix}*.json"):
+        target = dst / candidate.name
+        if candidate.exists():
+            candidate.replace(target)
+            moved.append(target)
+    return moved
+
+
+def archive_tasks_filtered(prefix: str, src: Path, dst: Path, exclude_prefixes=None):
+    dst.mkdir(parents=True, exist_ok=True)
+    moved = []
+    exclude_prefixes = exclude_prefixes or []
+    for candidate in src.glob(f"{prefix}*.json"):
+        if any(candidate.name.startswith(exclude) for exclude in exclude_prefixes):
+            continue
         target = dst / candidate.name
         if candidate.exists():
             candidate.replace(target)
@@ -730,6 +870,7 @@ def reconcile_state_md():
     latest_task_022a = next(iter(sorted(INBOX_CODEX.glob("task-022A*.json"), key=lambda p: p.stat().st_mtime, reverse=True)), None)
     latest_task_022a_diag = next(iter(sorted(INBOX_CLAUDE.glob("task-022A-DIAG*.json"), key=lambda p: p.stat().st_mtime, reverse=True)), None)
     invalid_022a_path, _ = find_latest_matching_reply(OUTBOX_CODEX, "022A", "022A", is_invalid_codex_reply)
+    invalid_022a_diag_path, _ = find_latest_matching_reply(OUTBOX_CLAUDE, "022A-DIAG", "022A-DIAG", is_invalid_claude_reply)
 
     current_updated = "> Atualizado em: 2026-04-04 (021B homologado; 022A emitido para formalizar o contrato de abertura de R5)"
     cycle_value = "| Ciclo ativo | 22 |"
@@ -754,6 +895,16 @@ def reconcile_state_md():
         latest_commit = "orq: diagnostico 022A para claude"
         current_action = "| Acao em curso | Claude Local diagnostica por que o prompt do 022A chegou incompleto ao CODEX LOCAL |"
         result_22a = "| 22A | BLOQUEADO | reply generico do CODEX LOCAL; diagnostico local pendente |"
+
+    if invalid_022a_diag_path and not latest_task_022a_diag:
+        current_updated = "> Atualizado em: 2026-04-04 (022A-DIAG respondeu genericamente; retry diagnostico do 022A pendente ou em preparo)"
+        phase_value = "| Fase em andamento | 022A-DIAG falhou genericamente — aguardando retry diagnostico do Claude Local |"
+        next_value = "| Próxima etapa | Reemitir diagnostico util do 022A e, se conclusivo, liberar retry limpo do CODEX LOCAL |"
+        claude_value = "| Status inbox_claude | vazio (ultimo 022A-DIAG respondeu genericamente) |"
+        codex_value = "| Status inbox_codex_local | vazio |"
+        latest_commit = "orq: retry diagnostico 022A para claude"
+        current_action = "| Acao em curso | Supervisor prepara novo diagnostico do 022A com contexto mais estrito para o Claude Local |"
+        result_22a = "| 22A | BLOQUEADO | diagnostico local respondeu genericamente; retry diagnostico necessario |"
 
     lines = replace_line_starting_with(lines, "> Atualizado em:", current_updated)
     lines = replace_line_starting_with(lines, "| Ciclo ativo |", cycle_value)
@@ -954,6 +1105,58 @@ def process_invalid_022a(state):
     return True
 
 
+def process_complete_022a_diag(state):
+    reply_path, reply_data = find_latest_matching_reply(OUTBOX_CLAUDE, "022A-DIAG", "022A-DIAG", valid_022a_diag)
+    if not reply_path:
+        return False
+
+    reply_id = reply_data.get("reply_id") or reply_path.stem
+    if reply_id in state["processed_reply_ids"]:
+        return False
+
+    if task_or_reply_exists("task-022A-RETRY-", INBOX_CODEX) or task_or_reply_exists("reply-022A-RETRY-", OUTBOX_CODEX):
+        state["processed_reply_ids"].append(reply_id)
+        save_state(state)
+        return False
+
+    created_task = create_022a_retry_task(reply_path)
+    reply_data["status"] = "processed"
+    save_json(reply_path, reply_data)
+    archived = archive_tasks_filtered("task-022A-DIAG-", INBOX_CLAUDE, ARCHIVE_CLAUDE, exclude_prefixes=["task-022A-DIAG-RETRY-"])
+    state["processed_reply_ids"].append(reply_id)
+    save_state(state)
+    reconcile_state_md()
+    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *archived], "orq: retry 022A para codex local")
+    log(f"Diagnostico 022A processado pelo supervisor. Retry emitido: {created_task.name}")
+    return True
+
+
+def process_invalid_022a_diag(state):
+    reply_path, reply_data = find_latest_matching_reply(OUTBOX_CLAUDE, "022A-DIAG", "022A-DIAG", is_invalid_claude_reply)
+    if not reply_path:
+        return False
+
+    reply_id = reply_data.get("reply_id") or reply_path.stem
+    if reply_id in state["processed_reply_ids"]:
+        return False
+
+    if task_or_reply_exists("task-022A-DIAG-RETRY-", INBOX_CLAUDE) or task_or_reply_exists("reply-022A-DIAG-RETRY-", OUTBOX_CLAUDE):
+        state["processed_reply_ids"].append(reply_id)
+        save_state(state)
+        return False
+
+    created_task = create_022a_diag_retry_task(reply_path)
+    reply_data["status"] = "processed"
+    save_json(reply_path, reply_data)
+    archived = archive_tasks_filtered("task-022A-DIAG-", INBOX_CLAUDE, ARCHIVE_CLAUDE, exclude_prefixes=["task-022A-DIAG-RETRY-"])
+    state["processed_reply_ids"].append(reply_id)
+    save_state(state)
+    reconcile_state_md()
+    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *archived], "orq: retry diagnostico 022A para claude")
+    log(f"022A-DIAG invalido processado pelo supervisor. Retry diagnostico emitido: {created_task.name}")
+    return True
+
+
 def process_once():
     git_pull_ff_only()
     state = load_state()
@@ -987,6 +1190,14 @@ def process_once():
 
     state = load_state()
     if process_invalid_022a(state):
+        changed = True
+
+    state = load_state()
+    if process_complete_022a_diag(state):
+        changed = True
+
+    state = load_state()
+    if process_invalid_022a_diag(state):
         changed = True
 
     reconcile_state_md()
