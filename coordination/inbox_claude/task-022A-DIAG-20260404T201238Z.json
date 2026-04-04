@@ -1,22 +1,22 @@
-{
-  "task_id": "task-022A-DIAG-20260404T201238Z",
-  "target_actor": "claude_local",
-  "cycle": "022A-DIAG",
-  "instruction": "Voce deve diagnosticar por que o CODEX LOCAL respondeu de forma generica/incompleta ao ciclo 022A em vez de produzir o payload esperado. Objetivo: encontrar o ponto exato do caminho local que fez o prompt chegar truncado ou descaracterizado, corrigir o minimo necessario e dizer se 022A esta apto para retry valido. Leia obrigatoriamente: STATE.md; task 022A correspondente; reply 022A correspondente; poller-autonomous.ps1; logs locais relevantes. Red lines: nao tocar em producao, bridge, .mcp.json, projeto real, R2, R6. Formato obrigatorio: INICIO DO RELATORIO / STATUS GERAL / DIAGNOSTICO / CORRECOES APLICADAS / VALIDACAO / GIT / CONCLUSAO / FIM DO RELATORIO. O bloco VALIDACAO deve responder explicitamente: '022A apto para retry valido: sim/nao'.",
-  "context_files": [
-    "STATE.md",
-    "coordination/outbox_codex_local/reply-022A-20260404T152521Z.json",
-    "cycle21-input/cycle-021A-r5-conditional-opening-basis.json",
-    "coordination/outbox_claude/reply-021B-20260404T143857Z.json"
-  ],
-  "output_path": "coordination/outbox_claude/reply-022A-DIAG-20260404T201238Z.json",
-  "red_lines": [
-    "no_production_write",
-    "no_bridge_write",
-    "no_mcp_json_write",
-    "no_r2_reopen",
-    "no_r6_reopen"
-  ],
-  "status": "pending",
-  "created_at": "2026-04-04T20:12:38Z"
+﻿{
+    "task_id":  "task-022A-DIAG-20260404T201238Z",
+    "target_actor":  "claude_local",
+    "cycle":  "022A-DIAG",
+    "instruction":  "Voce deve diagnosticar por que o CODEX LOCAL respondeu de forma generica/incompleta ao ciclo 022A em vez de produzir o payload esperado. Objetivo: encontrar o ponto exato do caminho local que fez o prompt chegar truncado ou descaracterizado, corrigir o minimo necessario e dizer se 022A esta apto para retry valido. Leia obrigatoriamente: STATE.md; task 022A correspondente; reply 022A correspondente; poller-autonomous.ps1; logs locais relevantes. Red lines: nao tocar em producao, bridge, .mcp.json, projeto real, R2, R6. Formato obrigatorio: INICIO DO RELATORIO / STATUS GERAL / DIAGNOSTICO / CORRECOES APLICADAS / VALIDACAO / GIT / CONCLUSAO / FIM DO RELATORIO. O bloco VALIDACAO deve responder explicitamente: \u0027022A apto para retry valido: sim/nao\u0027.",
+    "context_files":  [
+                          "STATE.md",
+                          "coordination/outbox_codex_local/reply-022A-20260404T152521Z.json",
+                          "cycle21-input/cycle-021A-r5-conditional-opening-basis.json",
+                          "coordination/outbox_claude/reply-021B-20260404T143857Z.json"
+                      ],
+    "output_path":  "coordination/outbox_claude/reply-022A-DIAG-20260404T201238Z.json",
+    "red_lines":  [
+                      "no_production_write",
+                      "no_bridge_write",
+                      "no_mcp_json_write",
+                      "no_r2_reopen",
+                      "no_r6_reopen"
+                  ],
+    "status":  "accepted",
+    "created_at":  "2026-04-04T20:12:38Z"
 }
