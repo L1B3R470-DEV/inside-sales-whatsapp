@@ -884,6 +884,7 @@ def reconcile_state_md():
     result_22a = "| 22A | PENDENTE | contrato de abertura de R5 ainda nao produzido |"
 
     if invalid_022a_path or latest_task_022a_diag:
+        retry_diag = latest_task_022a_diag and "DIAG-RETRY" in latest_task_022a_diag.name
         current_updated = "> Atualizado em: 2026-04-04 (021B homologado; 022A bloqueado por reply generico; diagnostico 022A emitido automaticamente)"
         phase_value = "| Fase em andamento | 022A bloqueado por reply generico do CODEX LOCAL — diagnostico local pendente |"
         next_value = "| Próxima etapa | Claude Local diagnostica o caminho do 022A e libera retry limpo do CODEX LOCAL |"
@@ -895,6 +896,13 @@ def reconcile_state_md():
         latest_commit = "orq: diagnostico 022A para claude"
         current_action = "| Acao em curso | Claude Local diagnostica por que o prompt do 022A chegou incompleto ao CODEX LOCAL |"
         result_22a = "| 22A | BLOQUEADO | reply generico do CODEX LOCAL; diagnostico local pendente |"
+        if retry_diag:
+            current_updated = "> Atualizado em: 2026-04-04 (021B homologado; 022A bloqueado; retry do diagnostico local pendente)"
+            phase_value = "| Fase em andamento | 022A bloqueado por reply generico do CODEX LOCAL — retry diagnostico do Claude Local pendente |"
+            next_value = "| Próxima etapa | Claude Local conclui o retry do diagnostico do 022A e, se conclusivo, libera retry limpo do CODEX LOCAL |"
+            latest_commit = "orq: retry diagnostico 022A para claude"
+            current_action = "| Acao em curso | Claude Local refaz o diagnostico do 022A com contexto mais estrito para localizar a regressao real |"
+            result_22a = "| 22A | BLOQUEADO | aguardando retry diagnostico do Claude Local |"
 
     if invalid_022a_diag_path and not latest_task_022a_diag:
         current_updated = "> Atualizado em: 2026-04-04 (022A-DIAG respondeu genericamente; retry diagnostico do 022A pendente ou em preparo)"
