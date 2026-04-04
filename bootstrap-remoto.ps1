@@ -4,6 +4,7 @@
 $RepoDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $PythonExe = "C:\Python310\python.exe"
 $PollerScript = Join-Path $RepoDir "poller-codex-remoto.py"
+$SupervisorScript = Join-Path $RepoDir "orq-supervisor.py"
 $WatchdogScript = Join-Path $RepoDir "watchdog-remoto.ps1"
 $LogFile = Join-Path $RepoDir "bootstrap-remoto.log"
 
@@ -15,20 +16,34 @@ function Write-Log {
 }
 
 function Test-ProcessByPattern {
-    param([string]$Pattern)
-    return [bool](Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -and $_.CommandLine -like $Pattern })
+    param(
+        [string]$Executable,
+        [string]$Pattern
+    )
+    return [bool](Get-CimInstance Win32_Process | Where-Object {
+        $_.Name -ieq $Executable -and
+        $_.CommandLine -and
+        $_.CommandLine -like $Pattern
+    })
 }
 
 Write-Log "=== bootstrap-remoto iniciado ==="
 
-if (-not (Test-ProcessByPattern "*poller-codex-remoto.py*")) {
+if (-not (Test-ProcessByPattern "python.exe" "*poller-codex-remoto.py*")) {
     Write-Log "Poller remoto ausente. Iniciando processo destacado..."
     Start-Process -FilePath $PythonExe -ArgumentList "`"$PollerScript`"","--relay","true","--repo-dir",".","--interval","60" -WorkingDirectory $RepoDir -WindowStyle Hidden
 } else {
     Write-Log "Poller remoto ja estava ativo."
 }
 
-if (-not (Test-ProcessByPattern "*watchdog-remoto.ps1*")) {
+if (-not (Test-ProcessByPattern "python.exe" "*orq-supervisor.py*")) {
+    Write-Log "Supervisor remoto ausente. Iniciando processo destacado..."
+    Start-Process -FilePath $PythonExe -ArgumentList "`"$SupervisorScript`"","--interval","60" -WorkingDirectory $RepoDir -WindowStyle Hidden
+} else {
+    Write-Log "Supervisor remoto ja estava ativo."
+}
+
+if (-not (Test-ProcessByPattern "powershell.exe" "*watchdog-remoto.ps1*")) {
     Write-Log "Watchdog remoto ausente. Iniciando processo destacado..."
     Start-Process -FilePath "powershell.exe" -ArgumentList "-WindowStyle","Hidden","-NonInteractive","-ExecutionPolicy","Bypass","-File","`"$WatchdogScript`"" -WorkingDirectory $RepoDir -WindowStyle Hidden
 } else {

@@ -4,6 +4,8 @@
 $RepoDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $TaskName = "OpenClaw-CodexRemotoPoller"
 $Launcher = Join-Path $RepoDir "start-poller-remoto.bat"
+$PythonExe = "C:\Python310\python.exe"
+$SupervisorScript = Join-Path $RepoDir "orq-supervisor.py"
 $LogFile = Join-Path $RepoDir "watchdog-remoto.log"
 $IntervalSeconds = 60
 
@@ -17,9 +19,19 @@ function Write-Log {
 function Get-PollerProcess {
     Get-CimInstance Win32_Process |
         Where-Object {
+            $_.Name -ieq "python.exe" -and
             $_.CommandLine -and
             $_.CommandLine -like "*poller-codex-remoto.py*" -and
             $_.CommandLine -like "*--relay true*"
+        }
+}
+
+function Get-SupervisorProcess {
+    Get-CimInstance Win32_Process |
+        Where-Object {
+            $_.Name -ieq "python.exe" -and
+            $_.CommandLine -and
+            $_.CommandLine -like "*orq-supervisor.py*"
         }
 }
 
@@ -51,6 +63,19 @@ while ($true) {
                 Write-Log "Poller remoto reerguido com sucesso."
             } else {
                 Write-Log "ERRO: watchdog nao conseguiu reerguer o poller remoto nesta tentativa."
+            }
+        }
+
+        $supervisor = Get-SupervisorProcess
+        if (-not $supervisor) {
+            Write-Log "Supervisor remoto ausente. Iniciando processo destacado..."
+            Start-Process -FilePath $PythonExe -ArgumentList "`"$SupervisorScript`"","--interval","60" -WorkingDirectory $RepoDir -WindowStyle Hidden
+            Start-Sleep -Seconds 5
+            $supervisor = Get-SupervisorProcess
+            if ($supervisor) {
+                Write-Log "Supervisor remoto reerguido com sucesso."
+            } else {
+                Write-Log "ERRO: watchdog nao conseguiu reerguer o supervisor remoto nesta tentativa."
             }
         }
     } catch {

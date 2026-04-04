@@ -81,8 +81,8 @@ Qualquer abertura exige:
 | watchdog-remoto.ps1 (PC remoto) | monitora e reergue o poller remoto quando o processo cair |
 | poller-autonomous.ps1 (PC local) | fix local confirmado; retry limpo do 020A emitido apos diagnostico |
 | CLAUDE.md workspace-integration | criado — contexto neutro para CODEX_LOCAL |
-| coordination/inbox_claude/ | vazio |
-| coordination/inbox_codex_local/ | retry limpo do 020A pendente |
+| coordination/inbox_claude/ | task-020B-20260404T132226Z.json pendente |
+| coordination/inbox_codex_local/ | vazio |
 | cycle19-input/ | commitado e pushado |
 
 ## Ultimo commit relevante
