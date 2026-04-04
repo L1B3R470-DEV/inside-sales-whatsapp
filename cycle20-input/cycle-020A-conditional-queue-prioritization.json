@@ -1,0 +1,266 @@
+{
+  "cycle_id": "020A",
+  "mode": "conditional-queue-prioritization",
+  "agent": "manual-orchestrated",
+  "generated_at": "2026-04-04T05:00:22Z",
+  "source_precedence": [
+    "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json",
+    "cycle19-input/remaining_queue_registry.json",
+    "cycle19-input/queue_source_map.json",
+    "output/cycle-005-write-proposals.json",
+    "output/cycle-004-execution-plan.json",
+    "output/cycle-003-improvement-plan.json"
+  ],
+  "closure_reference": {
+    "r2_status": "ITERACAO_SNAPSHOT_BOUND_ENCERRADA",
+    "r2_closed_by": "cycle-018B",
+    "r2_reopen_prohibited": true,
+    "r6_status": "stable_closed",
+    "r6_closed_by": "cycle-011",
+    "r6_reopen_prohibited": true
+  },
+  "inherited_constraints": {
+    "session_write_policy": "RESSALVA_OPERACIONAL",
+    "session_write_binding_from": "14A",
+    "live_crm_authorized": false,
+    "sandbox_authorized": false,
+    "write_authorized": false,
+    "r2_reopen_prohibited": true,
+    "r6_reopen_prohibited": true,
+    "conditions": [
+      "Prefer manual-orchestrated documentary production when zero-write cleanliness matters.",
+      "Do not treat session-file side effects as acceptable by default.",
+      "Any future item-specific phase still requires explicit authorization before analysis."
+    ]
+  },
+  "queue_input": {
+    "inherited_from": "cycle-019A-post-r2-closure-queue-assessment.json",
+    "queue_status": "TODOS_CONDICIONAIS",
+    "next_eligible_item": null,
+    "items": [
+      {
+        "rec_id": "R1",
+        "title": "Reduzir o desalinhamento entre cache ativo e uso efetivo na decisao de rota",
+        "category": "routing",
+        "classification": "ELEGIVEL_COM_CONDICAO",
+        "cycle3_priority": 1,
+        "cycle4_execution_order": 6,
+        "cycle4_status": "pending_validation",
+        "cycle5_status": "not_present_in_write_proposals"
+      },
+      {
+        "rec_id": "R3",
+        "title": "Reavaliar o volume de contatos ignorados em relacao ao perfil atual da operacao",
+        "category": "guardrails",
+        "classification": "ELEGIVEL_COM_CONDICAO",
+        "cycle3_priority": 3,
+        "cycle4_execution_order": 4,
+        "cycle4_status": "ready_for_execution",
+        "cycle5_status": "not_present_in_write_proposals",
+        "divergence": "ready_in_cycle4_but_absent_in_cycle5"
+      },
+      {
+        "rec_id": "R4",
+        "title": "Padronizar a consistencia consultiva da persona em respostas de baixa complexidade",
+        "category": "persona",
+        "classification": "ELEGIVEL_COM_CONDICAO",
+        "cycle3_priority": 4,
+        "cycle4_execution_order": 5,
+        "cycle4_status": "ready_for_execution",
+        "cycle5_status": "not_present_in_write_proposals",
+        "divergence": "ready_in_cycle4_but_absent_in_cycle5"
+      },
+      {
+        "rec_id": "R5",
+        "title": "Verificar se o fallback preserva utilidade comercial suficiente em mensagens recorrentes",
+        "category": "fallback",
+        "classification": "ELEGIVEL_COM_CONDICAO",
+        "cycle3_priority": 5,
+        "cycle4_execution_order": 3,
+        "cycle4_status": "pending_validation",
+        "cycle5_status": "maintained_in_observation"
+      }
+    ]
+  },
+  "prioritization_decision": {
+    "decision": "PRIORIZAR_CONDICAO",
+    "selected_focus": "R5",
+    "selected_condition_family": "pending_validation_evidence_collection",
+    "readiness_classification": "PRIORIDADE_CONDICIONAL_DEFINIDA",
+    "justification": "Dentre os quatro itens remanescentes, R5 apresenta a base documental mais coerente e resolvivel para uma priorizacao condicional defensavel: (1) detem o menor execution_order entre os remanescentes apos exclusao de R6 e R2 (execution_order=3 no ciclo 4), indicando que era o proximo item esperado na sequencia original; (2) e o unico item com risk_level=low, tanto no ciclo 3 quanto no ciclo 4; (3) sua nao-promocao no ciclo 5 foi atribuida a evidencia insuficiente — nao a uma contradicao documental — e o item foi explicitamente preservado nas next_steps do ciclo 5 como 'mantido em observacao'; (4) ao contrario de R3 e R4, que possuem divergencia explícita ready_for_execution→ausente entre ciclos 4 e 5 (divergencia que permanece irresoluta), R5 nao apresenta esse tipo de contradicao. A condicao de avanco de R5 e concreta e nomeada: coletar e revisar amostras adicionais agregadas de fallback para confirmar ou descartar utilidade comercial suficiente em cenarios de mensagens recorrentes.",
+    "basis": [
+      "cycle-004-execution-plan.json: R5 execution_order=3, status=pending_validation, risk_level=low",
+      "cycle-004-execution-plan.json: R6 (excluido) execution_order=1, R2 (excluido) execution_order=2 — R5 e o primeiro remanescente na sequencia",
+      "cycle-003-improvement-plan.json: R5 priority=5 (cycle3), implementation_risk=low",
+      "cycle-005-write-proposals.json: next_steps explicito — 'Manter R5 em observacao ate haver evidencia adicional de fallback'",
+      "cycle-004-execution-plan.json: anomaly sobre R5 — 'a evidencia ainda nao e forte o suficiente para promovê-la alem de validacao supervisionada' — condicao nomeada",
+      "cycle19-input/queue_source_map.json: R5 cross_source_note — nao promovido por evidencia insuficiente (distinto da divergencia estrutural de R3/R4)"
+    ]
+  },
+  "priority_assessment": [
+    {
+      "rec_id": "R1",
+      "category": "routing",
+      "cycle3_priority": 1,
+      "cycle4_execution_order": 6,
+      "cycle4_status": "pending_validation",
+      "cycle5_status": "not_present_in_write_proposals",
+      "risk_level": "medium",
+      "documentary_strength": "fraca",
+      "blocking_condition": "R1 possui a maior prioridade do ciclo 3 (priority=1), mas o ciclo 4 a posicionou com execution_order=6 (ultimo), indicando rebaixamento de urgencia. O item permaneceu pending_validation no ciclo 4 e nao apareceu nas write_proposals do ciclo 5 nem em suas next_steps. A base documental nao suporta promocao na ausencia de nova validacao tecnica.",
+      "rationale": "O contraste entre priority_cycle3=1 e execution_order_cycle4=6 constitui uma inconsistencia interna que enfraquece a posicao de R1 como candidato prioritario. Sem evidencia de que essa inversao foi revisada, nao ha base defensavel para seleciona-lo sobre os demais."
+    },
+    {
+      "rec_id": "R3",
+      "category": "guardrails",
+      "cycle3_priority": 3,
+      "cycle4_execution_order": 4,
+      "cycle4_status": "ready_for_execution",
+      "cycle5_status": "not_present_in_write_proposals",
+      "divergence_explicit": "ready_in_cycle4_but_absent_in_cycle5",
+      "risk_level": "medium",
+      "documentary_strength": "comprometida_por_divergencia",
+      "blocking_condition": "R3 foi marcado ready_for_execution no ciclo 4 com execution_order=4 e risk_level=medium, mas o ciclo 5 nao o incluiu nas write_proposals nem o mencionou nas next_steps. Esta divergencia e explicita e permanece sem resolucao documental. A divergencia nao pode ser suavizada ou tratada como equivalencia resolvida.",
+      "rationale": "A contradicao entre prontidao tecnica no ciclo 4 e ausencia completa no ciclo 5 impede a selecao de R3 como foco de priorizacao condicional. Qualquer avanco exige resolucao documental previa dessa inconsistencia, via novo contrato explicito."
+    },
+    {
+      "rec_id": "R4",
+      "category": "persona",
+      "cycle3_priority": 4,
+      "cycle4_execution_order": 5,
+      "cycle4_status": "ready_for_execution",
+      "cycle5_status": "not_present_in_write_proposals",
+      "divergence_explicit": "ready_in_cycle4_but_absent_in_cycle5",
+      "risk_level": "medium",
+      "documentary_strength": "comprometida_por_divergencia",
+      "blocking_condition": "Mesma divergencia estrutural de R3: ready_for_execution no ciclo 4 com execution_order=5 e risk_level=medium, mas completamente ausente nas write_proposals e next_steps do ciclo 5. A divergencia e explicita e nao pode ser tratada como resolvida.",
+      "rationale": "Assim como R3, R4 nao pode ser selecionado como foco condicional enquanto a contradição entre ciclo 4 e ciclo 5 permanecer sem resolucao documental. O risco medium agrava a necessidade de validacao antes de qualquer avanco."
+    },
+    {
+      "rec_id": "R5",
+      "category": "fallback",
+      "cycle3_priority": 5,
+      "cycle4_execution_order": 3,
+      "cycle4_status": "pending_validation",
+      "cycle5_status": "maintained_in_observation",
+      "risk_level": "low",
+      "documentary_strength": "suficiente_para_priorizacao_condicional",
+      "blocking_condition": "Coleta e revisao de amostras adicionais agregadas de fallback para confirmar ou descartar que o fallback preserva utilidade comercial suficiente em cenarios de mensagens recorrentes (conforme condicao nomeada no ciclo 4 e preservada no ciclo 5).",
+      "rationale": "R5 ocupa execution_order=3 no ciclo 4 — o primeiro slot remanescente apos exclusao de R6 e R2. E o unico item com risk_level=low na fila remanescente. Sua nao-promocao no ciclo 5 foi por insuficiencia de evidencia (nao por divergencia estrutural), e o ciclo 5 o preservou explicitamente com condicao nomeada. A base documental suporta uma priorizacao condicional defensavel, sem analisar conteudo de item."
+    }
+  ],
+  "next_cycle_contract_basis": {
+    "opening_goal": "Resolver a condicao de pending_validation de R5 mediante coleta e revisao de amostras adicionais agregadas de fallback, para decidir se o item avanca para proposta de escrita em ciclo futuro.",
+    "required_sources": [
+      "Amostras agregadas de fallback (sem PII)",
+      "Baseline de tom consultivo aprovado",
+      "cycle-004-execution-plan.json (referencia de validation_criteria do R5)"
+    ],
+    "non_goals": [
+      "Nao abrir R5 para analise de conteudo neste ciclo",
+      "Nao reabrir R2 ou R6",
+      "Nao executar live CRM",
+      "Nao escrever em producao",
+      "Nao inferir autorizacao para os demais itens a partir da priorizacao condicional de R5"
+    ],
+    "authorization_status": "nao autorizado neste ciclo",
+    "note": "A priorizacao condicional de R5 orienta o proximo contrato, mas nao autoriza abertura. Um novo contrato explicito e necessario antes de qualquer analise especifica de R5."
+  },
+  "authorization_reset": {
+    "authorization_inheritance": false,
+    "scope_reused": false,
+    "premises_reused": false,
+    "live_crm_authorized": false,
+    "sandbox_authorized": false,
+    "write_authorized": false,
+    "r2_reopen_prohibited": true,
+    "r6_reopen_prohibited": true,
+    "note": "Nenhum item remanescente herda autorizacao operacional deste ciclo. Esta rodada apenas decide priorizacao condicional documental da fila."
+  },
+  "blockers": [],
+  "violations": [],
+  "prohibitions": [
+    "Nao interpretar este payload como autorizacao para analisar o conteudo de R5 ou de qualquer outro item.",
+    "Nao reabrir R2 ou R6 a partir desta priorizacao.",
+    "Nao tratar a priorizacao condicional de R5 como autorizacao implicita para os demais itens.",
+    "Nao suavizar as divergencias documentais de R3 e R4 — elas permanecem explícitas e irresoltas.",
+    "Nao executar escrita fora do payload final."
+  ],
+  "anomalies": [
+    {
+      "source": "cycle-003-improvement-plan.json",
+      "description": "Arquivo apresenta caracteres UTF-8 degradados em alguns trechos, sem impedir leitura das prioridades e categorias dos itens.",
+      "severity": "low"
+    },
+    {
+      "source": "cycle-005-write-proposals.json",
+      "description": "O ciclo 5 preparou apenas R6 e R2 como write_proposals, deixando R1, R3, R4 e R5 sem application_order formal. R5 foi o unico item remanescente explicitamente preservado nas next_steps do ciclo 5.",
+      "severity": "low"
+    },
+    {
+      "source": "cycle-004-execution-plan.json / cycle-003-improvement-plan.json",
+      "description": "R1 possui priority=1 no ciclo 3 mas execution_order=6 no ciclo 4 — inversao de posicao entre ciclos que nao foi documentalmente resolvida e enfraquece sua candidatura.",
+      "severity": "medium"
+    }
+  ],
+  "evidence_trace": [
+    {
+      "claim": "R5 e o primeiro item remanescente na sequencia de execucao do ciclo 4 apos exclusao de R6 e R2.",
+      "source": "cycle-004-execution-plan.json",
+      "evidence": "execution_candidates: R6 execution_order=1 (excluido), R2 execution_order=2 (excluido), R5 execution_order=3 (primeiro remanescente)"
+    },
+    {
+      "claim": "R5 e o unico item com risk_level=low na fila remanescente.",
+      "source": "cycle-004-execution-plan.json",
+      "evidence": "R5 risk_level=low; R1, R3, R4 risk_level=medium"
+    },
+    {
+      "claim": "A nao-promocao de R5 no ciclo 5 foi por evidencia insuficiente, nao por divergencia estrutural.",
+      "source": "cycle-005-write-proposals.json e cycle-004-execution-plan.json",
+      "evidence": "cycle5 anomaly: 'a evidencia ainda nao e forte o suficiente para promovê-la alem de validacao supervisionada'; cycle5 next_steps: 'Manter R5 em observacao ate haver evidencia adicional de fallback'"
+    },
+    {
+      "claim": "R5 possui condicao de avanco concreta e nomeada no ciclo 4.",
+      "source": "cycle-004-execution-plan.json",
+      "evidence": "R5 dependencies: ['amostras adicionais de fallback', 'comparacao entre respostas recorrentes e consultivas']"
+    },
+    {
+      "claim": "R3 e R4 possuem divergencia explícita ready_for_execution→ausente entre ciclos 4 e 5.",
+      "source": "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json",
+      "evidence": "divergence_log: R3 e R4 ambos com type=ready_in_cycle4_but_absent_in_cycle5; implication='nao permite promovê-los como proximo item identificado sem resolver a lacuna documental'"
+    },
+    {
+      "claim": "R1 possui inversao de posicao entre ciclo 3 (priority=1) e ciclo 4 (execution_order=6).",
+      "source": "cycle-003-improvement-plan.json e cycle-004-execution-plan.json",
+      "evidence": "cycle3 recommendations R1 priority=1; cycle4 execution_candidates R1 execution_order=6, status=pending_validation"
+    },
+    {
+      "claim": "R2 esta permanentemente excluido da fila remanescente.",
+      "source": "cycle-018B-r2-iteration-closure-or-reopen-conditions-review.json (via 019A assessment)",
+      "evidence": "closure_reference: r2_status=ITERACAO_SNAPSHOT_BOUND_ENCERRADA, r2_closed_by=cycle-018B, r2_reopen_prohibited=true"
+    },
+    {
+      "claim": "R6 esta permanentemente excluido da fila remanescente.",
+      "source": "cycle-011 (via 019A assessment)",
+      "evidence": "closure_reference: r6_status=stable_closed, r6_closed_by=cycle-011, r6_reopen_prohibited=true"
+    },
+    {
+      "claim": "A fila remanescente herdada do ciclo 19 possui queue_status=TODOS_CONDICIONAIS e next_eligible_item=null.",
+      "source": "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json",
+      "evidence": "queue_decision.queue_status=TODOS_CONDICIONAIS, queue_decision.next_eligible_item=null"
+    }
+  ],
+  "meta": {
+    "workspace": "C:\\Users\\User\\.openclaw\\workspace-integration",
+    "context_files_read": [
+      "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json",
+      "cycle19-input/remaining_queue_registry.json",
+      "cycle19-input/queue_source_map.json",
+      "output/cycle-005-write-proposals.json",
+      "output/cycle-004-execution-plan.json",
+      "output/cycle-003-improvement-plan.json"
+    ],
+    "output_file": "cycle20-input/cycle-020A-conditional-queue-prioritization.json",
+    "task_source": "task-020A-RETRY-20260404T015206Z"
+  }
+}
