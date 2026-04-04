@@ -471,6 +471,24 @@ function yesNoIntent(text) {
   return 'unknown';
 }
 
+function isShortAcknowledgement(text) {
+  const norm = normalizeText(text).replace(/\s+/g, ' ').trim();
+  if (!norm) return false;
+  if (yesNoIntent(text) !== 'unknown') return true;
+
+  const tokens = norm.split(' ').filter(Boolean);
+  if (tokens.length > 6) return false;
+
+  return [
+    'ok', 'okay', 'certo', 'beleza', 'blz', 'entendi', 'obrigado', 'obrigada',
+    'valeu', 'show', 'perfeito', 'recebi', 'combinado', 'fechado', 'joia',
+    'maravilha', 'tudo certo', 'de acordo'
+  ].some((label) => {
+    const probe = normalizeText(label);
+    return norm === probe || norm.startsWith(`${probe} `) || norm.endsWith(` ${probe}`) || norm.includes(` ${probe} `);
+  });
+}
+
 function extractPhone(text) {
   const digits = String(text || '').replace(/\D/g, '');
   if (digits.length < 10) return '';
@@ -1092,6 +1110,7 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
   const recentSignals = getRecentRevendaSignals(staticData, profile, activeScript, nowIso);
   const profileKnownName = sanitizeCustomerName(profile?.customerName || profile?.pushName || '');
   const vitrineAssetsAvailable = Array.isArray(staticData?.vitrineAssets?.items) && staticData.vitrineAssets.items.length > 0;
+  const shortAcknowledgement = isShortAcknowledgement(inboundText);
 
   if (!activeScript.active && !activeScript.completed) {
     activeScript.active = true;
@@ -1224,6 +1243,10 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
       profile.awaitingVitrineConsent = false;
       profile.vitrineConsentDeclinedAt = nowIso;
     }
+    if (yn === 'unknown' && !shortAcknowledgement) {
+      profile.awaitingVitrineConsent = false;
+      profile.vitrineConsentDismissedAt = nowIso;
+    }
   }
 
   if (
@@ -1233,6 +1256,7 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
     !profile.awaitingVitrineConsent &&
     !profile.vitrineShownAt &&
     vitrineAssetsAvailable &&
+    shortAcknowledgement &&
     !wantsSalesBook(inboundText) &&
     !wantsB2BAccess(inboundText)
   ) {
@@ -1258,7 +1282,8 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
     profile.bookSalesAccess === 'eligible' &&
     !profile.b2bLinkSentAt &&
     !profile.awaitingB2BConsent &&
-    (profile.vitrineShownAt || (profile.salesBookLastSentAt && showsCommercialEngagement(inboundText)))
+    shortAcknowledgement &&
+    (profile.vitrineShownAt || (!vitrineAssetsAvailable && profile.salesBookLastSentAt))
   ) {
     profile.awaitingB2BConsent = true;
     profile.b2bConsentAskedAt = nowIso;
@@ -1281,6 +1306,10 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
     if (yn === 'no') {
       profile.awaitingB2BConsent = false;
       profile.b2bConsentDeclinedAt = nowIso;
+    }
+    if (yn === 'unknown' && !shortAcknowledgement) {
+      profile.awaitingB2BConsent = false;
+      profile.b2bConsentDismissedAt = nowIso;
     }
   }
 
