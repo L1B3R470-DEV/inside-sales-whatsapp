@@ -138,6 +138,26 @@ def find_latest_complete_reply(folder: Path, cycle_prefix: str, cycle_name: str)
     return candidates[0][1], candidates[0][2]
 
 
+def find_latest_matching_reply(folder: Path, cycle_prefix: str, cycle_name: str, validator):
+    candidates = []
+    for path in folder.glob(f"reply-{cycle_prefix}*.json"):
+        try:
+            data = load_json(path)
+        except Exception:
+            continue
+        if data.get("status") != "complete":
+            continue
+        if str(data.get("cycle", "")) != cycle_name:
+            continue
+        if not validator(data):
+            continue
+        candidates.append((path.stat().st_mtime, path, data))
+    if not candidates:
+        return None, None
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    return candidates[0][1], candidates[0][2]
+
+
 def valid_020a(data: dict) -> bool:
     report = data.get("report")
     if isinstance(report, dict):
@@ -193,9 +213,21 @@ def is_invalid_codex_reply(data: dict) -> bool:
 
 
 def valid_021a_diag(data: dict) -> bool:
-    lowered = normalize_text(data.get("output"))
+    output = data.get("output")
+    if isinstance(output, dict):
+        status = output.get("STATUS_GERAL", {})
+        if status.get("021A_apto_para_retry") is True:
+            return True
+        validation = output.get("VALIDACAO", {})
+        if normalize_text(validation.get("021A_apto_para_retry_valido")) == "sim":
+            return True
+        conclusion = output.get("CONCLUSAO", {})
+        if "apto para retry valido" in normalize_text(conclusion.get("resumo")):
+            return True
+    lowered = normalize_text(output)
     return (
         "021a apto para retry valido: sim" in lowered or
+        "021a apto para retry" in lowered or
         "integracao do codex local destravada: sim" in lowered or
         "texto contaminante foi removido do caminho do codex local: sim" in lowered
     )
@@ -618,8 +650,8 @@ def process_invalid_021a(state):
 
 
 def process_complete_021a_diag(state):
-    reply_path, reply_data = find_latest_complete_reply(OUTBOX_CLAUDE, "021A-DIAG", "021A-DIAG")
-    if not reply_path or not valid_021a_diag(reply_data):
+    reply_path, reply_data = find_latest_matching_reply(OUTBOX_CLAUDE, "021A-DIAG", "021A-DIAG", valid_021a_diag)
+    if not reply_path:
         return False
 
     reply_id = reply_data.get("reply_id") or reply_path.stem
