@@ -214,6 +214,30 @@ def find_latest_matching_reply(folder: Path, cycle_prefix: str, cycle_name: str,
     return candidates[0][1], candidates[0][2]
 
 
+def find_latest_complete_reply_any(folders, cycle_prefix: str, cycle_name: str):
+    candidates = []
+    for folder in folders:
+        path, data = find_latest_complete_reply(folder, cycle_prefix, cycle_name)
+        if path and data:
+            candidates.append((path.stat().st_mtime, path, data))
+    if not candidates:
+        return None, None
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    return candidates[0][1], candidates[0][2]
+
+
+def find_latest_matching_reply_any(folders, cycle_prefix: str, cycle_name: str, validator):
+    candidates = []
+    for folder in folders:
+        path, data = find_latest_matching_reply(folder, cycle_prefix, cycle_name, validator)
+        if path and data:
+            candidates.append((path.stat().st_mtime, path, data))
+    if not candidates:
+        return None, None
+    candidates.sort(key=lambda x: x[0], reverse=True)
+    return candidates[0][1], candidates[0][2]
+
+
 def valid_020a(data: dict) -> bool:
     report = data.get("report")
     if isinstance(report, dict):
@@ -1073,7 +1097,7 @@ def process_complete_020a(state):
 
 
 def process_complete_020b(state):
-    reply_path, reply_data = find_latest_complete_reply(OUTBOX_CLAUDE, "020B", "020B")
+    reply_path, reply_data = find_latest_complete_reply_any([OUTBOX_CLAUDE, OUTBOX_CODEX], "020B", "020B")
     if not reply_path or not valid_020b(reply_data):
         return False
 
@@ -1125,7 +1149,7 @@ def process_invalid_021a(state):
 
 
 def process_complete_021a_diag(state):
-    reply_path, reply_data = find_latest_matching_reply(OUTBOX_CLAUDE, "021A-DIAG", "021A-DIAG", valid_021a_diag)
+    reply_path, reply_data = find_latest_matching_reply_any([OUTBOX_CLAUDE, OUTBOX_CODEX], "021A-DIAG", "021A-DIAG", valid_021a_diag)
     if not reply_path:
         return False
 
@@ -1177,7 +1201,7 @@ def process_complete_021a(state):
 
 
 def process_complete_021b(state):
-    reply_path, reply_data = find_latest_matching_reply(OUTBOX_CLAUDE, "021B", "021B", valid_021b)
+    reply_path, reply_data = find_latest_matching_reply_any([OUTBOX_CLAUDE, OUTBOX_CODEX], "021B", "021B", valid_021b)
     if not reply_path:
         return False
 
@@ -1229,7 +1253,7 @@ def process_invalid_022a(state):
 
 
 def process_complete_022a_diag(state):
-    reply_path, reply_data = find_latest_matching_reply(OUTBOX_CLAUDE, "022A-DIAG", "022A-DIAG", valid_022a_diag)
+    reply_path, reply_data = find_latest_matching_reply_any([OUTBOX_CLAUDE, OUTBOX_CODEX], "022A-DIAG", "022A-DIAG", valid_022a_diag)
     if not reply_path:
         return False
 
@@ -1255,7 +1279,7 @@ def process_complete_022a_diag(state):
 
 
 def process_invalid_022a_diag(state):
-    reply_path, reply_data = find_latest_matching_reply(OUTBOX_CLAUDE, "022A-DIAG", "022A-DIAG", is_invalid_claude_reply)
+    reply_path, reply_data = find_latest_matching_reply_any([OUTBOX_CLAUDE, OUTBOX_CODEX], "022A-DIAG", "022A-DIAG", is_invalid_claude_reply)
     if not reply_path:
         return False
 
