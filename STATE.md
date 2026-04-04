@@ -10,7 +10,7 @@
 | Fase em andamento | 021A PRODUZIDO — aguardando homologacao (021B) |
 | Próxima etapa | Orquestrador homologa payload 021A; se aprovado, emite contrato de abertura de R5 (022A) |
 | Status inbox_claude | task-021A-DIAG-20260404T133957Z.json (processado — reply existente) |
-| Status inbox_codex_local | task-021A-RETRY-20260404T142951Z.json (reply produzido por claude_local) |
+| Status inbox_codex_local | vazio (021A concluido; aguardando revisao 021B) |-20260404T142951Z.json (reply produzido por claude_local) |
 
 ## Resultado consolidado do ciclo 19
 
@@ -99,7 +99,7 @@ orq: diagnostico 021A para claude
 | reply-020A-20260403T063700Z | processed — resposta generica, sem payload |
 | reply-020A-DIAG-20260403T073016Z | processed — usage limit, sem diagnostico util |
 | reply-020A-DIAG-RETRY-20260404T005826Z | processed — diagnostico util com causa raiz e fix confirmado |
-| Acao em curso | CODEX LOCAL recebe retry limpo do 021A apos diagnostico local conclusivo |
+| Acao em curso | Claude Local revisa a base documental do 021A para homologar ou corrigir o 021B |
 
 
 ## Resultado consolidado do ciclo 20

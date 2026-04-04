@@ -3,11 +3,10 @@
   "source_task_id": "task-021A-20260404T142951Z",
   "actor": "claude_local",
   "cycle": "021A",
-  "status": "complete",
+  "status": "processed",
   "produced_at": "2026-04-04T17:00:00Z",
   "output": {
     "section": "INICIO DO RELATORIO",
-
     "STATUS_GERAL": {
       "ciclo_executado": "021A",
       "artefato_produzido": true,
@@ -17,7 +16,6 @@
       "commit_realizado": false,
       "nota": "Commit pendente apos validacao do payload pelo orquestrador"
     },
-
     "PRODUCAO_DO_021A": {
       "arquivo_criado": "cycle21-input/cycle-021A-r5-conditional-opening-basis.json",
       "campos_presentes": [
@@ -45,7 +43,6 @@
         "cycle19-input/queue_source_map.json"
       ]
     },
-
     "VALIDACAO_DO_PAYLOAD": {
       "violations": [],
       "blockers": [],
@@ -57,14 +54,12 @@
       "authorization_reset": "authorization_inheritance=false, scope_reused=false, premises_reused=false, live_crm_authorized=false, sandbox_authorized=false, write_authorized=false, r2_reopen_prohibited=true, r6_reopen_prohibited=true",
       "evidence_trace": "9 claims com fonte e evidencia especifica"
     },
-
     "BASE_DE_ABERTURA_DE_R5": {
       "readiness_classification": "OPENING_BASIS_DEFINED",
       "justificativa_da_classificacao": "A base documental disponivel e suficiente para definir os tres elementos necessarios: (1) quais evidencias sao necessarias (EV1-EV3), (2) quais criterios de validacao devem ser aplicados (VC1-VC4), (3) quais sao os non-goals explícitos. A condicao de avanco de R5 e concreta, nomeada e resolvivel. OPENING_BASIS_INCONCLUSIVA seria aplicavel apenas se a base nao permitisse definir criterios objetivos — o que nao e o caso aqui.",
       "condicao_central": "Coletar e revisar amostras adicionais agregadas de fallback (sem PII) para confirmar ou descartar que o fallback preserva utilidade comercial suficiente em mensagens recorrentes.",
       "regra_preservada": "Este ciclo orienta o contrato futuro de abertura de R5 mas NAO autoriza a abertura agora. Novo contrato explicito e obrigatorio."
     },
-
     "ISOLAMENTO_PRESERVADO": {
       "no_production_write": "confirmado — nenhuma escrita fora de workspace-integration",
       "no_bridge_write": "confirmado — C:\\AUTOMACAO\\cowork\\claude_bridge intocada",
@@ -74,12 +69,10 @@
       "no_live_crm": "confirmado — nenhuma consulta CRM live",
       "no_content_analysis": "confirmado — nenhuma analise de conteudo de R5 realizada neste ciclo"
     },
-
     "CONCLUSAO": {
       "resumo": "O ciclo 021A produziu a base de abertura condicional de R5 com readiness_classification=OPENING_BASIS_DEFINED. A evidencia dos ciclos 3, 4, 5, 19, 020A e 020B e suficiente para definir criterios objetivos para um futuro contrato de abertura. R5 permanece nao aberto — este ciclo apenas documenta o que seria necessario para abri-lo. Todas as restricoes ativas e red_lines foram preservadas.",
       "proximo_passo_sugerido": "Orquestrador homologa o payload 021A e decide se emite o contrato de abertura de R5 (ciclo 022A) com instrucao para coletar EV1, EV2 e EV3."
     },
-
     "ARTEFATOS": {
       "criados": [
         "cycle21-input/cycle-021A-r5-conditional-opening-basis.json"
@@ -87,7 +80,6 @@
       "modificados": [],
       "commits_pendentes": true
     },
-
     "section_end": "FIM DO RELATORIO"
   }
 }

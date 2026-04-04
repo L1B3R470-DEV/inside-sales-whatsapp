@@ -1,0 +1,23 @@
+﻿{
+    "task_id":  "task-021A-20260404T142951Z",
+    "target_actor":  "codex_local",
+    "cycle":  "021A",
+    "instruction":  "Voce esta autorizado a executar UMA tentativa unica do ciclo 021A, em modo MANUAL/ORQUESTRADO, estritamente documental, read-only, sem runner stateful e sem analise de conteudo real de fallback. O ciclo 020B homologou a priorizacao condicional de R5 como foco defensavel da fila remanescente. Sua missao e produzir o payload oficial do 021A para definir a base de abertura condicional de R5: quais evidencias agregadas e nao sensiveis seriam necessarias, quais criterios documentais devem ser aplicados e quais non-goals precisam ficar explicitados antes de qualquer abertura futura. Este ciclo NAO abre R5 para analise de conteudo. Este ciclo NAO autoriza live CRM, sandbox, escrita, SQL, DDL, DML, producao, bridge, .mcp.json, R2 ou R6. Fontes oficiais obrigatorias: cycle20-input/cycle-020A-conditional-queue-prioritization.json; coordination/outbox_claude/reply-020B-20260404T132226Z.json; cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json; cycle19-input/queue_source_map.json; output/cycle-005-write-proposals.json; output/cycle-004-execution-plan.json; output/cycle-003-improvement-plan.json. Arquivo a criar: cycle21-input/cycle-021A-r5-conditional-opening-basis.json. O JSON deve ser parseavel e conter no minimo: cycle_id=021A; mode=r5-conditional-opening-basis; agent=manual-orchestrated; generated_at; source_precedence; inherited_constraints; focus_reference com selected_focus=R5 e condition_family=pending_validation_evidence_collection; opening_basis com required_evidence_inputs, validation_criteria, documentary_boundaries, explicit_non_goals, why_r5_and_not_others; readiness_classification com um de OPENING_BASIS_DEFINED ou OPENING_BASIS_INCONCLUSIVA; authorization_reset com todos os flags false; blockers; violations=[]; prohibitions; anomalies; evidence_trace; meta.output_file. Regra central: orientar um futuro contrato de abertura de R5 sem autorizar a abertura agora. Se a base documental nao bastar para definir criterios objetivos, prefira OPENING_BASIS_INCONCLUSIVA. Ao final, responda no formato: INICIO DO RELATORIO / STATUS GERAL / PRODUCAO DO 021A / VALIDACAO DO PAYLOAD / BASE DE ABERTURA DE R5 / ISOLAMENTO PRESERVADO / CONCLUSAO / ARTEFATOS / FIM DO RELATORIO.",
+    "context_files":  [
+                          "STATE.md",
+                          "cycle20-input/cycle-020A-conditional-queue-prioritization.json",
+                          "coordination/outbox_claude/reply-021A-DIAG-20260404T110111Z.json",
+                          "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json",
+                          "cycle19-input/queue_source_map.json"
+                      ],
+    "output_path":  "coordination/outbox_codex_local/reply-021A-RETRY-20260404T142951Z.json",
+    "red_lines":  [
+                      "no_production_write",
+                      "no_bridge_write",
+                      "no_mcp_json_write",
+                      "no_r2_reopen",
+                      "no_r6_reopen"
+                  ],
+    "status":  "accepted",
+    "created_at":  "2026-04-04T14:29:51Z"
+}
