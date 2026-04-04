@@ -1,5 +1,5 @@
 # OpenClaw — Estado do Processo
-> Atualizado em: 2026-04-03 (020A bloqueado por reply generico; aguardando diagnostico do Claude Local)
+> Atualizado em: 2026-04-04 (retry do diagnostico 020A emitido; watchdog remoto instalado)
 > Fonte de verdade para todos os atores.
 
 ## Ciclo atual
@@ -7,9 +7,9 @@
 | Campo | Valor |
 |---|---|
 | Ciclo ativo | 20 |
-| Fase em andamento | 020A bloqueado — reply generico do CODEX LOCAL processado; aguardando diagnostico do Claude Local |
-| Próxima etapa | Claude Local investiga regressao de framing/execucao do CODEX LOCAL antes de novo retry do 020A |
-| Status inbox_claude | task-020A-DIAG pendente |
+| Fase em andamento | 020A bloqueado — retry do diagnostico do Claude Local pendente apos reset de usage limit |
+| Próxima etapa | Claude Local executa retry do diagnostico; se util, novo retry controlado do 020A |
+| Status inbox_claude | task-020A-DIAG-RETRY pendente |
 | Status inbox_codex_local | task-020A aceita; ultimo reply invalido processado |
 
 ## Resultado consolidado do ciclo 19
@@ -77,16 +77,17 @@ Qualquer abertura exige:
 | Componente | Status |
 |---|---|
 | poller-codex-remoto.py (PC remoto) | ativo em relay=true |
+| watchdog-remoto.ps1 (PC remoto) | instalado para reiniciar o poller remoto no login e quando o processo cair |
 | poller-autonomous.ps1 (PC local) | ativo — regressao funcional em 020A ainda nao explicada |
 | CLAUDE.md workspace-integration | criado — contexto neutro para CODEX_LOCAL |
-| coordination/inbox_claude/ | task diagnostica do 020A pendente |
+| coordination/inbox_claude/ | retry diagnostico do 020A pendente |
 | coordination/inbox_codex_local/ | task-020A ainda aceita; nenhum retry adicional autorizado |
 | cycle19-input/ | commitado e pushado |
 
 ## Ultimo commit relevante
 
 ```
-orq: instrucao 020A para codex local
+orq: retry 020A-DIAG + watchdog remoto
 ```
 
 ## Bloqueio atual do ciclo 20
@@ -95,4 +96,5 @@ orq: instrucao 020A para codex local
 |---|---|
 | task-020A-20260403T063556Z | accepted pelo CODEX LOCAL |
 | reply-020A-20260403T063700Z | processed — resposta generica, sem payload |
-| Acao em curso | diagnostico do Claude Local para identificar regressao no caminho de execucao do CODEX LOCAL |
+| reply-020A-DIAG-20260403T073016Z | processed — usage limit, sem diagnostico util |
+| Acao em curso | retry do diagnostico do Claude Local para identificar regressao no caminho de execucao do CODEX LOCAL |

@@ -5,3 +5,6 @@
 # Arquivos temporários
 *.tmp
 *.log
+processed_replies.txt
+processed_tasks.txt
+backups/git-prealign-*/

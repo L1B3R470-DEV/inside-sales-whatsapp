@@ -4,6 +4,6 @@
     "actor":  "claude_local",
     "cycle":  "020A-DIAG",
     "output":  "You\u0027re out of extra usage ┬À resets 10am (America/Bahia)",
-    "status":  "complete",
+    "status":  "processed",
     "produced_at":  "2026-04-03T07:30:16.6990685-03:00"
 }
