@@ -971,8 +971,10 @@ def reconcile_state_md():
 
     latest_task_022a = next(iter(sorted(INBOX_CODEX.glob("task-022A*.json"), key=lambda p: p.stat().st_mtime, reverse=True)), None)
     latest_task_022a_diag = next(iter(sorted(INBOX_CLAUDE.glob("task-022A-DIAG*.json"), key=lambda p: p.stat().st_mtime, reverse=True)), None)
+    latest_task_022a_diag_reroute = next(iter(sorted(INBOX_CODEX.glob("task-022A-DIAG*.json"), key=lambda p: p.stat().st_mtime, reverse=True)), None)
     invalid_022a_path, _ = find_latest_matching_reply(OUTBOX_CODEX, "022A", "022A", is_invalid_codex_reply)
     invalid_022a_diag_path, _ = find_latest_matching_reply(OUTBOX_CLAUDE, "022A-DIAG", "022A-DIAG", is_invalid_claude_reply)
+    claude_limited = not actor_is_available("claude_local")
 
     current_updated = "> Atualizado em: 2026-04-04 (021B homologado; 022A emitido para formalizar o contrato de abertura de R5)"
     cycle_value = "| Ciclo ativo | 22 |"
@@ -985,7 +987,7 @@ def reconcile_state_md():
     result_21b = "| 21B | HOMOLOGADO | base de abertura de R5 confirmada; ciclo 22 pode ser discutido |"
     result_22a = "| 22A | PENDENTE | contrato de abertura de R5 ainda nao produzido |"
 
-    if invalid_022a_path or latest_task_022a_diag:
+    if invalid_022a_path or latest_task_022a_diag or latest_task_022a_diag_reroute:
         retry_diag = latest_task_022a_diag and "DIAG-RETRY" in latest_task_022a_diag.name
         current_updated = "> Atualizado em: 2026-04-04 (021B homologado; 022A bloqueado por reply generico; diagnostico 022A emitido automaticamente)"
         phase_value = "| Fase em andamento | 022A bloqueado por reply generico do CODEX LOCAL — diagnostico local pendente |"
@@ -1006,7 +1008,18 @@ def reconcile_state_md():
             current_action = "| Acao em curso | Claude Local refaz o diagnostico do 022A com contexto mais estrito para localizar a regressao real |"
             result_22a = "| 22A | BLOQUEADO | aguardando retry diagnostico do Claude Local |"
 
-    if invalid_022a_diag_path and not latest_task_022a_diag:
+        if latest_task_022a_diag_reroute and "DIAG-RETRY" in latest_task_022a_diag_reroute.name:
+            current_updated = "> Atualizado em: 2026-04-04 (Claude Local em limit-hit; 022A-DIAG-RETRY rerouteado para o CODEX LOCAL)"
+            phase_value = "| Fase em andamento | 022A-DIAG-RETRY rerouteado para o CODEX LOCAL por indisponibilidade do Claude Local |"
+            next_value = "| Próxima etapa | CODEX LOCAL executa o diagnostico do 022A; se conclusivo, o supervisor libera retry limpo do 022A |"
+            claude_hint = "limit-hit" if claude_limited else "indisponivel"
+            claude_value = f"| Status inbox_claude | vazio (Claude Local {claude_hint}; diagnostico rerouteado) |"
+            codex_value = f"| Status inbox_codex_local | {latest_task_022a_diag_reroute.name} pendente |"
+            latest_commit = "orq: reroute task analitica por indisponibilidade de IA"
+            current_action = "| Acao em curso | CODEX LOCAL executa o diagnostico do 022A usando a mesma output_path da trilha analitica original |"
+            result_22a = "| 22A | BLOQUEADO | Claude Local indisponivel; diagnostico rerouteado para o CODEX LOCAL |"
+
+    if invalid_022a_diag_path and not latest_task_022a_diag and not latest_task_022a_diag_reroute:
         current_updated = "> Atualizado em: 2026-04-04 (022A-DIAG respondeu genericamente; retry diagnostico do 022A pendente ou em preparo)"
         phase_value = "| Fase em andamento | 022A-DIAG falhou genericamente — aguardando retry diagnostico do Claude Local |"
         next_value = "| Próxima etapa | Reemitir diagnostico util do 022A e, se conclusivo, liberar retry limpo do CODEX LOCAL |"
