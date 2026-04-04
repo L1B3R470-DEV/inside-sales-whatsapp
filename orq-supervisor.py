@@ -101,6 +101,10 @@ def load_agent_runtime_status():
     return {"actors": {}}
 
 
+def save_agent_runtime_status(data: dict):
+    AGENT_STATUS_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
 def actor_is_available(actor_id: str) -> bool:
     data = load_agent_runtime_status()
     actor = data.get("actors", {}).get(actor_id, {})
@@ -111,6 +115,66 @@ def actor_is_available(actor_id: str) -> bool:
     if status in {"limit-hit", "blocked", "unavailable"}:
         return False
     return True
+
+
+def is_usage_limit_output(output) -> bool:
+    lowered = normalize_text(output)
+    markers = [
+        "out of extra usage",
+        "youre out of extra usage",
+        "you're out of extra usage",
+        "usage limit",
+        "hit your weekly limit",
+    ]
+    return any(marker in lowered for marker in markers)
+
+
+def sync_agent_status_from_replies() -> bool:
+    data = load_agent_runtime_status()
+    actors = data.setdefault("actors", {})
+    latest_by_actor = {}
+
+    for folder in (OUTBOX_CLAUDE, OUTBOX_CODEX):
+        for path in folder.glob("reply-*.json"):
+            try:
+                reply = load_json(path)
+            except Exception:
+                continue
+            actor = str(reply.get("actor") or "").strip()
+            if not actor:
+                continue
+            current = latest_by_actor.get(actor)
+            mtime = path.stat().st_mtime
+            if current is None or mtime > current[0]:
+                latest_by_actor[actor] = (mtime, path, reply)
+
+    changed = False
+    for actor, (_, path, reply) in latest_by_actor.items():
+        entry = actors.setdefault(actor, {})
+        output = reply.get("output")
+        produced_at = reply.get("produced_at", "")
+        reply_id = reply.get("reply_id", path.stem)
+        new_status = "limit-hit" if is_usage_limit_output(output) else "ok"
+        new_available = new_status == "ok"
+
+        updates = {
+            "status": new_status,
+            "available": new_available,
+            "last_seen_at": produced_at,
+            "last_reply_id": reply_id,
+            "source": "orq-supervisor",
+        }
+        if new_status == "limit-hit":
+            entry["last_limit_hit_at"] = produced_at
+        for key, value in updates.items():
+            if entry.get(key) != value:
+                entry[key] = value
+                changed = True
+
+    if changed:
+        data["updated_at"] = now_iso()
+        save_agent_runtime_status(data)
+    return changed
 
 
 def pick_actor(role: str) -> str:
@@ -999,6 +1063,7 @@ def reconcile_state_md():
     invalid_022a_path, _ = find_latest_matching_reply(OUTBOX_CODEX, "022A", "022A", is_invalid_codex_reply)
     invalid_022a_diag_path, _ = find_latest_matching_reply(OUTBOX_CLAUDE, "022A-DIAG", "022A-DIAG", is_invalid_claude_reply)
     claude_limited = not actor_is_available("claude_local")
+    codex_limited = not actor_is_available("codex_local")
 
     current_updated = "> Atualizado em: 2026-04-04 (021B homologado; 022A emitido para formalizar o contrato de abertura de R5)"
     cycle_value = "| Ciclo ativo | 22 |"
@@ -1042,6 +1107,15 @@ def reconcile_state_md():
             latest_commit = "orq: reroute task analitica por indisponibilidade de IA"
             current_action = "| Acao em curso | CODEX LOCAL executa o diagnostico do 022A usando a mesma output_path da trilha analitica original |"
             result_22a = "| 22A | BLOQUEADO | Claude Local indisponivel; diagnostico rerouteado para o CODEX LOCAL |"
+            if codex_limited:
+                current_updated = "> Atualizado em: 2026-04-04 (Claude Local e CODEX LOCAL em limit-hit; 022A-DIAG-RETRY sem backend local elegivel)"
+                phase_value = "| Fase em andamento | 022A-DIAG-RETRY bloqueado por exaustao de quota nos dois backends locais |"
+                next_value = "| Próxima etapa | Redirecionar para backend independente disponivel ou aguardar reset de quota/local shell alternativo |"
+                claude_value = "| Status inbox_claude | vazio (Claude Local em limit-hit) |"
+                codex_value = f"| Status inbox_codex_local | {latest_task_022a_diag_reroute.name} accepted (CODEX LOCAL em limit-hit) |"
+                latest_commit = "feat: monitora usage das IAs e reroteia tasks"
+                current_action = "| Acao em curso | Monitor de usage bloqueia novos reroutes locais porque Claude e CODEX LOCAL compartilham saturacao no PC local |"
+                result_22a = "| 22A | BLOQUEADO | ambos os backends locais saturados; falta backend independente para continuar |"
 
     if invalid_022a_diag_path and not latest_task_022a_diag and not latest_task_022a_diag_reroute:
         current_updated = "> Atualizado em: 2026-04-04 (022A-DIAG respondeu genericamente; retry diagnostico do 022A pendente ou em preparo)"
@@ -1344,6 +1418,9 @@ def process_once():
         tailscale_ping(peer)
 
     changed = False
+    if sync_agent_status_from_replies():
+        reconcile_state_md()
+        changed = True
     if process_stalled_tasks():
         changed = True
 

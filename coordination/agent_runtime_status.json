@@ -1,29 +1,29 @@
 {
-  "updated_at": "",
+  "updated_at": "2026-04-04T21:32:20Z",
   "actors": {
     "claude_local": {
       "status": "limit-hit",
       "available": false,
       "provider": "Anthropic",
-      "last_seen_at": "2026-04-04T18:09:00-03:00",
-      "last_limit_hit_at": "2026-04-04T18:09:00-03:00",
+      "last_seen_at": "2026-04-04T18:28:48.8901572-03:00",
+      "last_limit_hit_at": "2026-04-04T18:28:48.8901572-03:00",
       "session_renews_at": "Apr 7, 7pm (America/Bahia)",
       "reset_hint": "Apr 7, 7pm (America/Bahia)",
       "last_task_id": "task-022A-DIAG-RETRY-20260404T202012Z.json",
-      "last_reply_id": "",
-      "source": "manual-observation"
+      "last_reply_id": "reply-022A-DIAG-20260404T182848Z",
+      "source": "orq-supervisor"
     },
     "codex_local": {
-      "status": "ok",
-      "available": true,
+      "status": "limit-hit",
+      "available": false,
       "provider": "OpenAI/Codex",
-      "last_seen_at": "",
-      "last_limit_hit_at": "",
+      "last_seen_at": "2026-04-04T18:23:36.3681752-03:00",
+      "last_limit_hit_at": "2026-04-04T18:23:36.3681752-03:00",
       "session_renews_at": "",
       "reset_hint": "",
       "last_task_id": "",
-      "last_reply_id": "",
-      "source": "openclaw-poller"
+      "last_reply_id": "reply-022A-DIAG-20260404T182336Z",
+      "source": "orq-supervisor"
     },
     "codex_business": {
       "status": "watch",

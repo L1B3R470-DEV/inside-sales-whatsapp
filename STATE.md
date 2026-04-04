@@ -1,5 +1,5 @@
 # OpenClaw — Estado do Processo
-> Atualizado em: 2026-04-04 (Claude Local em limit-hit; 022A-DIAG-RETRY rerouteado para o CODEX LOCAL)
+> Atualizado em: 2026-04-04 (Claude Local e CODEX LOCAL em limit-hit; 022A-DIAG-RETRY sem backend local elegivel)
 > Fonte de verdade para todos os atores.
 
 ## Ciclo atual
@@ -7,10 +7,10 @@
 | Campo | Valor |
 |---|---|
 | Ciclo ativo | 22 |
-| Fase em andamento | 022A-DIAG-RETRY rerouteado para o CODEX LOCAL por indisponibilidade do Claude Local |
-| Próxima etapa | CODEX LOCAL executa o diagnostico do 022A; se conclusivo, o supervisor libera retry limpo do 022A |
-| Status inbox_claude | vazio (Claude Local limit-hit; diagnostico rerouteado) |
-| Status inbox_codex_local | task-022A-DIAG-RETRY-20260404T202012Z-REROUTE-20260404T182159Z.json pendente |
+| Fase em andamento | 022A-DIAG-RETRY bloqueado por exaustao de quota nos dois backends locais |
+| Próxima etapa | Redirecionar para backend independente disponivel ou aguardar reset de quota/local shell alternativo |
+| Status inbox_claude | vazio (Claude Local em limit-hit) |
+| Status inbox_codex_local | task-022A-DIAG-RETRY-20260404T202012Z-REROUTE-20260404T182159Z.json accepted (CODEX LOCAL em limit-hit) |
 
 ## Resultado consolidado do ciclo 19
 
@@ -82,14 +82,14 @@ Qualquer abertura exige:
 | poller-autonomous.ps1 (PC local) | monitora usage das IAs, atualiza coordination/agent_runtime_status.json e honra target_actor/output_path |
 | CLAUDE.md workspace-integration | criado — contexto neutro para CODEX_LOCAL |
 | coordination/agent_runtime_status.json | registra disponibilidade/usage das IAs para reroteamento automatico |
-| coordination/inbox_claude/ | vazio (Claude Local limit-hit; diagnostico rerouteado) |
-| coordination/inbox_codex_local/ | task-022A-DIAG-RETRY-20260404T202012Z-REROUTE-20260404T182159Z.json pendente |
+| coordination/inbox_claude/ | vazio (Claude Local em limit-hit) |
+| coordination/inbox_codex_local/ | task-022A-DIAG-RETRY-20260404T202012Z-REROUTE-20260404T182159Z.json accepted (CODEX LOCAL em limit-hit) |
 | cycle19-input/ | commitado e pushado |
 
 ## Ultimo commit relevante
 
 ```
-orq: reroute task analitica por indisponibilidade de IA
+feat: monitora usage das IAs e reroteia tasks
 ```
 
 ## Bloqueio atual do ciclo 20
@@ -100,7 +100,7 @@ orq: reroute task analitica por indisponibilidade de IA
 | reply-020A-20260403T063700Z | processed — resposta generica, sem payload |
 | reply-020A-DIAG-20260403T073016Z | processed — usage limit, sem diagnostico util |
 | reply-020A-DIAG-RETRY-20260404T005826Z | processed — diagnostico util com causa raiz e fix confirmado |
-| Acao em curso | CODEX LOCAL executa o diagnostico do 022A usando a mesma output_path da trilha analitica original |
+| Acao em curso | Monitor de usage bloqueia novos reroutes locais porque Claude e CODEX LOCAL compartilham saturacao no PC local |
 
 
 ## Resultado consolidado do ciclo 20
@@ -123,4 +123,4 @@ orq: reroute task analitica por indisponibilidade de IA
 
 | Microfase | Veredito | Observacao |
 |---|---|---|
-| 22A | BLOQUEADO | Claude Local indisponivel; diagnostico rerouteado para o CODEX LOCAL |
+| 22A | BLOQUEADO | ambos os backends locais saturados; falta backend independente para continuar |
