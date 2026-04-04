@@ -1,0 +1,59 @@
+{
+  "reply_id": "reply-021B-20260404T143857Z",
+  "source_task_id": "TASK-WS-021B-20260404T143907Z",
+  "actor": "claude_local",
+  "cycle": "021B",
+  "status": "complete",
+  "produced_at": "2026-04-04T14:50:00Z",
+  "output": {
+    "section": "INICIO DO RELATORIO",
+    "VEREDITO": "HOMOLOGADO — o payload do ciclo 021A define formalmente a base de abertura condicional de R5 com criterios documentais objetivos, non-goals claros e fronteiras de autorizacao que impedem abertura implicita. A base e suficiente para orientar um futuro contrato de abertura de R5 sem autorizar abertura agora. Nenhuma violacao material identificada.",
+    "EVIDENCIAS_OBRIGATORIAS_RECEBIDAS": {
+      "cycle21-input/cycle-021A-r5-conditional-opening-basis.json": "lido e analisado integralmente — artefato primario da homologacao",
+      "coordination/outbox_codex_local/reply-021A-RETRY-20260404T142951Z.json": "lido — confirma producao limpa, violations=[], blockers=[], todos os campos presentes, evidence_trace com 9 claims, red_lines preservadas",
+      "cycle20-input/cycle-020A-conditional-queue-prioritization.json": "referenciado no source_precedence do 021A — base da priorizacao condicional de R5",
+      "coordination/outbox_claude/reply-020B-20260404T132226Z.json": "lido — homologacao do 020A confirmada; 020B_homologado=true; ciclo_21_pode_ser_discutido=true"
+    },
+    "CLASSIFICACAO_DO_RESULTADO": "success",
+    "AVALIACAO_DA_BASE_DE_ABERTURA": {
+      "ponto_1_required_evidence_inputs_e_validation_criteria_sao_objetivos_e_auditaveis": {
+        "resultado": "CONFIRMADO",
+        "evidencia": "Os tres required_evidence_inputs possuem ID unico (EV1, EV2, EV3), descricao especifica, source_type categorizado e origin_reference com citacao de arquivo e campo de origem. EV1 difere o criterio de volume ('sem volume minimo prescrito neste ciclo; criterio de suficiencia a definir no contrato de abertura') — essa deferencia e explicitamente declarada e auditavel, nao uma lacuna oculta. Os quatro validation_criteria (VC1-VC4) possuem ID unico, descricao com output_format binario ou ternario explicito (VC1: FALLBACK_UTIL_CONFIRMADO / INCONCLUSIVO / NEGADO; VC2: sem PII como criterio binario; VC3: cruzamento obrigatorio com EV2, nao opcional; VC4: ancoragem nos criterios herdados do ciclo 4, nao substituicao). Todos os criterios sao auditaveis por terceiro com acesso aos arquivos de origem referenciados."
+      },
+      "ponto_2_documentary_boundaries_e_explicit_non_goals_impedem_abertura_implicita": {
+        "resultado": "CONFIRMADO",
+        "evidencia": "As 6 documentary_boundaries cobrem: restricao de dado (sem PII, somente agregado), restricao operacional (sem CRM live, sandbox ou producao), restricao de escrita (somente workspace-integration), restricao de escopo de analise (nenhuma analise de conteudo de implementacao de fallback), restricao de propagacao (nenhuma inferencia de autorizacao para R1/R3/R4), e restricao de heranca (ciclo de abertura de R5 e independente, nao herda autorizacao de ciclos anteriores). Os 7 explicit_non_goals fecham os vetores de abertura implicita mais preocupantes: o non_goal 6 ('NAO tratar esta base de abertura como contrato de abertura') previne a armadilha mais direta; o non_goal 3 bloqueia escrita em producao, bridge e .mcp.json de forma enumerada. Nenhuma ambiguidade autorizante identificada."
+      },
+      "ponto_3_why_r5_and_not_others_preserva_base_020A_020B_sem_reabrir_R1_R3_R4": {
+        "resultado": "CONFIRMADO",
+        "evidencia": "A secao why_r5_and_not_others do 021A reproduz os impedimentos de R1/R3/R4 com referencia aos mesmos artefatos do 020A e 019A, sem suavizar, reclassificar ou resolver nenhuma das divergencias registradas. vs_r1: inversao de posicao (priority_cycle3=1 vs execution_order_cycle4=6) permanece registrada como anomalia de severity=medium — identico ao tratamento do 020A. vs_r3 e vs_r4: divergencia explicita irresoluta (ready_in_cycle4_but_absent_in_cycle5) permanece irresolvida — identico ao 019A e 020A. Os 5 pontos positivos de R5 referenciam ciclos 4 e 5 e o evidence_trace confirma a homologacao pelo 020B. O 021A nao abre nem tangencia R1/R3/R4 — apenas os exclui pela mesma razao ja documentada."
+      },
+      "ponto_4_readiness_classification_e_tecnicamente_defensavel": {
+        "resultado": "CONFIRMADO",
+        "evidencia": "readiness_classification=OPENING_BASIS_DEFINED esta correto: o payload define formalmente quais evidencias sao necessarias (EV1-EV3), quais criterios de validacao devem ser aplicados (VC1-VC4), quais fronteiras limitam a abertura e quais sao os non-goals. A condicao de avanco de R5 e concreta ('coletar amostras adicionais agregadas de fallback e avaliar utilidade comercial') e resolvivel. A justificativa descarta ativamente OPENING_BASIS_INCONCLUSIVA com argumento documentado ('seria aplicavel se a base documental nao permitisse definir criterios objetivos — o que nao e o caso'). OPENING_BASIS_DEFINED nao equivale a autorizacao de abertura — o authorization_reset confirma: authorization_inheritance=false, scope_reused=false, write_authorized=false. A classificacao e defensavel."
+      },
+      "ponto_5_payload_021A_e_formalmente_homologavel": {
+        "resultado": "HOMOLOGAVEL",
+        "evidencia": "violations=[], blockers=[]. authorization_reset: todos os flags operacionais false, r2_reopen_prohibited=true, r6_reopen_prohibited=true. Prohibitions explícitas (7 itens). Anomalies registradas (3 itens herdados de baixa severidade). Evidence_trace com 9 claims, todas com fonte especifica e evidencia citada. source_precedence rastreavel (8 fontes). focus_reference com selection_basis apontando para 020A e homologation_basis apontando para reply-020B. O reply-021A-RETRY confirma que nenhuma escrita em producao, bridge ou .mcp.json foi realizada. Red_lines da tarefa 021B todas preservadas: no_production_write, no_bridge_write, no_mcp_json_write, no_r2_reopen, no_r6_reopen."
+      }
+    },
+    "DECISAO_SOBRE_A_PROGRESSAO": {
+      "021B_homologado": true,
+      "ciclo_22_pode_ser_discutido": true,
+      "justificativa": "Todos os cinco pontos de verificacao foram confirmados sem falha. O payload 021A e coerente com os ciclos 020A, 020B, 019A e com as restricoes herdadas desde o ciclo 14A. A base de abertura condicional de R5 esta formalmente definida com criterios objetivos, auditaveis e nao-autorizantes. O 021B e homologado. O ciclo 22 pode ser discutido a partir da necessidade de emissao do contrato de abertura de R5, que deve incluir instrucao explicita para coleta de EV1, EV2 e EV3 com aplicacao dos criterios VC1-VC4."
+    },
+    "CRITERIO_OBJETIVO_QUE_DECIDIU_O_CASO": "Ausencia de violations, blockers e falhas de ancoragem documental no payload 021A, combinada com: (a) required_evidence_inputs com IDs unicos, source_type categorizado e origin_reference especifico; (b) validation_criteria com output_format binario/ternario explicito e ancoragem em fontes precedentes; (c) documentary_boundaries e explicit_non_goals que cobrem todos os vetores de abertura implicita sem ambiguidade autorizante; (d) why_r5_and_not_others que reproduz os impedimentos de R1/R3/R4 sem suavizacao; (e) readiness_classification defensavel com authorization_reset com todos os flags operacionais false. Nenhum ponto de verificacao retornou falha.",
+    "O_QUE_NAO_DEVE_MUDAR": [
+      "R2 permanece ITERACAO_SNAPSHOT_BOUND_ENCERRADA — r2_reopen_prohibited=true",
+      "R6 permanece stable_closed — r6_reopen_prohibited=true",
+      "Divergencia de R3 e R4 permanece explicita e irresoluta — nao suavizar, nao reclassificar",
+      "Inversao de R1 permanece registrada como anomalia severity=medium — nao remover, nao resolver sem novo contrato",
+      "OPENING_BASIS_DEFINED nao equivale a autorizacao de abertura — novo contrato explicito obrigatorio antes de qualquer analise de conteudo de R5",
+      "session_write_policy=RESSALVA_OPERACIONAL permanece ativa (binding desde 14A)",
+      "write_authorized=false, live_crm_authorized=false, sandbox_authorized=false — nao alterar sem novo contrato",
+      "O criterio de suficiencia de volume de EV1 deve ser definido no contrato de abertura, nao inferido a partir deste payload"
+    ],
+    "RESUMO_EXECUTIVO": "O payload do ciclo 021A e formalmente homologavel. A base de abertura condicional de R5 esta suficientemente definida: EV1/EV2/EV3 sao inputs objetivos e auditaveis; VC1-VC4 sao criterios com output_format explicito e ancoragem em fontes precedentes; as 6 documentary_boundaries e 7 explicit_non_goals fecham todos os vetores de abertura implicita sem ambiguidade; why_r5_and_not_others preserva os impedimentos de R1/R3/R4 sem reabrir nenhum; OPENING_BASIS_DEFINED e defensavel e nao-autorizante. Nenhuma violacao, nenhum bloqueio, nenhuma falha de ancoragem. Ciclo 021B homologado. Ciclo 22 pode ser discutido a partir da emissao do contrato de abertura de R5 com instrucao para coleta de EV1/EV2/EV3.",
+    "section_end": "FIM DO RELATORIO"
+  }
+}
