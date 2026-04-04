@@ -125,12 +125,15 @@ function Build-Prompt {
         } else {
             ""
         }
-        $lines = @(
-            $contextBlock,
-            "",
-            $Instruction
-        )
-        return ($lines | Where-Object { $_ -ne "" -and $_ -ne $null }) -join "`n"
+        # FIX 021A-DIAG: separador explicito garante linha em branco entre contexto e instrucao;
+        # instrucao nula/vazia agora gera aviso em vez de prompt silenciosamente incompleto.
+        if (-not $Instruction) {
+            Write-Log "AVISO: instrucao vazia/nula para tarefa CODEX_LOCAL (ciclo $Cycle) — prompt sera incompleto" "WARN"
+        }
+        $parts = @()
+        if ($contextBlock) { $parts += $contextBlock }
+        if ($Instruction)  { $parts += $Instruction }
+        return $parts -join "`n`n"
     } else {
         # Prompt para CLAUDE_LOCAL (roda no projeto real com CLAUDE.md completo)
         $contextBlock = if ($ContextFiles -and $ContextFiles.Count -gt 0) {
