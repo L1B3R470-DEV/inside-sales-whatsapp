@@ -1,5 +1,5 @@
 # OpenClaw — Estado do Processo
-> Atualizado em: 2026-04-04 (021B homologado; 022A bloqueado por reply generico; diagnostico 022A emitido automaticamente)
+> Atualizado em: 2026-04-04 (021B homologado; 022A bloqueado; retry do diagnostico local pendente)
 > Fonte de verdade para todos os atores.
 
 ## Ciclo atual
@@ -7,8 +7,8 @@
 | Campo | Valor |
 |---|---|
 | Ciclo ativo | 22 |
-| Fase em andamento | 022A bloqueado por reply generico do CODEX LOCAL — diagnostico local pendente |
-| Próxima etapa | Claude Local diagnostica o caminho do 022A e libera retry limpo do CODEX LOCAL |
+| Fase em andamento | 022A bloqueado por reply generico do CODEX LOCAL — retry diagnostico do Claude Local pendente |
+| Próxima etapa | Claude Local conclui o retry do diagnostico do 022A e, se conclusivo, libera retry limpo do CODEX LOCAL |
 | Status inbox_claude | task-022A-DIAG-RETRY-20260404T202012Z.json pendente |
 | Status inbox_codex_local | vazio (task 022A arquivada apos reply generico) |
 
@@ -88,7 +88,7 @@ Qualquer abertura exige:
 ## Ultimo commit relevante
 
 ```
-orq: diagnostico 022A para claude
+orq: retry diagnostico 022A para claude
 ```
 
 ## Bloqueio atual do ciclo 20
@@ -99,7 +99,7 @@ orq: diagnostico 022A para claude
 | reply-020A-20260403T063700Z | processed — resposta generica, sem payload |
 | reply-020A-DIAG-20260403T073016Z | processed — usage limit, sem diagnostico util |
 | reply-020A-DIAG-RETRY-20260404T005826Z | processed — diagnostico util com causa raiz e fix confirmado |
-| Acao em curso | Claude Local diagnostica por que o prompt do 022A chegou incompleto ao CODEX LOCAL |
+| Acao em curso | Claude Local refaz o diagnostico do 022A com contexto mais estrito para localizar a regressao real |
 
 
 ## Resultado consolidado do ciclo 20
@@ -122,4 +122,4 @@ orq: diagnostico 022A para claude
 
 | Microfase | Veredito | Observacao |
 |---|---|---|
-| 22A | BLOQUEADO | reply generico do CODEX LOCAL; diagnostico local pendente |
+| 22A | BLOQUEADO | aguardando retry diagnostico do Claude Local |
