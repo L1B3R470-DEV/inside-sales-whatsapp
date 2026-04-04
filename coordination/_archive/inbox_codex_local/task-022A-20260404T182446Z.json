@@ -1,0 +1,24 @@
+﻿{
+    "task_id":  "task-022A-20260404T182446Z",
+    "target_actor":  "codex_local",
+    "cycle":  "022A",
+    "instruction":  "Voce esta autorizado a executar UMA tentativa unica do ciclo 022A, em modo MANUAL/ORQUESTRADO, estritamente documental, read-only, sem runner stateful e sem coletar dados reais neste ciclo. O ciclo 021B homologou a base de abertura condicional de R5. Sua missao e produzir o payload oficial do 022A para formalizar o CONTRATO DE ABERTURA de R5, definindo exatamente como um ciclo futuro podera coletar EV1, EV2 e EV3 e aplicar VC1, VC2, VC3 e VC4, sem autorizar essa coleta agora. Este ciclo NAO executa a abertura de R5. Este ciclo NAO coleta amostras reais. Este ciclo NAO autoriza live CRM, sandbox, escrita, SQL, DDL, DML, producao, bridge, .mcp.json, R2 ou R6. Fontes oficiais obrigatorias: cycle21-input/cycle-021A-r5-conditional-opening-basis.json; coordination/outbox_claude/reply-021B-20260404T143857Z.json; cycle20-input/cycle-020A-conditional-queue-prioritization.json; coordination/outbox_claude/reply-020B-20260404T132226Z.json; cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json. Arquivo a criar: cycle22-input/cycle-022A-r5-opening-contract.json. O JSON deve ser parseavel e conter no minimo: cycle_id=022A; mode=r5-opening-contract; agent=manual-orchestrated; generated_at; source_precedence; inherited_constraints; opening_reference com selected_focus=R5, readiness_inherited=OPENING_BASIS_DEFINED, homologation_basis=021B; contract_scope com objective, permitted_future_inputs (EV1, EV2, EV3), prohibited_actions_now, future_validation_protocol (VC1-VC4), acceptance_gates, execution_non_goals; collection_contract with collection_requirements, evidence_format_rules, pii_controls, isolation_requirements, future_authorization_dependencies; readiness_classification com um de OPENING_CONTRACT_DEFINED ou OPENING_CONTRACT_INCONCLUSIVO; authorization_reset com todos os flags false; blockers; violations=[]; prohibitions; anomalies; evidence_trace; meta.output_file. Regra central: transformar a base de abertura do 021A em contrato operacional futuro, mas sem iniciar a abertura agora. Se a base nao bastar para definir gates objetivos do contrato, prefira OPENING_CONTRACT_INCONCLUSIVO. Ao final, responda no formato: INICIO DO RELATORIO / STATUS GERAL / PRODUCAO DO 022A / VALIDACAO DO PAYLOAD / CONTRATO DE ABERTURA DE R5 / ISOLAMENTO PRESERVADO / CONCLUSAO / ARTEFATOS / FIM DO RELATORIO.",
+    "context_files":  [
+                          "STATE.md",
+                          "cycle21-input/cycle-021A-r5-conditional-opening-basis.json",
+                          "coordination/outbox_claude/reply-021B-20260404T143857Z.json",
+                          "cycle20-input/cycle-020A-conditional-queue-prioritization.json",
+                          "coordination/outbox_claude/reply-020B-20260404T132226Z.json",
+                          "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json"
+                      ],
+    "output_path":  "coordination/outbox_codex_local/reply-022A-20260404T182446Z.json",
+    "red_lines":  [
+                      "no_production_write",
+                      "no_bridge_write",
+                      "no_mcp_json_write",
+                      "no_r2_reopen",
+                      "no_r6_reopen"
+                  ],
+    "status":  "accepted",
+    "created_at":  "2026-04-04T18:24:46Z"
+}

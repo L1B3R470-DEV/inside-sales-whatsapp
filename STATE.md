@@ -1,5 +1,5 @@
 # OpenClaw — Estado do Processo
-> Atualizado em: 2026-04-04 (021B homologado; 022A emitido para formalizar o contrato de abertura de R5)
+> Atualizado em: 2026-04-04 (021B homologado; 022A bloqueado por reply generico; diagnostico 022A emitido automaticamente)
 > Fonte de verdade para todos os atores.
 
 ## Ciclo atual
@@ -7,10 +7,10 @@
 | Campo | Valor |
 |---|---|
 | Ciclo ativo | 22 |
-| Fase em andamento | 021B homologado — 022A pendente de producao do CODEX LOCAL |
-| Próxima etapa | CODEX LOCAL formaliza o contrato de abertura de R5 no 022A |
-| Status inbox_claude | vazio (021B homologado) |
-| Status inbox_codex_local | task-022A-20260404T182446Z.json pendente |
+| Fase em andamento | 022A bloqueado por reply generico do CODEX LOCAL — diagnostico local pendente |
+| Próxima etapa | Claude Local diagnostica o caminho do 022A e libera retry limpo do CODEX LOCAL |
+| Status inbox_claude | task-022A-DIAG-20260404T201238Z.json pendente |
+| Status inbox_codex_local | vazio (task 022A arquivada apos reply generico) |
 
 ## Resultado consolidado do ciclo 19
 
@@ -81,14 +81,14 @@ Qualquer abertura exige:
 | watchdog-remoto.ps1 (PC remoto) | monitora e reergue o poller remoto quando o processo cair |
 | poller-autonomous.ps1 (PC local) | fix local confirmado; retry limpo do 020A emitido apos diagnostico |
 | CLAUDE.md workspace-integration | criado — contexto neutro para CODEX_LOCAL |
-| coordination/inbox_claude/ | task-021A-DIAG-20260404T133957Z.json pendente |
-| coordination/inbox_codex_local/ | vazio |
+| coordination/inbox_claude/ | task-022A-DIAG-20260404T201238Z.json pendente |
+| coordination/inbox_codex_local/ | vazio (task 022A arquivada apos reply generico) |
 | cycle19-input/ | commitado e pushado |
 
 ## Ultimo commit relevante
 
 ```
-orq: diagnostico 021A para claude
+orq: diagnostico 022A para claude
 ```
 
 ## Bloqueio atual do ciclo 20
@@ -99,7 +99,7 @@ orq: diagnostico 021A para claude
 | reply-020A-20260403T063700Z | processed — resposta generica, sem payload |
 | reply-020A-DIAG-20260403T073016Z | processed — usage limit, sem diagnostico util |
 | reply-020A-DIAG-RETRY-20260404T005826Z | processed — diagnostico util com causa raiz e fix confirmado |
-| Acao em curso | Claude Local revisa a base documental do 021A para homologar ou corrigir o 021B |
+| Acao em curso | Claude Local diagnostica por que o prompt do 022A chegou incompleto ao CODEX LOCAL |
 
 
 ## Resultado consolidado do ciclo 20
@@ -115,11 +115,11 @@ orq: diagnostico 021A para claude
 | Microfase | Veredito | Observacao |
 |---|---|---|
 | 21A | PRODUZIDO | OPENING_BASIS_DEFINED / R5 / reply em outbox_codex_local |
-| 21B | PENDENTE | homologacao do payload 021A pelo orquestrador |
+| 21B | HOMOLOGADO | base de abertura de R5 confirmada; ciclo 22 pode ser discutido |
 
 
 ## Resultado consolidado do ciclo 22
 
 | Microfase | Veredito | Observacao |
 |---|---|---|
-| 22A | PENDENTE | contrato de abertura de R5 ainda nao produzido |
+| 22A | BLOQUEADO | reply generico do CODEX LOCAL; diagnostico local pendente |
