@@ -17,6 +17,7 @@ $InboxClaude  = Join-Path $CoordDir "inbox_claude"
 $InboxCodex   = Join-Path $CoordDir "inbox_codex_local"
 $OutboxClaude = Join-Path $CoordDir "outbox_claude"
 $OutboxCodex  = Join-Path $CoordDir "outbox_codex_local"
+$AgentStatusFile = Join-Path $CoordDir "agent_runtime_status.json"
 $LogFile      = Join-Path $WorkDir "poller-autonomous.log"
 $ProcessedFile= Join-Path $WorkDir "processed_tasks.txt"
 $PromptFile   = Join-Path $WorkDir "temp_prompt.txt"
@@ -54,6 +55,152 @@ function Is-Processed {
 function Mark-Processed {
     param([string]$TaskId)
     Add-Content -Path $ProcessedFile -Value $TaskId
+}
+
+function Load-AgentStatus {
+    if (Test-Path $AgentStatusFile) {
+        try {
+            return Get-Content $AgentStatusFile -Raw | ConvertFrom-Json
+        } catch {
+        }
+    }
+
+    return [pscustomobject]@{
+        updated_at = ""
+        actors = [pscustomobject]@{
+            claude_local = [pscustomobject]@{
+                status = "unknown"
+                available = $true
+                provider = "Anthropic"
+                last_seen_at = ""
+                last_limit_hit_at = ""
+                session_renews_at = ""
+                reset_hint = ""
+                last_task_id = ""
+                last_reply_id = ""
+                source = "openclaw-poller"
+            }
+            codex_local = [pscustomobject]@{
+                status = "unknown"
+                available = $true
+                provider = "OpenAI/Codex"
+                last_seen_at = ""
+                last_limit_hit_at = ""
+                session_renews_at = ""
+                reset_hint = ""
+                last_task_id = ""
+                last_reply_id = ""
+                source = "openclaw-poller"
+            }
+            codex_business = [pscustomobject]@{
+                status = "unknown"
+                available = $true
+                provider = "Codex Business"
+                last_seen_at = ""
+                last_limit_hit_at = ""
+                session_renews_at = ""
+                reset_hint = ""
+                last_task_id = ""
+                last_reply_id = ""
+                source = "openclaw-poller"
+            }
+        }
+    }
+}
+
+function Save-AgentStatus {
+    param([Parameter(Mandatory = $true)]$Data)
+    $Data.updated_at = (Get-Date -Format "o")
+    $json = $Data | ConvertTo-Json -Depth 20
+    [System.IO.File]::WriteAllText($AgentStatusFile, $json, [System.Text.UTF8Encoding]::new($false))
+}
+
+function Resolve-ActorProfile {
+    param([string]$Actor)
+    switch ($Actor) {
+        "claude_local" { return "CLAUDE_LOCAL" }
+        default { return "CODEX_LOCAL" }
+    }
+}
+
+function Resolve-OutboxPath {
+    param(
+        [pscustomobject]$TaskData,
+        [string]$FallbackOutboxDir,
+        [string]$ReplyId
+    )
+
+    if ($TaskData.output_path) {
+        $relative = [string]$TaskData.output_path
+        return Join-Path $WorkDir ($relative -replace '/', '\')
+    }
+
+    return Join-Path $FallbackOutboxDir "$ReplyId.json"
+}
+
+function Test-UsageLimitOutput {
+    param([string]$Output)
+    if (-not $Output) { return $false }
+    $lower = $Output.ToLowerInvariant()
+    return $lower.Contains("out of extra usage") -or $lower.Contains("usage limit") -or $lower.Contains("hit your weekly limit")
+}
+
+function Parse-UsageResetHint {
+    param([string]$Output)
+    if (-not $Output) { return "" }
+    $match = [regex]::Match($Output, 'resets?\s+(?<reset>.+?)(?:\r?\n|$)')
+    if ($match.Success) {
+        return $match.Groups["reset"].Value.Trim()
+    }
+    return ""
+}
+
+function Update-AgentStatus {
+    param(
+        [string]$Actor,
+        [string]$TaskId,
+        [string]$ReplyId,
+        [string]$OutputRaw
+    )
+
+    $statusData = Load-AgentStatus
+    $actors = $statusData.actors
+    if (-not ($actors.PSObject.Properties.Name -contains $Actor)) {
+        $actors | Add-Member -NotePropertyName $Actor -NotePropertyValue ([pscustomobject]@{
+            status = "unknown"
+            available = $true
+            provider = "unknown"
+            last_seen_at = ""
+            last_limit_hit_at = ""
+            session_renews_at = ""
+            reset_hint = ""
+            last_task_id = ""
+            last_reply_id = ""
+            source = "openclaw-poller"
+        })
+    }
+
+    $entry = $actors.$Actor
+    $now = Get-Date -Format "o"
+    $entry.last_seen_at = $now
+    $entry.last_task_id = $TaskId
+    $entry.last_reply_id = $ReplyId
+
+    if (Test-UsageLimitOutput -Output $OutputRaw) {
+        $entry.status = "limit-hit"
+        $entry.available = $false
+        $entry.last_limit_hit_at = $now
+        $entry.reset_hint = Parse-UsageResetHint -Output $OutputRaw
+        $entry.session_renews_at = $entry.reset_hint
+    } else {
+        $entry.status = "ok"
+        $entry.available = $true
+        $entry.reset_hint = ""
+        $entry.session_renews_at = ""
+    }
+
+    Save-AgentStatus -Data $statusData
+    return $AgentStatusFile
 }
 
 function Git-Pull {
@@ -155,10 +302,10 @@ function Build-Prompt {
 function Persist-CurrentTask {
     param(
         [pscustomobject]$TaskData,
-        [string]$Actor
+        [string]$ActorProfile
     )
 
-    if ($Actor -eq "CODEX_LOCAL") {
+    if ($ActorProfile -eq "CODEX_LOCAL") {
         $txtPath = $CurrentTaskCodexTxt
         $jsonPath = $CurrentTaskCodexJson
     } else {
@@ -180,19 +327,21 @@ function Process-Task {
     $data   = Get-Content $TaskFilePath -Raw | ConvertFrom-Json
     $taskId = $data.task_id
     $cycle  = $data.cycle
+    $effectiveActor = if ($data.target_actor) { [string]$data.target_actor } else { $Actor.ToLower() }
+    $actorProfile = Resolve-ActorProfile -Actor $effectiveActor
 
     if (Is-Processed $taskId) { return }
     if ($data.status -ne "pending") { return }
 
-    Write-Log "$Actor task detectada: $taskId (ciclo $cycle)"
+    Write-Log "$Actor task detectada: $taskId (ciclo $cycle, target_actor=$effectiveActor)"
 
     $data = Update-TaskStatus $TaskFilePath "accepted"
     Git-CommitPush "accepted: $taskId" @($TaskFilePath)
 
-    Persist-CurrentTask -TaskData $data -Actor $Actor
+    Persist-CurrentTask -TaskData $data -ActorProfile $actorProfile
 
-    $workingDir = if ($Actor -eq "CODEX_LOCAL") { $WorkspaceDir } else { $ProjectDir }
-    $prompt    = Build-Prompt -Actor $Actor -Cycle $cycle -Instruction $data.instruction -ContextFiles $data.context_files
+    $workingDir = if ($actorProfile -eq "CODEX_LOCAL") { $WorkspaceDir } else { $ProjectDir }
+    $prompt    = Build-Prompt -Actor $actorProfile -Cycle $cycle -Instruction $data.instruction -ContextFiles $data.context_files
     $outputRaw = Invoke-ClaudeCLI -Prompt $prompt -Label $taskId -WorkingDir $workingDir
 
     $outputStatus = "complete"
@@ -205,12 +354,16 @@ function Process-Task {
     }
 
     $replyId   = "reply-$cycle-$(Get-Date -Format 'yyyyMMddTHHmmssZ')"
-    $replyPath = Join-Path $OutboxDir "$replyId.json"
+    $replyPath = Resolve-OutboxPath -TaskData $data -FallbackOutboxDir $OutboxDir -ReplyId $replyId
+    $replyDir = Split-Path -Parent $replyPath
+    if (-not (Test-Path $replyDir)) {
+        New-Item -ItemType Directory -Path $replyDir -Force | Out-Null
+    }
 
     $reply = [ordered]@{
         reply_id       = $replyId
         source_task_id = $taskId
-        actor          = $Actor.ToLower() -replace " ", "_"
+        actor          = $effectiveActor
         cycle          = $cycle
         output         = $outputRaw.Trim()
         status         = $outputStatus
@@ -218,7 +371,8 @@ function Process-Task {
     }
     $reply | ConvertTo-Json -Depth 20 | Set-Content $replyPath -Encoding UTF8
 
-    Git-CommitPush "$($Actor.ToLower()): output $cycle" @($replyPath)
+    $statusPath = Update-AgentStatus -Actor $effectiveActor -TaskId $taskId -ReplyId $replyId -OutputRaw $outputRaw
+    Git-CommitPush "$($effectiveActor): output $cycle" @($replyPath, $statusPath)
     Mark-Processed $taskId
     Write-Log "Output commitado: $replyId (status: $outputStatus)"
 }

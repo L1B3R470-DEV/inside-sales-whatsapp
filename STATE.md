@@ -1,5 +1,5 @@
 # OpenClaw — Estado do Processo
-> Atualizado em: 2026-04-04 (021B homologado; 022A bloqueado; retry do diagnostico local pendente)
+> Atualizado em: 2026-04-04 (Claude Local em limit-hit; 022A-DIAG-RETRY rerouteado para o CODEX LOCAL)
 > Fonte de verdade para todos os atores.
 
 ## Ciclo atual
@@ -7,10 +7,10 @@
 | Campo | Valor |
 |---|---|
 | Ciclo ativo | 22 |
-| Fase em andamento | 022A bloqueado por reply generico do CODEX LOCAL — retry diagnostico do Claude Local pendente |
-| Próxima etapa | Claude Local conclui o retry do diagnostico do 022A e, se conclusivo, libera retry limpo do CODEX LOCAL |
-| Status inbox_claude | task-022A-DIAG-RETRY-20260404T202012Z.json pendente |
-| Status inbox_codex_local | vazio (task 022A arquivada apos reply generico) |
+| Fase em andamento | 022A-DIAG-RETRY rerouteado para o CODEX LOCAL por indisponibilidade do Claude Local |
+| Próxima etapa | CODEX LOCAL executa o diagnostico do 022A; se conclusivo, o supervisor libera retry limpo do 022A |
+| Status inbox_claude | vazio (Claude Local indisponivel por usage limit) |
+| Status inbox_codex_local | task-022A-DIAG-RETRY-20260404T202012Z-REROUTE-20260404T182159Z.json pendente |
 
 ## Resultado consolidado do ciclo 19
 
@@ -79,16 +79,17 @@ Qualquer abertura exige:
 | poller-codex-remoto.py (PC remoto) | ativo em relay=true |
 | bootstrap-remoto.ps1 (PC remoto) | inicia poller + watchdog em cada login, de forma destacada |
 | watchdog-remoto.ps1 (PC remoto) | monitora e reergue o poller remoto quando o processo cair |
-| poller-autonomous.ps1 (PC local) | fix local confirmado; retry limpo do 020A emitido apos diagnostico |
+| poller-autonomous.ps1 (PC local) | monitora usage das IAs, atualiza coordination/agent_runtime_status.json e honra target_actor/output_path |
 | CLAUDE.md workspace-integration | criado — contexto neutro para CODEX_LOCAL |
-| coordination/inbox_claude/ | task-022A-DIAG-RETRY-20260404T202012Z.json pendente |
-| coordination/inbox_codex_local/ | vazio (task 022A arquivada apos reply generico) |
+| coordination/agent_runtime_status.json | registra disponibilidade/usage das IAs para reroteamento automatico |
+| coordination/inbox_claude/ | vazio (task diagnostica rerouteada por limit-hit do Claude Local) |
+| coordination/inbox_codex_local/ | task 022A-DIAG-RETRY rerouteada pendente |
 | cycle19-input/ | commitado e pushado |
 
 ## Ultimo commit relevante
 
 ```
-orq: retry diagnostico 022A para claude
+orq: reroute task analitica por indisponibilidade de IA
 ```
 
 ## Bloqueio atual do ciclo 20
@@ -99,7 +100,7 @@ orq: retry diagnostico 022A para claude
 | reply-020A-20260403T063700Z | processed — resposta generica, sem payload |
 | reply-020A-DIAG-20260403T073016Z | processed — usage limit, sem diagnostico util |
 | reply-020A-DIAG-RETRY-20260404T005826Z | processed — diagnostico util com causa raiz e fix confirmado |
-| Acao em curso | Claude Local refaz o diagnostico do 022A com contexto mais estrito para localizar a regressao real |
+| Acao em curso | Supervisor prepara novo diagnostico do 022A com contexto mais estrito para o Claude Local |
 
 
 ## Resultado consolidado do ciclo 20
@@ -122,4 +123,4 @@ orq: retry diagnostico 022A para claude
 
 | Microfase | Veredito | Observacao |
 |---|---|---|
-| 22A | BLOQUEADO | aguardando retry diagnostico do Claude Local |
+| 22A | BLOQUEADO | Claude Local entrou em limit-hit; diagnostico foi rerouteado para o CODEX LOCAL |

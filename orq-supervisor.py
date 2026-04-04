@@ -14,11 +14,14 @@ OUTBOX_CODEX = COORD / "outbox_codex_local"
 OUTBOX_CLAUDE = COORD / "outbox_claude"
 INBOX_CODEX = COORD / "inbox_codex_local"
 INBOX_CLAUDE = COORD / "inbox_claude"
+AGENT_STATUS_FILE = COORD / "agent_runtime_status.json"
 ARCHIVE_CODEX = COORD / "_archive" / "inbox_codex_local"
 ARCHIVE_CLAUDE = COORD / "_archive" / "inbox_claude"
 LOG_FILE = REPO / "orq-supervisor.log"
 STATE_FILE = REPO / "orq-supervisor-state.json"
 STATE_MD = REPO / "STATE.md"
+ANALYSIS_ACTORS = ["claude_local", "codex_local"]
+EXECUTION_ACTORS = ["codex_local", "claude_local"]
 
 
 def now_iso():
@@ -27,6 +30,15 @@ def now_iso():
 
 def now_compact():
     return datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+
+def parse_iso_dt(value):
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except Exception:
+        return None
 
 
 def log(message: str):
@@ -78,6 +90,49 @@ def load_state():
 
 def save_state(state):
     STATE_FILE.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
+def load_agent_runtime_status():
+    if AGENT_STATUS_FILE.exists():
+        try:
+            return json.loads(AGENT_STATUS_FILE.read_text(encoding="utf-8"))
+        except Exception:
+            return {"actors": {}}
+    return {"actors": {}}
+
+
+def actor_is_available(actor_id: str) -> bool:
+    data = load_agent_runtime_status()
+    actor = data.get("actors", {}).get(actor_id, {})
+    status = normalize_text(actor.get("status", ""))
+    available = actor.get("available")
+    if available is False:
+        return False
+    if status in {"limit-hit", "blocked", "unavailable"}:
+        return False
+    return True
+
+
+def pick_actor(role: str) -> str:
+    preferred = ANALYSIS_ACTORS if role == "analysis" else EXECUTION_ACTORS
+    for actor in preferred:
+        if actor_is_available(actor):
+            return actor
+    return preferred[0]
+
+
+def pick_fallback_actor(role: str, current_actor: str) -> str | None:
+    preferred = ANALYSIS_ACTORS if role == "analysis" else EXECUTION_ACTORS
+    for actor in preferred:
+        if actor == current_actor:
+            continue
+        if actor_is_available(actor):
+            return actor
+    return None
+
+
+def inbox_for_actor(actor: str) -> Path:
+    return INBOX_CLAUDE if actor == "claude_local" else INBOX_CODEX
 
 
 def normalize_text(value):
@@ -291,9 +346,10 @@ def create_020b_task(reply_path: Path):
     ts = now_compact()
     task_name = f"task-020B-{ts}.json"
     reply_name = f"reply-020B-{ts}.json"
+    selected_actor = pick_actor("analysis")
     task = {
         "task_id": f"task-020B-{ts}",
-        "target_actor": "claude_local",
+        "target_actor": selected_actor,
         "cycle": "020B",
         "instruction": (
             "Voce deve revisar o payload do ciclo 020A e decidir se a priorizacao condicional de R5 esta formalmente homologavel. "
@@ -335,9 +391,10 @@ def create_021a_task(reply_path: Path, retry: bool = False):
     reply_prefix = "reply-021A-RETRY" if retry else "reply-021A"
     task_name = f"{task_prefix}-{ts}.json"
     reply_name = f"{reply_prefix}-{ts}.json"
+    selected_actor = pick_actor("execution")
     task = {
         "task_id": f"task-021A-{ts}",
-        "target_actor": "codex_local",
+        "target_actor": selected_actor,
         "cycle": "021A",
         "instruction": (
             "Voce esta autorizado a executar UMA tentativa unica do ciclo 021A, em modo MANUAL/ORQUESTRADO, estritamente documental, read-only, sem runner stateful e sem analise de conteudo real de fallback. "
@@ -377,9 +434,10 @@ def create_021a_diag_task(reply_path: Path):
     ts = now_compact()
     task_name = f"task-021A-DIAG-{ts}.json"
     reply_name = f"reply-021A-DIAG-{ts}.json"
+    selected_actor = pick_actor("analysis")
     task = {
         "task_id": f"task-021A-DIAG-{ts}",
-        "target_actor": "claude_local",
+        "target_actor": selected_actor,
         "cycle": "021A-DIAG",
         "instruction": (
             "Voce deve diagnosticar por que o CODEX LOCAL respondeu de forma generica/incompleta ao ciclo 021A em vez de produzir o payload esperado. "
@@ -415,9 +473,10 @@ def create_021b_task(reply_path: Path):
     ts = now_compact()
     task_name = f"task-021B-{ts}.json"
     reply_name = f"reply-021B-{ts}.json"
+    selected_actor = pick_actor("analysis")
     task = {
         "task_id": f"task-021B-{ts}",
-        "target_actor": "claude_local",
+        "target_actor": selected_actor,
         "cycle": "021B",
         "instruction": (
             "Voce deve revisar o payload do ciclo 021A e decidir se a base documental de abertura condicional de R5 esta formalmente homologavel. "
@@ -455,9 +514,10 @@ def create_022a_task(reply_path: Path):
     ts = now_compact()
     task_name = f"task-022A-{ts}.json"
     reply_name = f"reply-022A-{ts}.json"
+    selected_actor = pick_actor("execution")
     task = {
         "task_id": f"task-022A-{ts}",
-        "target_actor": "codex_local",
+        "target_actor": selected_actor,
         "cycle": "022A",
         "instruction": (
             "Voce esta autorizado a executar UMA tentativa unica do ciclo 022A, em modo MANUAL/ORQUESTRADO, estritamente documental, read-only, sem runner stateful e sem coletar dados reais neste ciclo. "
@@ -497,9 +557,10 @@ def create_022a_retry_task(diag_reply_path: Path):
     ts = now_compact()
     task_name = f"task-022A-RETRY-{ts}.json"
     reply_name = f"reply-022A-RETRY-{ts}.json"
+    selected_actor = pick_actor("execution")
     task = {
         "task_id": f"task-022A-RETRY-{ts}",
-        "target_actor": "codex_local",
+        "target_actor": selected_actor,
         "cycle": "022A",
         "instruction": (
             "Retry unico do 022A apos diagnostico conclusivo do Claude Local. Voce esta autorizado a executar UMA tentativa unica do ciclo 022A, em modo MANUAL/ORQUESTRADO, estritamente documental, read-only, sem runner stateful e sem coletar dados reais neste ciclo. "
@@ -540,9 +601,10 @@ def create_022a_diag_task(reply_path: Path):
     ts = now_compact()
     task_name = f"task-022A-DIAG-{ts}.json"
     reply_name = f"reply-022A-DIAG-{ts}.json"
+    selected_actor = pick_actor("analysis")
     task = {
         "task_id": f"task-022A-DIAG-{ts}",
-        "target_actor": "claude_local",
+        "target_actor": selected_actor,
         "cycle": "022A-DIAG",
         "instruction": (
             "Voce deve diagnosticar por que o CODEX LOCAL respondeu de forma generica/incompleta ao ciclo 022A em vez de produzir o payload esperado. "
@@ -578,9 +640,10 @@ def create_022a_diag_retry_task(invalid_diag_reply_path: Path):
     ts = now_compact()
     task_name = f"task-022A-DIAG-RETRY-{ts}.json"
     reply_name = f"reply-022A-DIAG-RETRY-{ts}.json"
+    selected_actor = pick_actor("analysis")
     task = {
         "task_id": f"task-022A-DIAG-RETRY-{ts}",
-        "target_actor": "claude_local",
+        "target_actor": selected_actor,
         "cycle": "022A-DIAG",
         "instruction": (
             "Retry unico do diagnostico do 022A. O reply anterior do diagnostico foi generico e nao investigou o caminho real do prompt. "
@@ -667,6 +730,45 @@ def commit_push(files, message):
         log(f"Falha no push: {push.stdout} {push.stderr}".strip())
         return False
     log(f"Commit/push concluido: {message}")
+    return True
+
+
+def reroute_task(task_path: Path, archive_dir: Path, role: str, commit_message: str):
+    if not task_path.exists():
+        return False
+
+    try:
+        task = load_json(task_path)
+    except Exception:
+        return False
+
+    current_actor = str(task.get("target_actor") or "")
+    fallback_actor = pick_fallback_actor(role, current_actor)
+    if not fallback_actor:
+        return False
+
+    created_at = parse_iso_dt(task.get("created_at"))
+    if not created_at:
+        created_at = datetime.fromtimestamp(task_path.stat().st_mtime, tz=timezone.utc)
+
+    age_seconds = (datetime.now(timezone.utc) - created_at.astimezone(timezone.utc)).total_seconds()
+    if age_seconds < 600:
+        return False
+
+    task["task_id"] = f"{task.get('task_id', task_path.stem)}-REROUTE-{now_compact()}"
+    task["target_actor"] = fallback_actor
+    task["status"] = "pending"
+    task["created_at"] = now_iso()
+
+    new_task_path = inbox_for_actor(fallback_actor) / f"{task['task_id']}.json"
+    new_task_path.parent.mkdir(parents=True, exist_ok=True)
+    save_json(new_task_path, task)
+    archived_path = archive_dir / task_path.name
+    archive_dir.mkdir(parents=True, exist_ok=True)
+    if task_path.exists():
+        task_path.replace(archived_path)
+    commit_push([new_task_path, archived_path], commit_message)
+    log(f"Task rerouteada automaticamente: {task_path.name} -> {new_task_path.name} (actor={fallback_actor})")
     return True
 
 
@@ -1165,6 +1267,38 @@ def process_invalid_022a_diag(state):
     return True
 
 
+def process_stalled_tasks():
+    changed = False
+
+    for task_path in sorted(INBOX_CLAUDE.glob("task-*.json"), key=lambda p: p.stat().st_mtime):
+        try:
+            task = load_json(task_path)
+        except Exception:
+            continue
+        if task.get("status") != "accepted":
+            continue
+        actor = str(task.get("target_actor") or "claude_local")
+        if actor_is_available(actor):
+            continue
+        if reroute_task(task_path, ARCHIVE_CLAUDE, "analysis", "orq: reroute task analitica por indisponibilidade de IA"):
+            changed = True
+
+    for task_path in sorted(INBOX_CODEX.glob("task-*.json"), key=lambda p: p.stat().st_mtime):
+        try:
+            task = load_json(task_path)
+        except Exception:
+            continue
+        if task.get("status") != "accepted":
+            continue
+        actor = str(task.get("target_actor") or "codex_local")
+        if actor_is_available(actor):
+            continue
+        if reroute_task(task_path, ARCHIVE_CODEX, "execution", "orq: reroute task executora por indisponibilidade de IA"):
+            changed = True
+
+    return changed
+
+
 def process_once():
     git_pull_ff_only()
     state = load_state()
@@ -1173,6 +1307,9 @@ def process_once():
         tailscale_ping(peer)
 
     changed = False
+    if process_stalled_tasks():
+        changed = True
+
     if process_complete_020a(state):
         changed = True
 
