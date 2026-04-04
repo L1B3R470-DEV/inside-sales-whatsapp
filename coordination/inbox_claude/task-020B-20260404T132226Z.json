@@ -1,23 +1,23 @@
-{
-  "task_id": "task-020B-20260404T132226Z",
-  "target_actor": "claude_local",
-  "cycle": "020B",
-  "instruction": "Voce deve revisar o payload do ciclo 020A e decidir se a priorizacao condicional de R5 esta formalmente homologavel. Objetivo: confirmar se PRIORIZAR_CONDICAO / selected_focus=R5 / readiness_classification=PRIORIDADE_CONDICIONAL_DEFINIDA esta suficientemente ancorado nas fontes do ciclo 19, sem analise de conteudo de item, sem reabrir R2 ou R6 e sem autorizacao implicita. Verifique especificamente: 1. se R5 e tecnicamente a condicao priorizavel mais defensavel entre R1/R3/R4/R5; 2. se R3 e R4 permaneceram com divergencia explicita sem suavizacao; 3. se R1 permaneceu enfraquecido pela inversao priority_cycle3=1 vs execution_order_cycle4=6; 4. se next_cycle_contract_basis de R5 esta preciso e nao autorizante; 5. se o payload 020A e formalmente homologavel. Nao modificar nada. Nao tocar em producao, bridge, .mcp.json, projeto real, R2, R6. Formato obrigatorio da resposta: INICIO DO RELATORIO / VEREDITO / EVIDENCIAS OBRIGATORIAS RECEBIDAS / CLASSIFICACAO DO RESULTADO / AVALIACAO DA PRIORIZACAO CONDICIONAL / DECISAO SOBRE A PROGRESSAO / CRITERIO OBJETIVO QUE DECIDIU O CASO / O QUE NAO DEVE MUDAR / RESUMO EXECUTIVO / FIM DO RELATORIO. Classificacao esperada: success/partial/failed/blocked. A decisao sobre a progressao deve responder se 020B pode ser homologado e se o ciclo 21 pode ser discutido. Se houver falha material na ancoragem documental, nao homologue automaticamente.",
-  "context_files": [
-    "STATE.md",
-    "cycle20-input/cycle-020A-conditional-queue-prioritization.json",
-    "coordination/outbox_codex_local/reply-020A-RETRY-20260404T015206Z.json",
-    "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json",
-    "cycle19-input/queue_source_map.json"
-  ],
-  "output_path": "coordination/outbox_claude/reply-020B-20260404T132226Z.json",
-  "red_lines": [
-    "no_production_write",
-    "no_bridge_write",
-    "no_mcp_json_write",
-    "no_r2_reopen",
-    "no_r6_reopen"
-  ],
-  "status": "pending",
-  "created_at": "2026-04-04T13:22:26Z"
+﻿{
+    "task_id":  "task-020B-20260404T132226Z",
+    "target_actor":  "claude_local",
+    "cycle":  "020B",
+    "instruction":  "Voce deve revisar o payload do ciclo 020A e decidir se a priorizacao condicional de R5 esta formalmente homologavel. Objetivo: confirmar se PRIORIZAR_CONDICAO / selected_focus=R5 / readiness_classification=PRIORIDADE_CONDICIONAL_DEFINIDA esta suficientemente ancorado nas fontes do ciclo 19, sem analise de conteudo de item, sem reabrir R2 ou R6 e sem autorizacao implicita. Verifique especificamente: 1. se R5 e tecnicamente a condicao priorizavel mais defensavel entre R1/R3/R4/R5; 2. se R3 e R4 permaneceram com divergencia explicita sem suavizacao; 3. se R1 permaneceu enfraquecido pela inversao priority_cycle3=1 vs execution_order_cycle4=6; 4. se next_cycle_contract_basis de R5 esta preciso e nao autorizante; 5. se o payload 020A e formalmente homologavel. Nao modificar nada. Nao tocar em producao, bridge, .mcp.json, projeto real, R2, R6. Formato obrigatorio da resposta: INICIO DO RELATORIO / VEREDITO / EVIDENCIAS OBRIGATORIAS RECEBIDAS / CLASSIFICACAO DO RESULTADO / AVALIACAO DA PRIORIZACAO CONDICIONAL / DECISAO SOBRE A PROGRESSAO / CRITERIO OBJETIVO QUE DECIDIU O CASO / O QUE NAO DEVE MUDAR / RESUMO EXECUTIVO / FIM DO RELATORIO. Classificacao esperada: success/partial/failed/blocked. A decisao sobre a progressao deve responder se 020B pode ser homologado e se o ciclo 21 pode ser discutido. Se houver falha material na ancoragem documental, nao homologue automaticamente.",
+    "context_files":  [
+                          "STATE.md",
+                          "cycle20-input/cycle-020A-conditional-queue-prioritization.json",
+                          "coordination/outbox_codex_local/reply-020A-RETRY-20260404T015206Z.json",
+                          "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json",
+                          "cycle19-input/queue_source_map.json"
+                      ],
+    "output_path":  "coordination/outbox_claude/reply-020B-20260404T132226Z.json",
+    "red_lines":  [
+                      "no_production_write",
+                      "no_bridge_write",
+                      "no_mcp_json_write",
+                      "no_r2_reopen",
+                      "no_r6_reopen"
+                  ],
+    "status":  "accepted",
+    "created_at":  "2026-04-04T13:22:26Z"
 }
