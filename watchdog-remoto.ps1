@@ -5,6 +5,7 @@ $RepoDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $TaskName = "OpenClaw-CodexRemotoPoller"
 $Launcher = Join-Path $RepoDir "start-poller-remoto.bat"
 $PythonExe = "C:\Python310\python.exe"
+$PollerScript = Join-Path $RepoDir "poller-codex-remoto.py"
 $SupervisorScript = Join-Path $RepoDir "orq-supervisor.py"
 $LogFile = Join-Path $RepoDir "watchdog-remoto.log"
 $IntervalSeconds = 60
@@ -35,12 +36,55 @@ function Get-SupervisorProcess {
         }
 }
 
+function Restart-TrackedPythonProcess {
+    param(
+        [Parameter(Mandatory = $true)][string]$Pattern,
+        [Parameter(Mandatory = $true)][string]$ScriptPath,
+        [Parameter(Mandatory = $true)][string[]]$ArgumentList,
+        [Parameter(Mandatory = $true)][string]$FriendlyName
+    )
+
+    $proc = Get-CimInstance Win32_Process |
+        Where-Object {
+            $_.Name -ieq "python.exe" -and
+            $_.CommandLine -and
+            $_.CommandLine -like $Pattern
+        } |
+        Select-Object -First 1
+
+    if (-not $proc) {
+        return $false
+    }
+
+    try {
+        $created = [Management.ManagementDateTimeConverter]::ToDateTime($proc.CreationDate)
+        $scriptWrite = (Get-Item $ScriptPath).LastWriteTime
+        if ($scriptWrite -le $created) {
+            return $false
+        }
+
+        Write-Log "$FriendlyName com codigo desatualizado. Reiniciando para carregar $ScriptPath..."
+        Stop-Process -Id $proc.ProcessId -Force -ErrorAction Stop
+        Start-Sleep -Seconds 2
+        Start-Process -FilePath $PythonExe -ArgumentList $ArgumentList -WorkingDirectory $RepoDir -WindowStyle Hidden
+        Start-Sleep -Seconds 5
+        Write-Log "$FriendlyName reiniciado apos atualizacao de script."
+        return $true
+    } catch {
+        Write-Log "Falha ao reiniciar $FriendlyName apos mudanca de script: $($_.Exception.Message)"
+        return $false
+    }
+}
+
 Write-Log "=== watchdog-remoto iniciado ==="
 Write-Log "Repo: $RepoDir"
 Write-Log "Task monitorada: $TaskName"
 
 while ($true) {
     try {
+        Restart-TrackedPythonProcess -Pattern "*poller-codex-remoto.py*" -ScriptPath $PollerScript -ArgumentList @("`"$PollerScript`"","--relay","true","--repo-dir",".","--interval","60") -FriendlyName "Poller remoto" | Out-Null
+        Restart-TrackedPythonProcess -Pattern "*orq-supervisor.py*" -ScriptPath $SupervisorScript -ArgumentList @("`"$SupervisorScript`"","--interval","60") -FriendlyName "Supervisor remoto" | Out-Null
+
         $poller = Get-PollerProcess
         if (-not $poller) {
             Write-Log "Poller remoto ausente. Tentando reiniciar pela tarefa agendada..."

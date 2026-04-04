@@ -10,3 +10,4 @@ processed_tasks.txt
 backups/git-prealign-*/
 orq-supervisor-state.json
 orq-supervisor.log
+__pycache__/

@@ -40,6 +40,27 @@ def git(args):
     return subprocess.run(["git", *args], cwd=REPO, capture_output=True, text=True)
 
 
+def git_pull_ff_only():
+    status = git(["status", "--porcelain"])
+    if status.returncode != 0:
+        log(f"Falha ao verificar status do git: {status.stdout} {status.stderr}".strip())
+        return
+    if status.stdout.strip():
+        log("Repositorio local com modificacoes pendentes; git pull automatico ignorado nesta passada.")
+        return
+    fetch = git(["fetch", "origin"])
+    if fetch.returncode != 0:
+        log(f"Falha no git fetch: {fetch.stdout} {fetch.stderr}".strip())
+        return
+    pull = git(["pull", "--ff-only", "origin", "master"])
+    if pull.returncode != 0:
+        log(f"Falha no git pull --ff-only: {pull.stdout} {pull.stderr}".strip())
+        return
+    output = (pull.stdout + pull.stderr).strip()
+    if output and "Already up to date." not in output:
+        log(f"Repositorio sincronizado automaticamente: {output}")
+
+
 def load_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8-sig"))
 
@@ -649,6 +670,7 @@ def process_complete_021a(state):
 
 
 def process_once():
+    git_pull_ff_only()
     state = load_state()
     peer = active_local_peer()
     if peer:
