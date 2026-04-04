@@ -1,16 +1,16 @@
 # OpenClaw — Estado do Processo
-> Atualizado em: 2026-04-04 (021A PRODUZIDO — OPENING_BASIS_DEFINED para R5; aguardando homologacao 021B)
+> Atualizado em: 2026-04-04 (021B homologado; 022A emitido para formalizar o contrato de abertura de R5)
 > Fonte de verdade para todos os atores.
 
 ## Ciclo atual
 
 | Campo | Valor |
 |---|---|
-| Ciclo ativo | 21 |
-| Fase em andamento | 021A PRODUZIDO — aguardando homologacao (021B) |
-| Próxima etapa | Orquestrador homologa payload 021A; se aprovado, emite contrato de abertura de R5 (022A) |
-| Status inbox_claude | task-021A-DIAG-20260404T133957Z.json (processado — reply existente) |
-| Status inbox_codex_local | vazio (021A concluido; aguardando revisao 021B) |-20260404T142951Z.json (reply produzido por claude_local) |
+| Ciclo ativo | 22 |
+| Fase em andamento | 021B homologado — 022A pendente de producao do CODEX LOCAL |
+| Próxima etapa | CODEX LOCAL formaliza o contrato de abertura de R5 no 022A |
+| Status inbox_claude | vazio (021B homologado) |
+| Status inbox_codex_local | task-022A-20260404T182446Z.json pendente |
 
 ## Resultado consolidado do ciclo 19
 
@@ -116,3 +116,10 @@ orq: diagnostico 021A para claude
 |---|---|---|
 | 21A | PRODUZIDO | OPENING_BASIS_DEFINED / R5 / reply em outbox_codex_local |
 | 21B | PENDENTE | homologacao do payload 021A pelo orquestrador |
+
+
+## Resultado consolidado do ciclo 22
+
+| Microfase | Veredito | Observacao |
+|---|---|---|
+| 22A | PENDENTE | contrato de abertura de R5 ainda nao produzido |

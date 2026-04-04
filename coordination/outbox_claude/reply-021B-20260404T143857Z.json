@@ -3,7 +3,7 @@
   "source_task_id": "TASK-WS-021B-20260404T143907Z",
   "actor": "claude_local",
   "cycle": "021B",
-  "status": "complete",
+  "status": "processed",
   "produced_at": "2026-04-04T14:50:00Z",
   "output": {
     "section": "INICIO DO RELATORIO",

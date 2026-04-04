@@ -1,0 +1,23 @@
+﻿{
+    "task_id":  "task-021B-20260404T143857Z",
+    "target_actor":  "claude_local",
+    "cycle":  "021B",
+    "instruction":  "Voce deve revisar o payload do ciclo 021A e decidir se a base documental de abertura condicional de R5 esta formalmente homologavel. Objetivo: confirmar se o 021A definiu criterios documentais objetivos, non-goals claros, fronteiras de autorizacao e justificativa suficiente para orientar um futuro contrato de abertura de R5 sem autorizar abertura agora. Verifique especificamente: 1. se opening_basis.required_evidence_inputs e validation_criteria sao objetivos e auditaveis; 2. se documentary_boundaries e explicit_non_goals impedem abertura implicita; 3. se why_r5_and_not_others preserva a base do 020A/020B sem reabrir R1/R3/R4; 4. se readiness_classification e tecnicamente defensavel; 5. se o payload 021A e formalmente homologavel. Nao modificar nada. Nao tocar em producao, bridge, .mcp.json, projeto real, R2, R6. Formato obrigatorio da resposta: INICIO DO RELATORIO / VEREDITO / EVIDENCIAS OBRIGATORIAS RECEBIDAS / CLASSIFICACAO DO RESULTADO / AVALIACAO DA BASE DE ABERTURA / DECISAO SOBRE A PROGRESSAO / CRITERIO OBJETIVO QUE DECIDIU O CASO / O QUE NAO DEVE MUDAR / RESUMO EXECUTIVO / FIM DO RELATORIO. A decisao sobre a progressao deve responder se 021B pode ser homologado e se o ciclo 22 pode ser discutido.",
+    "context_files":  [
+                          "STATE.md",
+                          "cycle21-input/cycle-021A-r5-conditional-opening-basis.json",
+                          "coordination/outbox_codex_local/reply-021A-RETRY-20260404T142951Z.json",
+                          "cycle20-input/cycle-020A-conditional-queue-prioritization.json",
+                          "coordination/outbox_claude/reply-020B-20260404T132226Z.json"
+                      ],
+    "output_path":  "coordination/outbox_claude/reply-021B-20260404T143857Z.json",
+    "red_lines":  [
+                      "no_production_write",
+                      "no_bridge_write",
+                      "no_mcp_json_write",
+                      "no_r2_reopen",
+                      "no_r6_reopen"
+                  ],
+    "status":  "accepted",
+    "created_at":  "2026-04-04T14:38:57Z"
+}
