@@ -1,5 +1,5 @@
 # OpenClaw — Estado do Processo
-> Atualizado em: 2026-04-04 (retry do diagnostico 020A emitido; watchdog remoto instalado)
+> Atualizado em: 2026-04-04 (diagnostico 020A concluido; retry limpo do 020A emitido; bootstrap remoto reforcado)
 > Fonte de verdade para todos os atores.
 
 ## Ciclo atual
@@ -7,10 +7,10 @@
 | Campo | Valor |
 |---|---|
 | Ciclo ativo | 20 |
-| Fase em andamento | 020A bloqueado — retry do diagnostico do Claude Local pendente apos reset de usage limit |
-| Próxima etapa | Claude Local executa retry do diagnostico; se util, novo retry controlado do 020A |
-| Status inbox_claude | task-020A-DIAG-RETRY pendente |
-| Status inbox_codex_local | task-020A aceita; ultimo reply invalido processado |
+| Fase em andamento | 020A retry emitido — aguardando payload do CODEX LOCAL com poller local corrigido |
+| Próxima etapa | CODEX LOCAL reprocesa o 020A usando o caminho corrigido do Invoke-ClaudeCLI |
+| Status inbox_claude | vazio (diagnosticos arquivados; replies processados) |
+| Status inbox_codex_local | task-020A-RETRY pendente |
 
 ## Resultado consolidado do ciclo 19
 
@@ -77,24 +77,26 @@ Qualquer abertura exige:
 | Componente | Status |
 |---|---|
 | poller-codex-remoto.py (PC remoto) | ativo em relay=true |
-| watchdog-remoto.ps1 (PC remoto) | instalado para reiniciar o poller remoto no login e quando o processo cair |
-| poller-autonomous.ps1 (PC local) | ativo — regressao funcional em 020A ainda nao explicada |
+| bootstrap-remoto.ps1 (PC remoto) | inicia poller + watchdog em cada login, de forma destacada |
+| watchdog-remoto.ps1 (PC remoto) | monitora e reergue o poller remoto quando o processo cair |
+| poller-autonomous.ps1 (PC local) | fix local confirmado; retry limpo do 020A emitido apos diagnostico |
 | CLAUDE.md workspace-integration | criado — contexto neutro para CODEX_LOCAL |
-| coordination/inbox_claude/ | retry diagnostico do 020A pendente |
-| coordination/inbox_codex_local/ | task-020A ainda aceita; nenhum retry adicional autorizado |
+| coordination/inbox_claude/ | vazio |
+| coordination/inbox_codex_local/ | retry limpo do 020A pendente |
 | cycle19-input/ | commitado e pushado |
 
 ## Ultimo commit relevante
 
 ```
-orq: retry 020A-DIAG + watchdog remoto
+orq: retry limpo 020A + bootstrap remoto
 ```
 
 ## Bloqueio atual do ciclo 20
 
 | Item | Estado |
 |---|---|
-| task-020A-20260403T063556Z | accepted pelo CODEX LOCAL |
+| task-020A-20260403T063556Z | arquivada — substituida por retry limpo |
 | reply-020A-20260403T063700Z | processed — resposta generica, sem payload |
 | reply-020A-DIAG-20260403T073016Z | processed — usage limit, sem diagnostico util |
-| Acao em curso | retry do diagnostico do Claude Local para identificar regressao no caminho de execucao do CODEX LOCAL |
+| reply-020A-DIAG-RETRY-20260404T005826Z | processed — diagnostico util com causa raiz e fix confirmado |
+| Acao em curso | CODEX LOCAL recebe retry limpo do 020A, com prompt sem pipes e poller local corrigido |

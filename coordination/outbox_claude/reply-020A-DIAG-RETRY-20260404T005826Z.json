@@ -3,7 +3,7 @@
   "source_task_id": "task-020A-DIAG-RETRY-20260404T005826Z",
   "actor": "claude_local",
   "cycle": "020A-DIAG",
-  "status": "complete",
+  "status": "processed",
   "produced_at": "2026-04-04T04:15:00Z",
   "output": {
     "INICIO_DO_RELATORIO": true,

@@ -1,10 +1,10 @@
 # install-remote-watchdog-task.ps1
-# Registra o watchdog remoto para iniciar em cada login e manter o poller vivo.
+# Registra o bootstrap remoto para iniciar em cada login e destacar poller + watchdog.
 
 $TaskName    = "OpenClaw-RemoteWatchdog"
 $RepoDir     = "C:\Users\murdo\workspace-integration"
-$ScriptPath  = Join-Path $RepoDir "watchdog-remoto.ps1"
-$Description = "Watchdog remoto OpenClaw para reerguer o poller em relay quando necessario"
+$ScriptPath  = Join-Path $RepoDir "bootstrap-remoto.ps1"
+$Description = "Bootstrap remoto OpenClaw para iniciar poller em relay e watchdog no login"
 
 Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
 
