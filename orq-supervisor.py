@@ -2,8 +2,8 @@
 import argparse
 import json
 import subprocess
-import sys
 import time
+import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -14,6 +14,7 @@ OUTBOX_CLAUDE = COORD / "outbox_claude"
 INBOX_CODEX = COORD / "inbox_codex_local"
 INBOX_CLAUDE = COORD / "inbox_claude"
 ARCHIVE_CODEX = COORD / "_archive" / "inbox_codex_local"
+ARCHIVE_CLAUDE = COORD / "_archive" / "inbox_claude"
 LOG_FILE = REPO / "orq-supervisor.log"
 STATE_FILE = REPO / "orq-supervisor-state.json"
 STATE_MD = REPO / "STATE.md"
@@ -57,6 +58,15 @@ def save_state(state):
     STATE_FILE.write_text(json.dumps(state, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
+def normalize_text(value):
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        value = json.dumps(value, ensure_ascii=False)
+    normalized = unicodedata.normalize("NFKD", value)
+    return "".join(ch for ch in normalized if not unicodedata.combining(ch)).lower()
+
+
 def active_local_peer():
     try:
         result = subprocess.run(["tailscale", "status", "--json"], capture_output=True, text=True, timeout=10)
@@ -85,17 +95,20 @@ def tailscale_ping(peer: str):
         log(f"Tailscale ping falhou com excecao: {exc}")
 
 
-def find_latest_complete_020a_reply():
+def task_or_reply_exists(prefix: str, folder: Path) -> bool:
+    return any(p.name.startswith(prefix) for p in folder.glob("*.json"))
+
+
+def find_latest_complete_reply(folder: Path, cycle_prefix: str, cycle_name: str):
     candidates = []
-    for path in OUTBOX_CODEX.glob("reply-020A*.json"):
+    for path in folder.glob(f"reply-{cycle_prefix}*.json"):
         try:
             data = load_json(path)
         except Exception:
             continue
         if data.get("status") != "complete":
             continue
-        cycle = str(data.get("cycle", ""))
-        if cycle != "020A":
+        if str(data.get("cycle", "")) != cycle_name:
             continue
         candidates.append((path.stat().st_mtime, path, data))
     if not candidates:
@@ -104,9 +117,7 @@ def find_latest_complete_020a_reply():
     return candidates[0][1], candidates[0][2]
 
 
-def reply_contains_valid_020a(data: dict) -> bool:
-    if data.get("status") != "complete":
-        return False
+def valid_020a(data: dict) -> bool:
     report = data.get("report")
     if isinstance(report, dict):
         return report.get("conclusao", {}).get("pronto_para_revisao") is True
@@ -114,38 +125,59 @@ def reply_contains_valid_020a(data: dict) -> bool:
     return isinstance(output, str) and "PRIORIDADE_CONDICIONAL_DEFINIDA" in output and "pronto_para_revisao" in output.lower()
 
 
-def task_or_reply_exists(prefix: str, folder: Path) -> bool:
-    return any(p.name.startswith(prefix) for p in folder.glob("*.json"))
+def valid_020b(data: dict) -> bool:
+    output = data.get("output")
+    if isinstance(output, dict):
+        decision = output.get("DECISAO_SOBRE_A_PROGRESSAO", {})
+        return decision.get("020B_homologado") is True and decision.get("ciclo_21_pode_ser_discutido") is True
+    if isinstance(output, str):
+        lowered = output.lower()
+        return "020b homologado" in lowered and "ciclo 21 pode ser discutido" in lowered
+    return False
 
 
-def update_state_md_for_020b(task_name: str):
-    text = STATE_MD.read_text(encoding="utf-8")
-    replacements = {
-        "| Fase em andamento | 020A retry emitido — aguardando payload do CODEX LOCAL com poller local corrigido |":
-            "| Fase em andamento | 020A concluido — 020B pendente de revisao do Claude Local |",
-        "| Próxima etapa | CODEX LOCAL reprocesa o 020A usando o caminho corrigido do Invoke-ClaudeCLI |":
-            "| Próxima etapa | Claude Local revisa o payload do 020A e decide homologacao do 020B |",
-        "| Status inbox_claude | vazio (diagnosticos arquivados; replies processados) |":
-            f"| Status inbox_claude | {task_name} pendente |",
-        "| Status inbox_codex_local | task-020A-RETRY pendente |":
-            "| Status inbox_codex_local | vazio (020A concluido; aguardando revisao 020B) |",
-        "| Acao em curso | CODEX LOCAL recebe retry limpo do 020A, com prompt sem pipes e poller local corrigido |":
-            "| Acao em curso | Claude Local revisa o payload do 020A para confirmar ou corrigir a priorizacao condicional de R5 |",
-    }
-    for old, new in replacements.items():
-        text = text.replace(old, new)
-    if "## Resultado consolidado do ciclo 20" not in text:
-        insert = """
+def valid_021a(data: dict) -> bool:
+    payload = REPO / "cycle21-input" / "cycle-021A-r5-conditional-opening-basis.json"
+    if not payload.exists():
+        return False
+    try:
+        parsed = load_json(payload)
+    except Exception:
+        return False
+    if parsed.get("cycle_id") != "021A":
+        return False
+    readiness = parsed.get("readiness_classification")
+    return readiness in {"OPENING_BASIS_DEFINED", "OPENING_BASIS_INCONCLUSIVA"}
 
-## Resultado consolidado do ciclo 20
 
-| Microfase | Veredito | Observacao |
-|---|---|---|
-| 20A | PRODUZIDO | PRIORIZAR_CONDICAO / selected_focus = R5 |
-| 20B | PENDENTE | revisao do Claude Local ainda nao executada |
-"""
-        text += insert
-    STATE_MD.write_text(text, encoding="utf-8")
+def valid_021b(data: dict) -> bool:
+    output = data.get("output")
+    lowered = normalize_text(output)
+    return "021b_homologado" in lowered and "ciclo 22 pode ser discutido" in lowered
+
+
+def is_invalid_codex_reply(data: dict) -> bool:
+    lowered = normalize_text(data.get("output"))
+    markers = [
+        "mensagem parece incompleta",
+        "nao reconheco esse comando",
+        "prompt injection",
+        "potential prompt injection",
+        "o que voce deseja que eu faca",
+        "what do you want me to do",
+        "youre out of extra usage",
+        "you're out of extra usage"
+    ]
+    return any(marker in lowered for marker in markers)
+
+
+def valid_021a_diag(data: dict) -> bool:
+    lowered = normalize_text(data.get("output"))
+    return (
+        "021a apto para retry valido: sim" in lowered or
+        "integracao do codex local destravada: sim" in lowered or
+        "texto contaminante foi removido do caminho do codex local: sim" in lowered
+    )
 
 
 def create_020b_task(reply_path: Path):
@@ -190,17 +222,147 @@ def create_020b_task(reply_path: Path):
     return path
 
 
-def archive_old_020a_task():
-    ARCHIVE_CODEX.mkdir(parents=True, exist_ok=True)
-    for candidate in INBOX_CODEX.glob("task-020A*.json"):
-        if "RETRY" in candidate.name or candidate.name.startswith("task-020A-"):
-            target = ARCHIVE_CODEX / candidate.name
-            if candidate.exists():
-                candidate.replace(target)
+def create_021a_task(reply_path: Path, retry: bool = False):
+    ts = now_compact()
+    task_prefix = "task-021A-RETRY" if retry else "task-021A"
+    reply_prefix = "reply-021A-RETRY" if retry else "reply-021A"
+    task_name = f"{task_prefix}-{ts}.json"
+    reply_name = f"{reply_prefix}-{ts}.json"
+    task = {
+        "task_id": f"task-021A-{ts}",
+        "target_actor": "codex_local",
+        "cycle": "021A",
+        "instruction": (
+            "Voce esta autorizado a executar UMA tentativa unica do ciclo 021A, em modo MANUAL/ORQUESTRADO, estritamente documental, read-only, sem runner stateful e sem analise de conteudo real de fallback. "
+            "O ciclo 020B homologou a priorizacao condicional de R5 como foco defensavel da fila remanescente. Sua missao e produzir o payload oficial do 021A para definir a base de abertura condicional de R5: "
+            "quais evidencias agregadas e nao sensiveis seriam necessarias, quais criterios documentais devem ser aplicados e quais non-goals precisam ficar explicitados antes de qualquer abertura futura. "
+            "Este ciclo NAO abre R5 para analise de conteudo. Este ciclo NAO autoriza live CRM, sandbox, escrita, SQL, DDL, DML, producao, bridge, .mcp.json, R2 ou R6. "
+            "Fontes oficiais obrigatorias: cycle20-input/cycle-020A-conditional-queue-prioritization.json; coordination/outbox_claude/reply-020B-20260404T132226Z.json; cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json; cycle19-input/queue_source_map.json; output/cycle-005-write-proposals.json; output/cycle-004-execution-plan.json; output/cycle-003-improvement-plan.json. "
+            "Arquivo a criar: cycle21-input/cycle-021A-r5-conditional-opening-basis.json. "
+            "O JSON deve ser parseavel e conter no minimo: cycle_id=021A; mode=r5-conditional-opening-basis; agent=manual-orchestrated; generated_at; source_precedence; inherited_constraints; focus_reference com selected_focus=R5 e condition_family=pending_validation_evidence_collection; opening_basis com required_evidence_inputs, validation_criteria, documentary_boundaries, explicit_non_goals, why_r5_and_not_others; readiness_classification com um de OPENING_BASIS_DEFINED ou OPENING_BASIS_INCONCLUSIVA; authorization_reset com todos os flags false; blockers; violations=[]; prohibitions; anomalies; evidence_trace; meta.output_file. "
+            "Regra central: orientar um futuro contrato de abertura de R5 sem autorizar a abertura agora. Se a base documental nao bastar para definir criterios objetivos, prefira OPENING_BASIS_INCONCLUSIVA. "
+            "Ao final, responda no formato: INICIO DO RELATORIO / STATUS GERAL / PRODUCAO DO 021A / VALIDACAO DO PAYLOAD / BASE DE ABERTURA DE R5 / ISOLAMENTO PRESERVADO / CONCLUSAO / ARTEFATOS / FIM DO RELATORIO."
+        ),
+        "context_files": [
+            "STATE.md",
+            "cycle20-input/cycle-020A-conditional-queue-prioritization.json",
+            str(reply_path.relative_to(REPO)).replace("\\", "/"),
+            "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json",
+            "cycle19-input/queue_source_map.json"
+        ],
+        "output_path": f"coordination/outbox_codex_local/{reply_name}",
+        "red_lines": [
+            "no_production_write",
+            "no_bridge_write",
+            "no_mcp_json_write",
+            "no_r2_reopen",
+            "no_r6_reopen"
+        ],
+        "status": "pending",
+        "created_at": now_iso()
+    }
+    path = INBOX_CODEX / task_name
+    save_json(path, task)
+    return path
+
+
+def create_021a_diag_task(reply_path: Path):
+    ts = now_compact()
+    task_name = f"task-021A-DIAG-{ts}.json"
+    reply_name = f"reply-021A-DIAG-{ts}.json"
+    task = {
+        "task_id": f"task-021A-DIAG-{ts}",
+        "target_actor": "claude_local",
+        "cycle": "021A-DIAG",
+        "instruction": (
+            "Voce deve diagnosticar por que o CODEX LOCAL respondeu de forma generica/incompleta ao ciclo 021A em vez de produzir o payload esperado. "
+            "Objetivo: encontrar o ponto exato do caminho local que fez o prompt chegar truncado ou descaracterizado, corrigir o minimo necessario e dizer se 021A esta apto para retry valido. "
+            "Leia obrigatoriamente: STATE.md; coordination/inbox_codex_local/_archive/ ou task 021A correspondente; coordination/outbox_codex_local/reply-021A*.json; poller-autonomous.ps1; logs locais relevantes. "
+            "Red lines: nao tocar em producao, bridge, .mcp.json, projeto real, R2, R6. "
+            "Formato obrigatorio: INICIO DO RELATORIO / STATUS GERAL / DIAGNOSTICO / CORRECOES APLICADAS / VALIDACAO / GIT / CONCLUSAO / FIM DO RELATORIO. "
+            "O bloco VALIDACAO deve responder explicitamente: '021A apto para retry valido: sim/nao'."
+        ),
+        "context_files": [
+            "STATE.md",
+            str(reply_path.relative_to(REPO)).replace("\\", "/"),
+            "cycle20-input/cycle-020A-conditional-queue-prioritization.json",
+            "coordination/outbox_claude/reply-020B-20260404T132226Z.json"
+        ],
+        "output_path": f"coordination/outbox_claude/{reply_name}",
+        "red_lines": [
+            "no_production_write",
+            "no_bridge_write",
+            "no_mcp_json_write",
+            "no_r2_reopen",
+            "no_r6_reopen"
+        ],
+        "status": "pending",
+        "created_at": now_iso()
+    }
+    path = INBOX_CLAUDE / task_name
+    save_json(path, task)
+    return path
+
+
+def create_021b_task(reply_path: Path):
+    ts = now_compact()
+    task_name = f"task-021B-{ts}.json"
+    reply_name = f"reply-021B-{ts}.json"
+    task = {
+        "task_id": f"task-021B-{ts}",
+        "target_actor": "claude_local",
+        "cycle": "021B",
+        "instruction": (
+            "Voce deve revisar o payload do ciclo 021A e decidir se a base documental de abertura condicional de R5 esta formalmente homologavel. "
+            "Objetivo: confirmar se o 021A definiu criterios documentais objetivos, non-goals claros, fronteiras de autorizacao e justificativa suficiente para orientar um futuro contrato de abertura de R5 sem autorizar abertura agora. "
+            "Verifique especificamente: 1. se opening_basis.required_evidence_inputs e validation_criteria sao objetivos e auditaveis; 2. se documentary_boundaries e explicit_non_goals impedem abertura implicita; "
+            "3. se why_r5_and_not_others preserva a base do 020A/020B sem reabrir R1/R3/R4; 4. se readiness_classification e tecnicamente defensavel; 5. se o payload 021A e formalmente homologavel. "
+            "Nao modificar nada. Nao tocar em producao, bridge, .mcp.json, projeto real, R2, R6. "
+            "Formato obrigatorio da resposta: INICIO DO RELATORIO / VEREDITO / EVIDENCIAS OBRIGATORIAS RECEBIDAS / CLASSIFICACAO DO RESULTADO / AVALIACAO DA BASE DE ABERTURA / DECISAO SOBRE A PROGRESSAO / CRITERIO OBJETIVO QUE DECIDIU O CASO / O QUE NAO DEVE MUDAR / RESUMO EXECUTIVO / FIM DO RELATORIO. "
+            "A decisao sobre a progressao deve responder se 021B pode ser homologado e se o ciclo 22 pode ser discutido."
+        ),
+        "context_files": [
+            "STATE.md",
+            "cycle21-input/cycle-021A-r5-conditional-opening-basis.json",
+            str(reply_path.relative_to(REPO)).replace("\\", "/"),
+            "cycle20-input/cycle-020A-conditional-queue-prioritization.json",
+            "coordination/outbox_claude/reply-020B-20260404T132226Z.json"
+        ],
+        "output_path": f"coordination/outbox_claude/{reply_name}",
+        "red_lines": [
+            "no_production_write",
+            "no_bridge_write",
+            "no_mcp_json_write",
+            "no_r2_reopen",
+            "no_r6_reopen"
+        ],
+        "status": "pending",
+        "created_at": now_iso()
+    }
+    path = INBOX_CLAUDE / task_name
+    save_json(path, task)
+    return path
+
+
+def archive_tasks(prefix: str, src: Path, dst: Path):
+    dst.mkdir(parents=True, exist_ok=True)
+    moved = []
+    for candidate in src.glob(f"{prefix}*.json"):
+        target = dst / candidate.name
+        if candidate.exists():
+            candidate.replace(target)
+            moved.append(target)
+    return moved
 
 
 def commit_push(files, message):
-    git(["add", *[str(p.relative_to(REPO)) for p in files]])
+    relative_files = []
+    for file_path in files:
+        if file_path.exists():
+            relative_files.append(str(file_path.relative_to(REPO)))
+    if not relative_files:
+        return False
+    git(["add", *relative_files])
     diff = git(["diff", "--cached", "--name-only"])
     if diff.returncode != 0 or not diff.stdout.strip():
         return False
@@ -216,14 +378,149 @@ def commit_push(files, message):
     return True
 
 
-def process_once():
-    state = load_state()
-    peer = active_local_peer()
-    if peer:
-        tailscale_ping(peer)
+def update_state_after_020a(task_name: str):
+    text = STATE_MD.read_text(encoding="utf-8")
+    replacements = {
+        "| Fase em andamento | 020A retry emitido — aguardando payload do CODEX LOCAL com poller local corrigido |":
+            "| Fase em andamento | 020A concluido — 020B pendente de revisao do Claude Local |",
+        "| Próxima etapa | CODEX LOCAL reprocesa o 020A usando o caminho corrigido do Invoke-ClaudeCLI |":
+            "| Próxima etapa | Claude Local revisa o payload do 020A e decide homologacao do 020B |",
+        "| Status inbox_claude | vazio (diagnosticos arquivados; replies processados) |":
+            f"| Status inbox_claude | {task_name} pendente |",
+        "| Status inbox_codex_local | task-020A-RETRY pendente |":
+            "| Status inbox_codex_local | vazio (020A concluido; aguardando revisao 020B) |",
+        "| Acao em curso | CODEX LOCAL recebe retry limpo do 020A, com prompt sem pipes e poller local corrigido |":
+            "| Acao em curso | Claude Local revisa o payload do 020A para confirmar ou corrigir a priorizacao condicional de R5 |",
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    if "## Resultado consolidado do ciclo 20" not in text:
+        text += """
 
-    reply_path, reply_data = find_latest_complete_020a_reply()
-    if not reply_path or not reply_contains_valid_020a(reply_data):
+## Resultado consolidado do ciclo 20
+
+| Microfase | Veredito | Observacao |
+|---|---|---|
+| 20A | PRODUZIDO | PRIORIZAR_CONDICAO / selected_focus = R5 |
+| 20B | PENDENTE | revisao do Claude Local ainda nao executada |
+"""
+    STATE_MD.write_text(text, encoding="utf-8")
+
+
+def update_state_after_020b(task_name: str):
+    text = STATE_MD.read_text(encoding="utf-8")
+    replacements = {
+        "| Fase em andamento | 020A concluido — 020B pendente de revisao do Claude Local |":
+            "| Fase em andamento | ciclo 20 homologado — 021A pendente de producao do CODEX LOCAL |",
+        "| Próxima etapa | Claude Local revisa o payload do 020A e decide homologacao do 020B |":
+            "| Próxima etapa | CODEX LOCAL produz a base documental de abertura condicional de R5 no 021A |",
+        "| Status inbox_claude | task-020B-20260404T132226Z.json pendente |":
+            "| Status inbox_claude | vazio (020B homologado) |",
+        "| Status inbox_codex_local | vazio (020A concluido; aguardando revisao 020B) |":
+            f"| Status inbox_codex_local | {task_name} pendente |",
+        "| Acao em curso | Claude Local revisa o payload do 020A para confirmar ou corrigir a priorizacao condicional de R5 |":
+            "| Acao em curso | CODEX LOCAL prepara a base documental de abertura condicional de R5 para o ciclo 21 |",
+        "| 20B | PENDENTE | revisao do Claude Local ainda nao executada |":
+            "| 20B | HOMOLOGADO | R5 confirmado como prioridade condicional defensavel |"
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    if "## Resultado consolidado do ciclo 21" not in text:
+        text += """
+
+## Resultado consolidado do ciclo 21
+
+| Microfase | Veredito | Observacao |
+|---|---|---|
+| 21A | PENDENTE | base documental de abertura condicional de R5 ainda nao produzida |
+"""
+    STATE_MD.write_text(text, encoding="utf-8")
+
+
+def update_state_after_021a_invalid(task_name: str):
+    text = STATE_MD.read_text(encoding="utf-8")
+    replacements = {
+        "| Fase em andamento | ciclo 20 homologado — 021A pendente de producao do CODEX LOCAL |":
+            "| Fase em andamento | 021A bloqueado por reply generico do CODEX LOCAL — diagnostico local pendente |",
+        "| Próxima etapa | CODEX LOCAL produz a base documental de abertura condicional de R5 no 021A |":
+            "| Próxima etapa | Claude Local diagnostica o caminho do 021A e libera retry limpo do CODEX LOCAL |",
+        "| Status inbox_claude | vazio (020B homologado) |":
+            f"| Status inbox_claude | {task_name} pendente |",
+        "| Status inbox_codex_local | task-021A-20260404T133410Z.json pendente |":
+            "| Status inbox_codex_local | vazio (task 021A arquivada apos reply generico) |",
+        "| Acao em curso | CODEX LOCAL prepara a base documental de abertura condicional de R5 para o ciclo 21 |":
+            "| Acao em curso | Claude Local diagnostica por que o prompt do 021A chegou incompleto ao CODEX LOCAL |",
+        "| 21A | PENDENTE | base documental de abertura condicional de R5 ainda nao produzida |":
+            "| 21A | BLOQUEADO | reply generico do CODEX LOCAL; diagnostico local pendente |"
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    STATE_MD.write_text(text, encoding="utf-8")
+
+
+def update_state_after_021a_retry(task_name: str):
+    text = STATE_MD.read_text(encoding="utf-8")
+    replacements = {
+        "| Fase em andamento | 021A bloqueado por reply generico do CODEX LOCAL — diagnostico local pendente |":
+            "| Fase em andamento | 021A em retry limpo — aguardando payload do CODEX LOCAL |",
+        "| Próxima etapa | Claude Local diagnostica o caminho do 021A e libera retry limpo do CODEX LOCAL |":
+            "| Próxima etapa | CODEX LOCAL reprocesa o 021A apos correcao local validada pelo Claude |",
+        "| Status inbox_claude | task-021A-DIAG-":  # sentinel, no exact replace
+            "| Status inbox_claude | vazio (diagnostico 021A concluido) |",
+        "| Status inbox_codex_local | vazio (task 021A arquivada apos reply generico) |":
+            f"| Status inbox_codex_local | {task_name} pendente |",
+        "| Acao em curso | Claude Local diagnostica por que o prompt do 021A chegou incompleto ao CODEX LOCAL |":
+            "| Acao em curso | CODEX LOCAL recebe retry limpo do 021A apos diagnostico local conclusivo |",
+        "| 21A | BLOQUEADO | reply generico do CODEX LOCAL; diagnostico local pendente |":
+            "| 21A | RETRY_EM_CURSO | aguardando nova producao do CODEX LOCAL |"
+    }
+    for old, new in replacements.items():
+        if old in text:
+            text = text.replace(old, new)
+    text = text.replace("| Status inbox_claude | task-021A-DIAG-", "| Status inbox_claude | vazio (diagnostico 021A concluido) |")
+    STATE_MD.write_text(text, encoding="utf-8")
+
+
+def update_state_after_021a_success(task_name: str):
+    text = STATE_MD.read_text(encoding="utf-8")
+    replacements = {
+        "| Fase em andamento | 021A em retry limpo — aguardando payload do CODEX LOCAL |":
+            "| Fase em andamento | 021A concluido — 021B pendente de revisao do Claude Local |",
+        "| Fase em andamento | ciclo 20 homologado — 021A pendente de producao do CODEX LOCAL |":
+            "| Fase em andamento | 021A concluido — 021B pendente de revisao do Claude Local |",
+        "| Próxima etapa | CODEX LOCAL reprocesa o 021A apos correcao local validada pelo Claude |":
+            "| Próxima etapa | Claude Local revisa a base documental do 021A e decide homologacao do 021B |",
+        "| Próxima etapa | CODEX LOCAL produz a base documental de abertura condicional de R5 no 021A |":
+            "| Próxima etapa | Claude Local revisa a base documental do 021A e decide homologacao do 021B |",
+        "| Status inbox_claude | vazio (020B homologado) |":
+            f"| Status inbox_claude | {task_name} pendente |",
+        "| Status inbox_codex_local | task-021A-20260404T133410Z.json pendente |":
+            "| Status inbox_codex_local | vazio (021A concluido; aguardando revisao 021B) |",
+        "| Status inbox_codex_local | task-021A-RETRY": "| Status inbox_codex_local | vazio (021A concluido; aguardando revisao 021B) |",
+        "| Acao em curso | CODEX LOCAL prepara a base documental de abertura condicional de R5 para o ciclo 21 |":
+            "| Acao em curso | Claude Local revisa a base documental do 021A para homologar ou corrigir o 021B |",
+        "| Acao em curso | CODEX LOCAL recebe retry limpo do 021A apos diagnostico local conclusivo |":
+            "| Acao em curso | Claude Local revisa a base documental do 021A para homologar ou corrigir o 021B |",
+        "| 21A | PENDENTE | base documental de abertura condicional de R5 ainda nao produzida |":
+            "| 21A | PRODUZIDO | base documental de abertura condicional de R5 produzida pelo CODEX LOCAL |",
+        "| 21A | RETRY_EM_CURSO | aguardando nova producao do CODEX LOCAL |":
+            "| 21A | PRODUZIDO | base documental de abertura condicional de R5 produzida pelo CODEX LOCAL |"
+    }
+    for old, new in replacements.items():
+        if old in text:
+            text = text.replace(old, new)
+    if "021B" not in text:
+        text += """
+| 21B | PENDENTE | revisao do Claude Local ainda nao executada |
+"""
+    elif "| 21B |" not in text:
+        text += "\n| 21B | PENDENTE | revisao do Claude Local ainda nao executada |\n"
+    STATE_MD.write_text(text, encoding="utf-8")
+
+
+def process_complete_020a(state):
+    reply_path, reply_data = find_latest_complete_reply(OUTBOX_CODEX, "020A", "020A")
+    if not reply_path or not valid_020a(reply_data):
         return False
 
     reply_id = reply_data.get("reply_id") or reply_path.stem
@@ -238,12 +535,146 @@ def process_once():
     created_task = create_020b_task(reply_path)
     reply_data["status"] = "processed"
     save_json(reply_path, reply_data)
-    archive_old_020a_task()
-    update_state_md_for_020b(created_task.name)
-    save_state({"processed_reply_ids": state["processed_reply_ids"] + [reply_id]})
-    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *(ARCHIVE_CODEX.glob("task-020A*.json"))], "orq: instrucao 020B para claude")
+    archived = archive_tasks("task-020A", INBOX_CODEX, ARCHIVE_CODEX)
+    update_state_after_020a(created_task.name)
+    state["processed_reply_ids"].append(reply_id)
+    save_state(state)
+    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *archived], "orq: instrucao 020B para claude")
     log(f"020A processado pelo supervisor. Task 020B emitida: {created_task.name}")
     return True
+
+
+def process_complete_020b(state):
+    reply_path, reply_data = find_latest_complete_reply(OUTBOX_CLAUDE, "020B", "020B")
+    if not reply_path or not valid_020b(reply_data):
+        return False
+
+    reply_id = reply_data.get("reply_id") or reply_path.stem
+    if reply_id in state["processed_reply_ids"]:
+        return False
+
+    if task_or_reply_exists("task-021A-", INBOX_CODEX) or task_or_reply_exists("reply-021A-", OUTBOX_CODEX):
+        state["processed_reply_ids"].append(reply_id)
+        save_state(state)
+        return False
+
+    created_task = create_021a_task(reply_path)
+    reply_data["status"] = "processed"
+    save_json(reply_path, reply_data)
+    archived = archive_tasks("task-020B", INBOX_CLAUDE, ARCHIVE_CLAUDE)
+    update_state_after_020b(created_task.name)
+    state["processed_reply_ids"].append(reply_id)
+    save_state(state)
+    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *archived], "orq: instrucao 021A para codex local")
+    log(f"020B processado pelo supervisor. Task 021A emitida: {created_task.name}")
+    return True
+
+
+def process_invalid_021a(state):
+    reply_path, reply_data = find_latest_complete_reply(OUTBOX_CODEX, "021A", "021A")
+    if not reply_path or valid_021a(reply_data) or not is_invalid_codex_reply(reply_data):
+        return False
+
+    reply_id = reply_data.get("reply_id") or reply_path.stem
+    if reply_id in state["processed_reply_ids"]:
+        return False
+
+    if task_or_reply_exists("task-021A-DIAG-", INBOX_CLAUDE) or task_or_reply_exists("reply-021A-DIAG-", OUTBOX_CLAUDE):
+        state["processed_reply_ids"].append(reply_id)
+        save_state(state)
+        return False
+
+    created_task = create_021a_diag_task(reply_path)
+    reply_data["status"] = "processed"
+    save_json(reply_path, reply_data)
+    archived = archive_tasks("task-021A", INBOX_CODEX, ARCHIVE_CODEX)
+    update_state_after_021a_invalid(created_task.name)
+    state["processed_reply_ids"].append(reply_id)
+    save_state(state)
+    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *archived], "orq: diagnostico 021A para claude")
+    log(f"021A invalido processado pelo supervisor. Task diagnostica emitida: {created_task.name}")
+    return True
+
+
+def process_complete_021a_diag(state):
+    reply_path, reply_data = find_latest_complete_reply(OUTBOX_CLAUDE, "021A-DIAG", "021A-DIAG")
+    if not reply_path or not valid_021a_diag(reply_data):
+        return False
+
+    reply_id = reply_data.get("reply_id") or reply_path.stem
+    if reply_id in state["processed_reply_ids"]:
+        return False
+
+    if task_or_reply_exists("task-021A-RETRY-", INBOX_CODEX) or task_or_reply_exists("reply-021A-RETRY-", OUTBOX_CODEX):
+        state["processed_reply_ids"].append(reply_id)
+        save_state(state)
+        return False
+
+    created_task = create_021a_task(reply_path, retry=True)
+    reply_data["status"] = "processed"
+    save_json(reply_path, reply_data)
+    archived = archive_tasks("task-021A-DIAG-", INBOX_CLAUDE, ARCHIVE_CLAUDE)
+    update_state_after_021a_retry(created_task.name)
+    state["processed_reply_ids"].append(reply_id)
+    save_state(state)
+    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *archived], "orq: retry 021A para codex local")
+    log(f"Diagnostico 021A processado pelo supervisor. Retry emitido: {created_task.name}")
+    return True
+
+
+def process_complete_021a(state):
+    reply_path, reply_data = find_latest_complete_reply(OUTBOX_CODEX, "021A", "021A")
+    if not reply_path or not valid_021a(reply_data):
+        return False
+
+    reply_id = reply_data.get("reply_id") or reply_path.stem
+    if reply_id in state["processed_reply_ids"]:
+        return False
+
+    if task_or_reply_exists("task-021B-", INBOX_CLAUDE) or task_or_reply_exists("reply-021B-", OUTBOX_CLAUDE):
+        state["processed_reply_ids"].append(reply_id)
+        save_state(state)
+        return False
+
+    created_task = create_021b_task(reply_path)
+    reply_data["status"] = "processed"
+    save_json(reply_path, reply_data)
+    archived = archive_tasks("task-021A", INBOX_CODEX, ARCHIVE_CODEX)
+    update_state_after_021a_success(created_task.name)
+    state["processed_reply_ids"].append(reply_id)
+    save_state(state)
+    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *archived], "orq: instrucao 021B para claude")
+    log(f"021A processado pelo supervisor. Task 021B emitida: {created_task.name}")
+    return True
+
+
+def process_once():
+    state = load_state()
+    peer = active_local_peer()
+    if peer:
+        tailscale_ping(peer)
+
+    changed = False
+    if process_complete_020a(state):
+        changed = True
+
+    state = load_state()
+    if process_complete_020b(state):
+        changed = True
+
+    state = load_state()
+    if process_invalid_021a(state):
+        changed = True
+
+    state = load_state()
+    if process_complete_021a_diag(state):
+        changed = True
+
+    state = load_state()
+    if process_complete_021a(state):
+        changed = True
+
+    return changed
 
 
 def main():

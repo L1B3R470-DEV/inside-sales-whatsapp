@@ -1,12 +1,12 @@
 # OpenClaw — Estado do Processo
-> Atualizado em: 2026-04-04 (diagnostico 020A concluido; retry limpo do 020A emitido; bootstrap remoto reforcado)
+> Atualizado em: 2026-04-04 (020B homologado; 021A bloqueado por reply generico; diagnostico 021A emitido automaticamente)
 > Fonte de verdade para todos os atores.
 
 ## Ciclo atual
 
 | Campo | Valor |
 |---|---|
-| Ciclo ativo | 20 |
+| Ciclo ativo | 21 |
 | Fase em andamento | 021A bloqueado por reply generico do CODEX LOCAL — diagnostico local pendente |
 | Próxima etapa | Claude Local diagnostica o caminho do 021A e libera retry limpo do CODEX LOCAL |
 | Status inbox_claude | task-021A-DIAG-20260404T133957Z.json pendente |
@@ -81,14 +81,14 @@ Qualquer abertura exige:
 | watchdog-remoto.ps1 (PC remoto) | monitora e reergue o poller remoto quando o processo cair |
 | poller-autonomous.ps1 (PC local) | fix local confirmado; retry limpo do 020A emitido apos diagnostico |
 | CLAUDE.md workspace-integration | criado — contexto neutro para CODEX_LOCAL |
-| coordination/inbox_claude/ | task-020B-20260404T132226Z.json pendente |
+| coordination/inbox_claude/ | task-021A-DIAG-20260404T133957Z.json pendente |
 | coordination/inbox_codex_local/ | vazio |
 | cycle19-input/ | commitado e pushado |
 
 ## Ultimo commit relevante
 
 ```
-orq: retry limpo 020A + bootstrap remoto
+orq: diagnostico 021A para claude
 ```
 
 ## Bloqueio atual do ciclo 20
