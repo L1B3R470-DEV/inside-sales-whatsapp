@@ -952,7 +952,7 @@ def process_complete_020a(state):
     update_state_after_020a(created_task.name)
     state["processed_reply_ids"].append(reply_id)
     save_state(state)
-    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *archived], "orq: instrucao 020B para claude")
+    commit_push([created_task, reply_path, STATE_MD, *archived], "orq: instrucao 020B para claude")
     log(f"020A processado pelo supervisor. Task 020B emitida: {created_task.name}")
     return True
 
@@ -978,7 +978,7 @@ def process_complete_020b(state):
     update_state_after_020b(created_task.name)
     state["processed_reply_ids"].append(reply_id)
     save_state(state)
-    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *archived], "orq: instrucao 021A para codex local")
+    commit_push([created_task, reply_path, STATE_MD, *archived], "orq: instrucao 021A para codex local")
     log(f"020B processado pelo supervisor. Task 021A emitida: {created_task.name}")
     return True
 
@@ -1004,7 +1004,7 @@ def process_invalid_021a(state):
     update_state_after_021a_invalid(created_task.name)
     state["processed_reply_ids"].append(reply_id)
     save_state(state)
-    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *archived], "orq: diagnostico 021A para claude")
+    commit_push([created_task, reply_path, STATE_MD, *archived], "orq: diagnostico 021A para claude")
     log(f"021A invalido processado pelo supervisor. Task diagnostica emitida: {created_task.name}")
     return True
 
@@ -1030,7 +1030,7 @@ def process_complete_021a_diag(state):
     update_state_after_021a_retry(created_task.name)
     state["processed_reply_ids"].append(reply_id)
     save_state(state)
-    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *archived], "orq: retry 021A para codex local")
+    commit_push([created_task, reply_path, STATE_MD, *archived], "orq: retry 021A para codex local")
     log(f"Diagnostico 021A processado pelo supervisor. Retry emitido: {created_task.name}")
     return True
 
@@ -1056,7 +1056,7 @@ def process_complete_021a(state):
     update_state_after_021a_success(created_task.name)
     state["processed_reply_ids"].append(reply_id)
     save_state(state)
-    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *archived], "orq: instrucao 021B para claude")
+    commit_push([created_task, reply_path, STATE_MD, *archived], "orq: instrucao 021B para claude")
     log(f"021A processado pelo supervisor. Task 021B emitida: {created_task.name}")
     return True
 
@@ -1082,7 +1082,7 @@ def process_complete_021b(state):
     update_state_after_021b(created_task.name)
     state["processed_reply_ids"].append(reply_id)
     save_state(state)
-    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *archived], "orq: instrucao 022A para codex local")
+    commit_push([created_task, reply_path, STATE_MD, *archived], "orq: instrucao 022A para codex local")
     log(f"021B processado pelo supervisor. Task 022A emitida: {created_task.name}")
     return True
 
@@ -1108,7 +1108,7 @@ def process_invalid_022a(state):
     state["processed_reply_ids"].append(reply_id)
     save_state(state)
     reconcile_state_md()
-    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *archived], "orq: diagnostico 022A para claude")
+    commit_push([created_task, reply_path, STATE_MD, *archived], "orq: diagnostico 022A para claude")
     log(f"022A invalido processado pelo supervisor. Task diagnostica emitida: {created_task.name}")
     return True
 
@@ -1134,7 +1134,7 @@ def process_complete_022a_diag(state):
     state["processed_reply_ids"].append(reply_id)
     save_state(state)
     reconcile_state_md()
-    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *archived], "orq: retry 022A para codex local")
+    commit_push([created_task, reply_path, STATE_MD, *archived], "orq: retry 022A para codex local")
     log(f"Diagnostico 022A processado pelo supervisor. Retry emitido: {created_task.name}")
     return True
 
@@ -1160,7 +1160,7 @@ def process_invalid_022a_diag(state):
     state["processed_reply_ids"].append(reply_id)
     save_state(state)
     reconcile_state_md()
-    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *archived], "orq: retry diagnostico 022A para claude")
+    commit_push([created_task, reply_path, STATE_MD, *archived], "orq: retry diagnostico 022A para claude")
     log(f"022A-DIAG invalido processado pelo supervisor. Retry diagnostico emitido: {created_task.name}")
     return True
 
