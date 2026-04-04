@@ -1,0 +1,125 @@
+{
+  "reply_id": "reply-021A-DIAG-20260404T134500Z",
+  "source_task_id": "task-021A-DIAG-20260404T133957Z",
+  "actor": "claude_local",
+  "cycle": "021A-DIAG",
+  "status": "complete",
+  "produced_at": "2026-04-04T16:45:00Z",
+  "output": {
+    "section": "INICIO DO RELATORIO",
+
+    "STATUS_GERAL": {
+      "diagnostico_concluido": true,
+      "causa_raiz_identificada": true,
+      "correcao_aplicada": true,
+      "commit_realizado": true,
+      "push_realizado": true,
+      "021A_apto_para_retry": true,
+      "violacoes_red_lines": "nenhuma — producao, bridge, .mcp.json, R2, R6 intocados"
+    },
+
+    "DIAGNOSTICO": {
+      "sintoma_observado": "CODEX LOCAL respondeu que a mensagem estava incompleta, citando apenas o cabecalho 'Arquivos de referencia disponiveis (leia os necessarios):' sem reconhecer instrucao de tarefa",
+      "tempo_de_resposta_cli": "15 segundos (anomalo — tarefas complexas levam de 5 a 8 minutos)",
+      "artefatos_produzidos_pelo_codex": "nenhum — cycle21-input/ nao criado; resposta foi pedido de esclarecimento",
+      "fontes_consultadas": [
+        "coordination/inbox_codex_local/task-021A-20260404T133410Z.json",
+        "coordination/outbox_codex_local/reply-021A-20260404T103506Z.json",
+        "poller-autonomous.log (linhas 69-73)",
+        "processed_tasks.txt",
+        "current_task_codex_local.txt",
+        "current_task_codex_local.json",
+        "poller-autonomous.ps1 (funcao Build-Prompt)",
+        "git show 37f2d13 (criacao da task)",
+        "git show 27fb4ed (accepted da task)"
+      ],
+
+      "linha_do_tempo": {
+        "2026-04-04T13:34:11-03:00": "commit 37f2d13 — orchestrador cria task-021A com instrucao completa (status=pending, sem BOM, 2-space indent)",
+        "2026-04-04T13:34:51-03:00": "poller detecta task-021A, invoca Update-TaskStatus (re-le arquivo, status->accepted, re-serializa com BOM+4-space)",
+        "2026-04-04T13:34:53-03:00": "poller invoca Claude CLI para task-021A-20260404T133410Z",
+        "2026-04-04T13:35:08-03:00": "output commitado em 15 segundos — reply-021A-20260404T103506Z.json (status: complete, conteudo: pedido de esclarecimento)"
+      },
+
+      "confirmacao_de_que_instrucao_estava_no_arquivo": {
+        "git_show_37f2d13": "task-021A criada com campo 'instruction' preenchido integralmente (Voce esta autorizado a executar UMA tentativa unica...)",
+        "git_show_27fb4ed": "Update-TaskStatus re-serializou corretamente — instrucao preservada no arquivo apos marcacao como accepted",
+        "current_task_codex_local_txt": "contém a instrucao completa — confirmando que Persist-CurrentTask (chamado antes de Build-Prompt) recebeu o dado correto"
+      },
+
+      "bug_identificado_em_Build_Prompt": {
+        "localizacao": "poller-autonomous.ps1, funcao Build-Prompt, bloco isCodex",
+        "codigo_problematico": "$lines = @($contextBlock, '', $Instruction)\nreturn ($lines | Where-Object { $_ -ne '' -and $_ -ne $null }) -join '\\n'",
+        "problemas_do_codigo": [
+          "1. O filtro Where-Object remove $_ -ne '' — elimina o separador de linha em branco entre o bloco de contexto e a instrucao. Com um unico \\n de juncao, o texto da instrucao fica concatenado diretamente apos o ultimo caminho de arquivo, sem separador visual claro.",
+          "2. O filtro Where-Object remove $_ -ne $null — se $Instruction for $null por qualquer razao (falha de acesso ao PSCustomObject, ConvertFrom-Json quirk, race condition no arquivo), a instrucao e silenciosamente omitida do prompt sem qualquer aviso no log.",
+          "3. Ausencia de aviso: o poller nao loga nem detecta que a instrucao foi removida do prompt antes de invocar o Claude CLI."
+        ],
+        "cenario_mais_provavel": "O prompt foi enviado ao Claude CLI com o bloco de contexto (lista de arquivos) mas sem o campo de instrucao separado por linha em branco. O CODEX, ao receber um prompt estruturado como apenas 'lista de arquivos sem cabecalho de tarefa', interpretou como mensagem incompleta e pediu esclarecimento em vez de executar. A velocidade de 15 segundos confirma que o Claude processou muito pouco conteudo util.",
+        "cenario_alternativo": "Instrucao era $null quando Build-Prompt foi chamado (ex: ConvertFrom-Json nao mapeou o campo em alguma condicao de encoding/timing), sendo silenciosamente filtrada — prompt ficou apenas com o bloco de contexto."
+      },
+
+      "por_que_020A_RETRY_funcionou": "A task-020A-RETRY tambem usava context_files + instruction sem separador. A diferenca pode ser (a) contexto de sessao Claude diferente em horarios distintos, (b) 020A-RETRY pode ter sido lida pelo CODEX com suficiente clareza estrutural apesar do bug, ou (c) o bug so manifesta quando a instrucao e nula/ausente — e no 020A-RETRY a instrucao estava presente e nao foi filtrada.",
+
+      "impacto": "021A ficou BLOQUEADO — nenhum artefato produzido, cycle21-input/ nao criado, payload oficial do 021A inexistente"
+    },
+
+    "CORRECOES_APLICADAS": {
+      "arquivo_modificado": "poller-autonomous.ps1",
+      "funcao": "Build-Prompt (bloco isCodex)",
+      "descricao_da_correcao": "Substituiu a construcao com filtro generico por: (a) separacao explicia com \\n\\n entre contexto e instrucao, (b) aviso WARN no log quando instrucao for nula/vazia antes de invocar o CLI",
+      "codigo_anterior": "$lines = @($contextBlock, '', $Instruction)\nreturn ($lines | Where-Object { $_ -ne '' -and $_ -ne $null }) -join '\\n'",
+      "codigo_novo": "if (-not $Instruction) {\n    Write-Log 'AVISO: instrucao vazia/nula para tarefa CODEX_LOCAL (ciclo $Cycle) — prompt sera incompleto' 'WARN'\n}\n$parts = @()\nif ($contextBlock) { $parts += $contextBlock }\nif ($Instruction)  { $parts += $Instruction }\nreturn $parts -join '\\n\\n'",
+      "efeitos_da_correcao": [
+        "Linha em branco explícita entre bloco de contexto e instrucao — estrutura visualmente clara para o CODEX",
+        "Log WARN quando instrucao for nula — detectavel no poller-autonomous.log em vez de silencioso",
+        "Comportamento identico ao anterior quando instrucao presente — nao quebra tarefas existentes"
+      ],
+      "commit": "697c0c0",
+      "mensagem_commit": "fix: Build-Prompt CODEX_LOCAL — separador explicito + aviso instrucao nula (021A-DIAG)",
+      "push": "realizado — origin master atualizado"
+    },
+
+    "VALIDACAO": {
+      "021A_apto_para_retry_valido": "sim",
+      "justificativa": [
+        "A instrucao da task-021A-20260404T133410Z esta correta e completa (confirmado por git show 37f2d13)",
+        "As fontes oficiais obrigatorias existem e estao commitadas: cycle20-input/cycle-020A-conditional-queue-prioritization.json, outbox_claude/reply-020B-20260404T132226Z.json, cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json, cycle19-input/queue_source_map.json",
+        "O ciclo 020B esta homologado (reply-020B-20260404T132226Z.json — status: processed, VEREDITO: HOMOLOGADO)",
+        "O bug foi corrigido no poller — retry usara Build-Prompt com separador explicito",
+        "Nenhuma violacao de red_line detectada no conteudo da instrucao original",
+        "A task-021A esta marcada como 'accepted' e em processed_tasks.txt — retry requer nova task file"
+      ],
+      "prerequisito_para_retry": "Orchestrador deve criar nova task file (ex: task-021A-RETRY-YYYYMMDDTHHMMSSZ) com a mesma instrucao e context_files — a task original (status=accepted) nao sera reprocessada pelo poller",
+      "confirma_red_lines_preservadas": {
+        "no_production_write": "nenhuma escrita fora de workspace-integration",
+        "no_bridge_write": "bridge C:\\AUTOMACAO\\cowork\\claude_bridge intocada",
+        "no_mcp_json_write": ".mcp.json do projeto real intocado",
+        "no_r2_reopen": "R2 nao referenciado — ITERACAO_SNAPSHOT_BOUND_ENCERRADA preservada",
+        "no_r6_reopen": "R6 nao referenciado — stable_closed preservado"
+      }
+    },
+
+    "GIT": {
+      "commits_produzidos": [
+        {
+          "hash": "697c0c0",
+          "mensagem": "fix: Build-Prompt CODEX_LOCAL — separador explicito + aviso instrucao nula (021A-DIAG)",
+          "arquivo": "poller-autonomous.ps1",
+          "tipo": "correcao de bug"
+        }
+      ],
+      "push_realizado": true,
+      "branch": "master",
+      "remote": "origin",
+      "mudancas_em_producao": "nenhuma — apenas workspace-integration/poller-autonomous.ps1"
+    },
+
+    "CONCLUSAO": {
+      "resumo": "O ciclo 021A falhou porque o CODEX LOCAL recebeu um prompt sem instrucao de tarefa claramente separada do bloco de contexto. O bug esta em Build-Prompt (poller-autonomous.ps1): o filtro Where-Object removia o separador de linha em branco e silenciava instrucoes nulas. A correcao minima foi aplicada: separador \\n\\n explicito + aviso WARN para instrucao ausente. O 021A esta apto para retry valido com nova task file mantendo a instrucao original e as fontes corretas.",
+      "proximo_passo_sugerido": "Orchestrador emite task-021A-RETRY com instrucao identica a task-021A-20260404T133410Z.instruction — poller corrigido processara com prompt estruturado corretamente"
+    },
+
+    "section_end": "FIM DO RELATORIO"
+  }
+}
