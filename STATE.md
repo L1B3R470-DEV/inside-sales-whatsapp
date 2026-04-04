@@ -1,5 +1,5 @@
 # OpenClaw — Estado do Processo
-> Atualizado em: 2026-04-04 (021B homologado; 022A bloqueado por reply generico; diagnostico 022A emitido automaticamente)
+> Atualizado em: 2026-04-04 (021B homologado; 022A emitido para formalizar o contrato de abertura de R5)
 > Fonte de verdade para todos os atores.
 
 ## Ciclo atual
@@ -7,10 +7,10 @@
 | Campo | Valor |
 |---|---|
 | Ciclo ativo | 22 |
-| Fase em andamento | 022A bloqueado por reply generico do CODEX LOCAL — diagnostico local pendente |
-| Próxima etapa | Claude Local diagnostica o caminho do 022A e libera retry limpo do CODEX LOCAL |
-| Status inbox_claude | task-022A-DIAG-20260404T201238Z.json pendente |
-| Status inbox_codex_local | vazio (task 022A arquivada apos reply generico) |
+| Fase em andamento | 021B homologado — 022A pendente de producao do CODEX LOCAL |
+| Próxima etapa | CODEX LOCAL formaliza o contrato de abertura de R5 no 022A |
+| Status inbox_claude | vazio (021B homologado) |
+| Status inbox_codex_local | vazio |
 
 ## Resultado consolidado do ciclo 19
 
@@ -81,14 +81,14 @@ Qualquer abertura exige:
 | watchdog-remoto.ps1 (PC remoto) | monitora e reergue o poller remoto quando o processo cair |
 | poller-autonomous.ps1 (PC local) | fix local confirmado; retry limpo do 020A emitido apos diagnostico |
 | CLAUDE.md workspace-integration | criado — contexto neutro para CODEX_LOCAL |
-| coordination/inbox_claude/ | task-022A-DIAG-20260404T201238Z.json pendente |
-| coordination/inbox_codex_local/ | vazio (task 022A arquivada apos reply generico) |
+| coordination/inbox_claude/ | vazio (021B homologado) |
+| coordination/inbox_codex_local/ | vazio |
 | cycle19-input/ | commitado e pushado |
 
 ## Ultimo commit relevante
 
 ```
-orq: diagnostico 022A para claude
+orq: instrucao 022A para codex local
 ```
 
 ## Bloqueio atual do ciclo 20
@@ -99,7 +99,7 @@ orq: diagnostico 022A para claude
 | reply-020A-20260403T063700Z | processed — resposta generica, sem payload |
 | reply-020A-DIAG-20260403T073016Z | processed — usage limit, sem diagnostico util |
 | reply-020A-DIAG-RETRY-20260404T005826Z | processed — diagnostico util com causa raiz e fix confirmado |
-| Acao em curso | Claude Local diagnostica por que o prompt do 022A chegou incompleto ao CODEX LOCAL |
+| Acao em curso | CODEX LOCAL formaliza o contrato de abertura de R5 com base em EV1, EV2, EV3 e VC1-VC4 |
 
 
 ## Resultado consolidado do ciclo 20
@@ -122,4 +122,4 @@ orq: diagnostico 022A para claude
 
 | Microfase | Veredito | Observacao |
 |---|---|---|
-| 22A | BLOQUEADO | reply generico do CODEX LOCAL; diagnostico local pendente |
+| 22A | PENDENTE | contrato de abertura de R5 ainda nao produzido |
