@@ -7,10 +7,10 @@
 | Campo | Valor |
 |---|---|
 | Ciclo ativo | 20 |
-| Fase em andamento | 020A concluido — 020B pendente de revisao do Claude Local |
-| Próxima etapa | Claude Local revisa o payload do 020A e decide homologacao do 020B |
-| Status inbox_claude | task-020B-20260404T132226Z.json pendente |
-| Status inbox_codex_local | vazio (020A concluido; aguardando revisao 020B) |
+| Fase em andamento | ciclo 20 homologado — 021A pendente de producao do CODEX LOCAL |
+| Próxima etapa | CODEX LOCAL produz a base documental de abertura condicional de R5 no 021A |
+| Status inbox_claude | vazio (020B homologado) |
+| Status inbox_codex_local | task-021A-20260404T133410Z.json pendente |
 
 ## Resultado consolidado do ciclo 19
 
@@ -99,7 +99,7 @@ orq: retry limpo 020A + bootstrap remoto
 | reply-020A-20260403T063700Z | processed — resposta generica, sem payload |
 | reply-020A-DIAG-20260403T073016Z | processed — usage limit, sem diagnostico util |
 | reply-020A-DIAG-RETRY-20260404T005826Z | processed — diagnostico util com causa raiz e fix confirmado |
-| Acao em curso | Claude Local revisa o payload do 020A para confirmar ou corrigir a priorizacao condicional de R5 |
+| Acao em curso | CODEX LOCAL prepara a base documental de abertura condicional de R5 para o ciclo 21 |
 
 
 ## Resultado consolidado do ciclo 20
@@ -107,4 +107,11 @@ orq: retry limpo 020A + bootstrap remoto
 | Microfase | Veredito | Observacao |
 |---|---|---|
 | 20A | PRODUZIDO | PRIORIZAR_CONDICAO / selected_focus = R5 |
-| 20B | PENDENTE | revisao do Claude Local ainda nao executada |
+| 20B | HOMOLOGADO | R5 confirmado como prioridade condicional defensavel |
+
+
+## Resultado consolidado do ciclo 21
+
+| Microfase | Veredito | Observacao |
+|---|---|---|
+| 21A | PENDENTE | base documental de abertura condicional de R5 ainda nao produzida |
