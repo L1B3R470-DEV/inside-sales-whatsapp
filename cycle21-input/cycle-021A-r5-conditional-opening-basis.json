@@ -1,0 +1,229 @@
+{
+  "cycle_id": "021A",
+  "mode": "r5-conditional-opening-basis",
+  "agent": "manual-orchestrated",
+  "generated_at": "2026-04-04T17:00:00Z",
+  "source_precedence": [
+    "cycle20-input/cycle-020A-conditional-queue-prioritization.json",
+    "coordination/outbox_claude/reply-020B-20260404T132226Z.json",
+    "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json",
+    "cycle19-input/queue_source_map.json",
+    "output/cycle-005-write-proposals.json",
+    "output/cycle-004-execution-plan.json",
+    "output/cycle-003-improvement-plan.json"
+  ],
+  "inherited_constraints": {
+    "session_write_policy": "RESSALVA_OPERACIONAL",
+    "session_write_binding_from": "14A",
+    "live_crm_authorized": false,
+    "sandbox_authorized": false,
+    "write_authorized": false,
+    "r2_reopen_prohibited": true,
+    "r6_reopen_prohibited": true,
+    "conditions": [
+      "Prefer manual-orchestrated documentary production when zero-write cleanliness matters.",
+      "Do not treat session-file side effects as acceptable by default.",
+      "Any future item-specific phase still requires explicit authorization before analysis."
+    ]
+  },
+  "focus_reference": {
+    "selected_focus": "R5",
+    "item_title": "Verificar se o fallback preserva utilidade comercial suficiente em mensagens recorrentes",
+    "category": "fallback",
+    "condition_family": "pending_validation_evidence_collection",
+    "selection_basis": "cycle-020A-conditional-queue-prioritization.json — PRIORIDADE_CONDICIONAL_DEFINIDA",
+    "homologation_basis": "reply-020B-20260404T132226Z.json — HOMOLOGADO"
+  },
+  "opening_basis": {
+    "required_evidence_inputs": [
+      {
+        "input_id": "EV1",
+        "description": "Amostras adicionais agregadas de respostas de fallback (sem PII, sem dados de identificacao individual)",
+        "volume_requirement": "Suficiente para discriminar padrao de utilidade comercial em cenarios de mensagens recorrentes — sem volume minimo prescrito neste ciclo; criterio de suficiencia a definir no contrato de abertura",
+        "source_type": "agregado_operacional_nao_sensivel",
+        "why_required": "A condicao nomeada no ciclo 4 e ciclo 5 e explicitamente a insuficiencia de evidencia de fallback. EV1 e o insumo primario para resolver essa condicao.",
+        "origin_reference": "cycle-004-execution-plan.json: R5 dependencies = ['amostras adicionais de fallback', 'comparacao entre respostas recorrentes e consultivas']; cycle-005-write-proposals.json next_steps: 'Manter R5 em observacao ate haver evidencia adicional de fallback'"
+      },
+      {
+        "input_id": "EV2",
+        "description": "Baseline de tom consultivo aprovado — referencia para comparar qualidade das respostas de fallback",
+        "source_type": "documental_interno",
+        "why_required": "A validacao de 'utilidade comercial suficiente' requer um baseline comparativo. Sem referencia de tom consultivo aprovado, o julgamento fica subjetivo e nao documentavel.",
+        "origin_reference": "cycle-020A next_cycle_contract_basis: required_sources inclui 'Baseline de tom consultivo aprovado'"
+      },
+      {
+        "input_id": "EV3",
+        "description": "Criterios de validacao do ciclo 4 para R5 — validation_criteria formais herdados de cycle-004-execution-plan.json",
+        "source_type": "documental_herdado",
+        "why_required": "O ciclo 4 registrou anomaly explicita para R5: 'a evidencia ainda nao e forte o suficiente para promovê-la alem de validacao supervisionada'. Os validation_criteria do ciclo 4 devem ser o ponto de partida formal da avaliacao, nao um novo criterio ad-hoc.",
+        "origin_reference": "cycle-004-execution-plan.json: anomaly para R5 com condicao nomeada"
+      }
+    ],
+    "validation_criteria": [
+      {
+        "criterion_id": "VC1",
+        "description": "As amostras de fallback devem permitir uma determinacao binaria: o fallback preserva ou nao preserva utilidade comercial suficiente em mensagens recorrentes.",
+        "output_format": "FALLBACK_UTIL_CONFIRMADO ou FALLBACK_UTIL_INCONCLUSIVO ou FALLBACK_UTIL_NEGADO",
+        "basis": "A condicao pending_validation de R5 e binaria — ou a evidencia resolve a pergunta ou o item continua condicional"
+      },
+      {
+        "criterion_id": "VC2",
+        "description": "A avaliacao deve usar somente dados agregados, sem PII. Qualquer amostra identificavel invalida o criterio de isolamento.",
+        "basis": "inherited_constraints: live_crm_authorized=false; session_write_policy=RESSALVA_OPERACIONAL"
+      },
+      {
+        "criterion_id": "VC3",
+        "description": "O resultado deve ser cruzado com o baseline de tom consultivo aprovado (EV2). A comparacao e obrigatoria — nao opcional.",
+        "basis": "cycle-004-execution-plan.json: R5 dependencies inclui 'comparacao entre respostas recorrentes e consultivas'"
+      },
+      {
+        "criterion_id": "VC4",
+        "description": "O julgamento deve ser ancorado nos validation_criteria do ciclo 4 (EV3) — novos criterios ad-hoc nao substituem os herdados sem novo contrato explicito.",
+        "basis": "cycle_precedence: ciclo 4 precedence sobre qualquer inferencia do agente executor"
+      }
+    ],
+    "documentary_boundaries": [
+      "Somente amostras agregadas, nao sensiveis, sem PII.",
+      "Nenhum acesso a CRM live, sandbox ou producao.",
+      "Nenhuma escrita fora de workspace-integration.",
+      "Nenhuma analise de conteudo de implementacao de fallback — apenas avaliacao documental de utilidade comercial via amostras.",
+      "Nenhuma inferencia de autorizacao para R1, R3 ou R4 a partir da abertura de R5.",
+      "O ciclo de abertura de R5 e independente — nao herda autorizacao de ciclos anteriores."
+    ],
+    "explicit_non_goals": [
+      "NAO abrir R5 para analise de conteudo neste ciclo (021A).",
+      "NAO reabrir R2 (ITERACAO_SNAPSHOT_BOUND_ENCERRADA) ou R6 (stable_closed).",
+      "NAO executar live CRM, sandbox, SQL, DDL, DML, escrita em producao, bridge ou .mcp.json.",
+      "NAO inferir que a priorizacao condicional de R5 autoriza analise de R1, R3 ou R4.",
+      "NAO resolver as divergencias documentais de R3 e R4 como efeito colateral desta base.",
+      "NAO tratar esta base de abertura como contrato de abertura — um novo contrato explicito ainda e necessario.",
+      "NAO substituir os validation_criteria herdados do ciclo 4 por criterios ad-hoc."
+    ],
+    "why_r5_and_not_others": {
+      "summary": "R5 e o unico item remanescente sem divergencia estrutural, com risco baixo, primeiro na sequencia de execucao apos exclusoes, e com condicao de avanco concreta e nomeada nos ciclos 4 e 5.",
+      "vs_r1": {
+        "r1_impediment": "R1 possui inversao de posicao nao resolvida: priority_cycle3=1 vs execution_order_cycle4=6. Essa inconsistencia interna foi registrada como anomalia de severity=medium no ciclo 020A e nao pode ser suavizada sem novo contrato.",
+        "r5_advantage": "R5 nao possui inversao de posicao — sua historia entre ciclos 3, 4 e 5 e coerente internamente."
+      },
+      "vs_r3": {
+        "r3_impediment": "R3 possui divergencia explicita irresoluta: ready_for_execution no ciclo 4 (execution_order=4) mas completamente ausente nas write_proposals e next_steps do ciclo 5. Essa divergencia nao pode ser suavizada ou tratada como equivalencia resolvida.",
+        "r5_advantage": "R5 nao possui divergencia estrutural — sua nao-promocao no ciclo 5 foi por insuficiencia de evidencia (documentada e nomeada), nao por contradicao documental."
+      },
+      "vs_r4": {
+        "r4_impediment": "R4 possui a mesma divergencia explicita de R3: ready_for_execution no ciclo 4 (execution_order=5) mas completamente ausente nas write_proposals e next_steps do ciclo 5. Mesma implicacao: impedimento formal sem resolucao.",
+        "r5_advantage": "Identico ao ponto vs_r3 — R5 nao compartilha essa categoria de impedimento."
+      },
+      "r5_positive_basis": [
+        "execution_order=3 no ciclo 4 — o menor (mais prioritario) entre os remanescentes apos exclusao de R6 (order=1) e R2 (order=2)",
+        "risk_level=low — unico item com risco baixo na fila remanescente (R1, R3, R4 tem risk_level=medium)",
+        "Nao-promocao no ciclo 5 por insuficiencia de evidencia — condicao concreta e nomeada, nao divergencia estrutural",
+        "Ciclo 5 preservou R5 explicitamente nas next_steps: 'Manter R5 em observacao ate haver evidencia adicional de fallback'",
+        "Condicao de avanco e binaria e resolvivel: coletar amostras adicionais agregadas de fallback e avaliar utilidade comercial"
+      ]
+    }
+  },
+  "readiness_classification": "OPENING_BASIS_DEFINED",
+  "readiness_justification": "A base documental disponivel (ciclos 3, 4, 5, 19, 020A, 020B) e suficiente para definir: (a) quais evidencias sao necessarias (EV1, EV2, EV3), (b) quais criterios de validacao devem ser aplicados (VC1-VC4), (c) quais fronteiras documentais limitam a abertura, e (d) quais sao os non-goals explícitos. A condicao de avanco de R5 e concreta, nomeada e resolvivel — nao e vaga nem estruturalmente irresolvivel como as divergencias de R3/R4. OPENING_BASIS_INCONCLUSIVA seria aplicavel se a base documental nao permitisse definir criterios objetivos, o que nao e o caso.",
+  "authorization_reset": {
+    "authorization_inheritance": false,
+    "scope_reused": false,
+    "premises_reused": false,
+    "live_crm_authorized": false,
+    "sandbox_authorized": false,
+    "write_authorized": false,
+    "r2_reopen_prohibited": true,
+    "r6_reopen_prohibited": true,
+    "note": "Este ciclo 021A apenas define a base de abertura condicional de R5. Nenhuma autorizacao operacional e concedida. Um novo contrato explicito e necessario antes de qualquer analise especifica de R5."
+  },
+  "blockers": [],
+  "violations": [],
+  "prohibitions": [
+    "Nao interpretar este payload como autorizacao para analisar o conteudo de R5 ou de qualquer outro item.",
+    "Nao reabrir R2 (ITERACAO_SNAPSHOT_BOUND_ENCERRADA) ou R6 (stable_closed).",
+    "Nao tratar a base de abertura como contrato de abertura — novo contrato explicito obrigatorio.",
+    "Nao suavizar ou reclassificar as divergencias documentais de R3 e R4.",
+    "Nao inferir autorizacao para R1, R3 ou R4 a partir desta base.",
+    "Nao executar escrita fora de workspace-integration.",
+    "Nao substituir validation_criteria herdados do ciclo 4 por criterios ad-hoc."
+  ],
+  "anomalies": [
+    {
+      "source": "cycle-003-improvement-plan.json",
+      "description": "Arquivo apresenta caracteres UTF-8 degradados em alguns trechos, sem impedir leitura das prioridades e categorias. Herdado do ciclo 019A e 020A.",
+      "severity": "low"
+    },
+    {
+      "source": "cycle-005-write-proposals.json",
+      "description": "O ciclo 5 preparou apenas R6 e R2 como write_proposals, deixando R1, R3, R4 e R5 sem application_order formal. R5 foi o unico item remanescente explicitamente preservado nas next_steps. Herdado do ciclo 019A e 020A.",
+      "severity": "low"
+    },
+    {
+      "source": "cycle-004-execution-plan.json / cycle-003-improvement-plan.json",
+      "description": "R1 possui priority=1 no ciclo 3 mas execution_order=6 no ciclo 4 — inversao de posicao entre ciclos que nao foi documentalmente resolvida. Herdado do ciclo 020A (severity=medium).",
+      "severity": "medium"
+    }
+  ],
+  "evidence_trace": [
+    {
+      "claim": "R5 e o primeiro item remanescente na sequencia de execucao do ciclo 4 apos exclusao de R6 e R2.",
+      "source": "cycle-004-execution-plan.json",
+      "evidence": "execution_candidates: R6 execution_order=1 (excluido), R2 execution_order=2 (excluido), R5 execution_order=3 (primeiro remanescente)"
+    },
+    {
+      "claim": "R5 e o unico item com risk_level=low na fila remanescente.",
+      "source": "cycle-004-execution-plan.json",
+      "evidence": "R5 risk_level=low; R1, R3, R4 risk_level=medium"
+    },
+    {
+      "claim": "A nao-promocao de R5 no ciclo 5 foi por insuficiencia de evidencia, nao por divergencia estrutural.",
+      "source": "cycle-005-write-proposals.json e cycle-004-execution-plan.json",
+      "evidence": "cycle4 anomaly para R5: 'a evidencia ainda nao e forte o suficiente para promovê-la alem de validacao supervisionada'; cycle5 next_steps: 'Manter R5 em observacao ate haver evidencia adicional de fallback'"
+    },
+    {
+      "claim": "R5 possui condicao de avanco concreta e nomeada nos ciclos 4 e 5.",
+      "source": "cycle-004-execution-plan.json e cycle-005-write-proposals.json",
+      "evidence": "cycle4 R5 dependencies: ['amostras adicionais de fallback', 'comparacao entre respostas recorrentes e consultivas']; cycle5 next_steps preserva R5 com condicao nomeada"
+    },
+    {
+      "claim": "R3 e R4 possuem divergencia explicita irresoluta que impede selecao como foco.",
+      "source": "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json e cycle20-input/cycle-020A-conditional-queue-prioritization.json",
+      "evidence": "divergence_log R3 e R4: type=ready_in_cycle4_but_absent_in_cycle5; implication='nao permite promovê-los sem resolver a lacuna documental'; 020A documentary_strength='comprometida_por_divergencia'"
+    },
+    {
+      "claim": "R1 possui inversao de posicao nao resolvida que enfraquece sua candidatura.",
+      "source": "cycle-003-improvement-plan.json e cycle-004-execution-plan.json",
+      "evidence": "cycle3 R1 priority=1; cycle4 R1 execution_order=6, status=pending_validation; 020A anomaly severity=medium"
+    },
+    {
+      "claim": "A priorizacao condicional de R5 foi homologada no ciclo 020B.",
+      "source": "coordination/outbox_claude/reply-020B-20260404T132226Z.json",
+      "evidence": "VEREDITO=HOMOLOGADO; ponto_1_R5_e_o_mais_defensavel=CONFIRMADO; 020B_homologado=true; ciclo_21_pode_ser_discutido=true"
+    },
+    {
+      "claim": "R2 esta permanentemente excluido da fila remanescente.",
+      "source": "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json",
+      "evidence": "r2_status=ITERACAO_SNAPSHOT_BOUND_ENCERRADA; r2_closed_by=cycle-018B; r2_reopen_prohibited=true"
+    },
+    {
+      "claim": "R6 esta permanentemente excluido da fila remanescente.",
+      "source": "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json",
+      "evidence": "r6_status=stable_closed; r6_closed_by=cycle-011; r6_reopen_prohibited=true"
+    },
+    {
+      "claim": "A abertura de R5 ainda nao esta autorizada — novo contrato explicito e necessario.",
+      "source": "cycle20-input/cycle-020A-conditional-queue-prioritization.json",
+      "evidence": "next_cycle_contract_basis.authorization_status='nao autorizado neste ciclo'; note='A priorizacao condicional de R5 orienta o proximo contrato, mas nao autoriza abertura. Um novo contrato explicito e necessario antes de qualquer analise especifica de R5.'"
+    }
+  ],
+  "meta": {
+    "workspace": "C:\\Users\\User\\.openclaw\\workspace-integration",
+    "context_files_read": [
+      "cycle20-input/cycle-020A-conditional-queue-prioritization.json",
+      "coordination/outbox_claude/reply-020B-20260404T132226Z.json",
+      "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json",
+      "cycle19-input/queue_source_map.json"
+    ],
+    "output_file": "cycle21-input/cycle-021A-r5-conditional-opening-basis.json",
+    "task_source": "task-021A-20260404T142951Z"
+  }
+}

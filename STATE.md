@@ -1,5 +1,5 @@
 # OpenClaw — Estado do Processo
-> Atualizado em: 2026-04-04 (020B homologado; 021A bloqueado por reply generico; diagnostico 021A emitido automaticamente)
+> Atualizado em: 2026-04-04 (021A PRODUZIDO — OPENING_BASIS_DEFINED para R5; aguardando homologacao 021B)
 > Fonte de verdade para todos os atores.
 
 ## Ciclo atual
@@ -7,10 +7,10 @@
 | Campo | Valor |
 |---|---|
 | Ciclo ativo | 21 |
-| Fase em andamento | 021A em retry limpo — aguardando payload do CODEX LOCAL |
-| Próxima etapa | CODEX LOCAL reprocesa o 021A apos correcao local validada pelo Claude |
-| Status inbox_claude | vazio (diagnostico 021A concluido) |20260404T133957Z.json pendente |
-| Status inbox_codex_local | task-021A-RETRY-20260404T142951Z.json pendente |
+| Fase em andamento | 021A PRODUZIDO — aguardando homologacao (021B) |
+| Próxima etapa | Orquestrador homologa payload 021A; se aprovado, emite contrato de abertura de R5 (022A) |
+| Status inbox_claude | task-021A-DIAG-20260404T133957Z.json (processado — reply existente) |
+| Status inbox_codex_local | task-021A-RETRY-20260404T142951Z.json (reply produzido por claude_local) |
 
 ## Resultado consolidado do ciclo 19
 
@@ -114,4 +114,5 @@ orq: diagnostico 021A para claude
 
 | Microfase | Veredito | Observacao |
 |---|---|---|
-| 21A | RETRY_EM_CURSO | aguardando nova producao do CODEX LOCAL |
+| 21A | PRODUZIDO | OPENING_BASIS_DEFINED / R5 / reply em outbox_codex_local |
+| 21B | PENDENTE | homologacao do payload 021A pelo orquestrador |
