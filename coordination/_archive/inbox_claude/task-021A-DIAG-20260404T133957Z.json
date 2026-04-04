@@ -1,0 +1,22 @@
+﻿{
+    "task_id":  "task-021A-DIAG-20260404T133957Z",
+    "target_actor":  "claude_local",
+    "cycle":  "021A-DIAG",
+    "instruction":  "Voce deve diagnosticar por que o CODEX LOCAL respondeu de forma generica/incompleta ao ciclo 021A em vez de produzir o payload esperado. Objetivo: encontrar o ponto exato do caminho local que fez o prompt chegar truncado ou descaracterizado, corrigir o minimo necessario e dizer se 021A esta apto para retry valido. Leia obrigatoriamente: STATE.md; coordination/inbox_codex_local/_archive/ ou task 021A correspondente; coordination/outbox_codex_local/reply-021A*.json; poller-autonomous.ps1; logs locais relevantes. Red lines: nao tocar em producao, bridge, .mcp.json, projeto real, R2, R6. Formato obrigatorio: INICIO DO RELATORIO / STATUS GERAL / DIAGNOSTICO / CORRECOES APLICADAS / VALIDACAO / GIT / CONCLUSAO / FIM DO RELATORIO. O bloco VALIDACAO deve responder explicitamente: \u0027021A apto para retry valido: sim/nao\u0027.",
+    "context_files":  [
+                          "STATE.md",
+                          "coordination/outbox_codex_local/reply-021A-20260404T103506Z.json",
+                          "cycle20-input/cycle-020A-conditional-queue-prioritization.json",
+                          "coordination/outbox_claude/reply-020B-20260404T132226Z.json"
+                      ],
+    "output_path":  "coordination/outbox_claude/reply-021A-DIAG-20260404T133957Z.json",
+    "red_lines":  [
+                      "no_production_write",
+                      "no_bridge_write",
+                      "no_mcp_json_write",
+                      "no_r2_reopen",
+                      "no_r6_reopen"
+                  ],
+    "status":  "accepted",
+    "created_at":  "2026-04-04T13:39:57Z"
+}

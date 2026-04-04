@@ -1,9 +1,9 @@
-﻿{
-    "reply_id":  "reply-021A-DIAG-20260404T110111Z",
-    "source_task_id":  "task-021A-DIAG-20260404T133957Z",
-    "actor":  "claude_local",
-    "cycle":  "021A-DIAG",
-    "output":  "Ciclo 021A-DIAG conclu├¡do. Resumo:\r\n\r\n**Diagn├│stico:** Bug em `Build-Prompt` (`poller-autonomous.ps1`) ÔÇö o filtro `Where-Object { $_ -ne \"\" -and $_ -ne $null }` removia silenciosamente o separador de linha em branco e qualquer instru├º├úo nula. O CODEX recebeu apenas o cabe├ºalho do bloco de contexto sem instru├º├úo, respondeu em 15 segundos pedindo esclarecimento.\r\n\r\n**Corre├º├úo aplicada (commit `697c0c0`):**\r\n- Separador `\\n\\n` expl├¡cito entre bloco de contexto e instru├º├úo\r\n- Aviso `WARN` no log quando instru├º├úo for nula ÔÇö deixa de ser silencioso\r\n\r\n**Valida├º├úo:** `021A apto para retry v├ílido: sim`\r\n- Instru├º├úo e fontes est├úo corretas na task original\r\n- 020B homologado e v├ílido como base\r\n- Retry requer nova task file (a original est├í em `accepted`/`processed_tasks.txt`)\r\n\r\n**Artifacts:** `reply-021A-DIAG-20260404T133957Z.json` commitado e pushado (commit `7b32e5a`).",
-    "status":  "complete",
-    "produced_at":  "2026-04-04T11:01:11.3454240-03:00"
+{
+  "reply_id": "reply-021A-DIAG-20260404T110111Z",
+  "source_task_id": "task-021A-DIAG-20260404T133957Z",
+  "actor": "claude_local",
+  "cycle": "021A-DIAG",
+  "output": "Ciclo 021A-DIAG conclu├¡do. Resumo:\r\n\r\n**Diagn├│stico:** Bug em `Build-Prompt` (`poller-autonomous.ps1`) ÔÇö o filtro `Where-Object { $_ -ne \"\" -and $_ -ne $null }` removia silenciosamente o separador de linha em branco e qualquer instru├º├úo nula. O CODEX recebeu apenas o cabe├ºalho do bloco de contexto sem instru├º├úo, respondeu em 15 segundos pedindo esclarecimento.\r\n\r\n**Corre├º├úo aplicada (commit `697c0c0`):**\r\n- Separador `\\n\\n` expl├¡cito entre bloco de contexto e instru├º├úo\r\n- Aviso `WARN` no log quando instru├º├úo for nula ÔÇö deixa de ser silencioso\r\n\r\n**Valida├º├úo:** `021A apto para retry v├ílido: sim`\r\n- Instru├º├úo e fontes est├úo corretas na task original\r\n- 020B homologado e v├ílido como base\r\n- Retry requer nova task file (a original est├í em `accepted`/`processed_tasks.txt`)\r\n\r\n**Artifacts:** `reply-021A-DIAG-20260404T133957Z.json` commitado e pushado (commit `7b32e5a`).",
+  "status": "processed",
+  "produced_at": "2026-04-04T11:01:11.3454240-03:00"
 }

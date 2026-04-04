@@ -7,10 +7,10 @@
 | Campo | Valor |
 |---|---|
 | Ciclo ativo | 21 |
-| Fase em andamento | 021A bloqueado por reply generico do CODEX LOCAL — diagnostico local pendente |
-| Próxima etapa | Claude Local diagnostica o caminho do 021A e libera retry limpo do CODEX LOCAL |
-| Status inbox_claude | task-021A-DIAG-20260404T133957Z.json pendente |
-| Status inbox_codex_local | vazio (task 021A arquivada apos reply generico) |
+| Fase em andamento | 021A em retry limpo — aguardando payload do CODEX LOCAL |
+| Próxima etapa | CODEX LOCAL reprocesa o 021A apos correcao local validada pelo Claude |
+| Status inbox_claude | vazio (diagnostico 021A concluido) |20260404T133957Z.json pendente |
+| Status inbox_codex_local | task-021A-RETRY-20260404T142951Z.json pendente |
 
 ## Resultado consolidado do ciclo 19
 
@@ -99,7 +99,7 @@ orq: diagnostico 021A para claude
 | reply-020A-20260403T063700Z | processed — resposta generica, sem payload |
 | reply-020A-DIAG-20260403T073016Z | processed — usage limit, sem diagnostico util |
 | reply-020A-DIAG-RETRY-20260404T005826Z | processed — diagnostico util com causa raiz e fix confirmado |
-| Acao em curso | Claude Local diagnostica por que o prompt do 021A chegou incompleto ao CODEX LOCAL |
+| Acao em curso | CODEX LOCAL recebe retry limpo do 021A apos diagnostico local conclusivo |
 
 
 ## Resultado consolidado do ciclo 20
@@ -114,4 +114,4 @@ orq: diagnostico 021A para claude
 
 | Microfase | Veredito | Observacao |
 |---|---|---|
-| 21A | BLOQUEADO | reply generico do CODEX LOCAL; diagnostico local pendente |
+| 21A | RETRY_EM_CURSO | aguardando nova producao do CODEX LOCAL |
