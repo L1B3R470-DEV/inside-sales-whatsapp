@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import re
 import subprocess
 import time
 import unicodedata
@@ -194,7 +195,25 @@ def valid_021a(data: dict) -> bool:
 def valid_021b(data: dict) -> bool:
     output = data.get("output")
     lowered = normalize_text(output)
+    if isinstance(output, dict):
+        decision = output.get("DECISAO_SOBRE_A_PROGRESSAO", {})
+        if decision.get("021B_homologado") is True and decision.get("ciclo_22_pode_ser_discutido") is True:
+            return True
     return "021b_homologado" in lowered and "ciclo 22 pode ser discutido" in lowered
+
+
+def valid_022a(data: dict) -> bool:
+    payload = REPO / "cycle22-input" / "cycle-022A-r5-opening-contract.json"
+    if not payload.exists():
+        return False
+    try:
+        parsed = load_json(payload)
+    except Exception:
+        return False
+    if parsed.get("cycle_id") != "022A":
+        return False
+    readiness = parsed.get("readiness_classification")
+    return readiness in {"OPENING_CONTRACT_DEFINED", "OPENING_CONTRACT_INCONCLUSIVO"}
 
 
 def is_invalid_codex_reply(data: dict) -> bool:
@@ -397,6 +416,86 @@ def create_021b_task(reply_path: Path):
     return path
 
 
+def create_022a_task(reply_path: Path):
+    ts = now_compact()
+    task_name = f"task-022A-{ts}.json"
+    reply_name = f"reply-022A-{ts}.json"
+    task = {
+        "task_id": f"task-022A-{ts}",
+        "target_actor": "codex_local",
+        "cycle": "022A",
+        "instruction": (
+            "Voce esta autorizado a executar UMA tentativa unica do ciclo 022A, em modo MANUAL/ORQUESTRADO, estritamente documental, read-only, sem runner stateful e sem coletar dados reais neste ciclo. "
+            "O ciclo 021B homologou a base de abertura condicional de R5. Sua missao e produzir o payload oficial do 022A para formalizar o CONTRATO DE ABERTURA de R5, definindo exatamente como um ciclo futuro podera coletar EV1, EV2 e EV3 e aplicar VC1, VC2, VC3 e VC4, sem autorizar essa coleta agora. "
+            "Este ciclo NAO executa a abertura de R5. Este ciclo NAO coleta amostras reais. Este ciclo NAO autoriza live CRM, sandbox, escrita, SQL, DDL, DML, producao, bridge, .mcp.json, R2 ou R6. "
+            "Fontes oficiais obrigatorias: cycle21-input/cycle-021A-r5-conditional-opening-basis.json; coordination/outbox_claude/reply-021B-20260404T143857Z.json; cycle20-input/cycle-020A-conditional-queue-prioritization.json; coordination/outbox_claude/reply-020B-20260404T132226Z.json; cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json. "
+            "Arquivo a criar: cycle22-input/cycle-022A-r5-opening-contract.json. "
+            "O JSON deve ser parseavel e conter no minimo: cycle_id=022A; mode=r5-opening-contract; agent=manual-orchestrated; generated_at; source_precedence; inherited_constraints; opening_reference com selected_focus=R5, readiness_inherited=OPENING_BASIS_DEFINED, homologation_basis=021B; contract_scope com objective, permitted_future_inputs (EV1, EV2, EV3), prohibited_actions_now, future_validation_protocol (VC1-VC4), acceptance_gates, execution_non_goals; collection_contract with collection_requirements, evidence_format_rules, pii_controls, isolation_requirements, future_authorization_dependencies; readiness_classification com um de OPENING_CONTRACT_DEFINED ou OPENING_CONTRACT_INCONCLUSIVO; authorization_reset com todos os flags false; blockers; violations=[]; prohibitions; anomalies; evidence_trace; meta.output_file. "
+            "Regra central: transformar a base de abertura do 021A em contrato operacional futuro, mas sem iniciar a abertura agora. Se a base nao bastar para definir gates objetivos do contrato, prefira OPENING_CONTRACT_INCONCLUSIVO. "
+            "Ao final, responda no formato: INICIO DO RELATORIO / STATUS GERAL / PRODUCAO DO 022A / VALIDACAO DO PAYLOAD / CONTRATO DE ABERTURA DE R5 / ISOLAMENTO PRESERVADO / CONCLUSAO / ARTEFATOS / FIM DO RELATORIO."
+        ),
+        "context_files": [
+            "STATE.md",
+            "cycle21-input/cycle-021A-r5-conditional-opening-basis.json",
+            str(reply_path.relative_to(REPO)).replace("\\", "/"),
+            "cycle20-input/cycle-020A-conditional-queue-prioritization.json",
+            "coordination/outbox_claude/reply-020B-20260404T132226Z.json",
+            "cycle19-input/cycle-019A-post-r2-closure-queue-assessment.json"
+        ],
+        "output_path": f"coordination/outbox_codex_local/{reply_name}",
+        "red_lines": [
+            "no_production_write",
+            "no_bridge_write",
+            "no_mcp_json_write",
+            "no_r2_reopen",
+            "no_r6_reopen"
+        ],
+        "status": "pending",
+        "created_at": now_iso()
+    }
+    path = INBOX_CODEX / task_name
+    save_json(path, task)
+    return path
+
+
+def create_022a_diag_task(reply_path: Path):
+    ts = now_compact()
+    task_name = f"task-022A-DIAG-{ts}.json"
+    reply_name = f"reply-022A-DIAG-{ts}.json"
+    task = {
+        "task_id": f"task-022A-DIAG-{ts}",
+        "target_actor": "claude_local",
+        "cycle": "022A-DIAG",
+        "instruction": (
+            "Voce deve diagnosticar por que o CODEX LOCAL respondeu de forma generica/incompleta ao ciclo 022A em vez de produzir o payload esperado. "
+            "Objetivo: encontrar o ponto exato do caminho local que fez o prompt chegar truncado ou descaracterizado, corrigir o minimo necessario e dizer se 022A esta apto para retry valido. "
+            "Leia obrigatoriamente: STATE.md; task 022A correspondente; reply 022A correspondente; poller-autonomous.ps1; logs locais relevantes. "
+            "Red lines: nao tocar em producao, bridge, .mcp.json, projeto real, R2, R6. "
+            "Formato obrigatorio: INICIO DO RELATORIO / STATUS GERAL / DIAGNOSTICO / CORRECOES APLICADAS / VALIDACAO / GIT / CONCLUSAO / FIM DO RELATORIO. "
+            "O bloco VALIDACAO deve responder explicitamente: '022A apto para retry valido: sim/nao'."
+        ),
+        "context_files": [
+            "STATE.md",
+            str(reply_path.relative_to(REPO)).replace("\\", "/"),
+            "cycle21-input/cycle-021A-r5-conditional-opening-basis.json",
+            "coordination/outbox_claude/reply-021B-20260404T143857Z.json"
+        ],
+        "output_path": f"coordination/outbox_claude/{reply_name}",
+        "red_lines": [
+            "no_production_write",
+            "no_bridge_write",
+            "no_mcp_json_write",
+            "no_r2_reopen",
+            "no_r6_reopen"
+        ],
+        "status": "pending",
+        "created_at": now_iso()
+    }
+    path = INBOX_CLAUDE / task_name
+    save_json(path, task)
+    return path
+
+
 def archive_tasks(prefix: str, src: Path, dst: Path):
     dst.mkdir(parents=True, exist_ok=True)
     moved = []
@@ -571,6 +670,108 @@ def update_state_after_021a_success(task_name: str):
     STATE_MD.write_text(text, encoding="utf-8")
 
 
+def update_state_after_021b(task_name: str):
+    text = STATE_MD.read_text(encoding="utf-8")
+    replacements = {
+        "> Atualizado em: 2026-04-04 (021A PRODUZIDO — OPENING_BASIS_DEFINED para R5; aguardando homologacao 021B)":
+            "> Atualizado em: 2026-04-04 (021B homologado; 022A emitido para formalizar o contrato de abertura de R5)",
+        "| Ciclo ativo | 21 |":
+            "| Ciclo ativo | 22 |",
+        "| Fase em andamento | 021A PRODUZIDO — aguardando homologacao (021B) |":
+            "| Fase em andamento | 021B homologado — 022A pendente de producao do CODEX LOCAL |",
+        "| Próxima etapa | Orquestrador homologa payload 021A; se aprovado, emite contrato de abertura de R5 (022A) |":
+            "| Próxima etapa | CODEX LOCAL formaliza o contrato de abertura de R5 no 022A |",
+        "| Status inbox_claude | task-021A-DIAG-20260404T133957Z.json (processado — reply existente) |":
+            "| Status inbox_claude | vazio (021B homologado) |",
+        "| Status inbox_codex_local | vazio (021A concluido; aguardando revisao 021B) |-20260404T142951Z.json (reply produzido por claude_local) |":
+            f"| Status inbox_codex_local | {task_name} pendente |",
+        "| 21A | PRODUZIDO | OPENING_BASIS_DEFINED / R5 / reply em outbox_codex_local |":
+            "| 21A | PRODUZIDO | OPENING_BASIS_DEFINED / R5 / reply em outbox_codex_local |",
+        "| Acao em curso | Claude Local diagnostica por que o prompt do 021A chegou incompleto ao CODEX LOCAL |":
+            "| Acao em curso | CODEX LOCAL formaliza o contrato de abertura de R5 com base em EV1, EV2, EV3 e VC1-VC4 |"
+    }
+    for old, new in replacements.items():
+        if old in text:
+            text = text.replace(old, new)
+    if "| 21B |" in text:
+        text = text.replace("| 21B | PENDENTE | revisao do Claude Local ainda nao executada |", "| 21B | HOMOLOGADO | base de abertura de R5 confirmada; ciclo 22 pode ser discutido |")
+    else:
+        text += "\n| 21B | HOMOLOGADO | base de abertura de R5 confirmada; ciclo 22 pode ser discutido |\n"
+    if "## Resultado consolidado do ciclo 22" not in text:
+        text += """
+
+## Resultado consolidado do ciclo 22
+
+| Microfase | Veredito | Observacao |
+|---|---|---|
+| 22A | PENDENTE | contrato de abertura de R5 ainda nao produzido |
+"""
+    STATE_MD.write_text(text, encoding="utf-8")
+
+
+def replace_line_starting_with(lines, prefix, new_line):
+    replaced = False
+    for idx, line in enumerate(lines):
+        if line.startswith(prefix):
+            lines[idx] = new_line
+            replaced = True
+            break
+    if not replaced:
+        lines.append(new_line)
+    return lines
+
+
+def reconcile_state_md():
+    if not STATE_MD.exists():
+        return
+    text = STATE_MD.read_text(encoding="utf-8")
+    lines = text.splitlines()
+
+    latest_task_022a = next(iter(sorted(INBOX_CODEX.glob("task-022A*.json"), key=lambda p: p.stat().st_mtime, reverse=True)), None)
+    latest_task_022a_diag = next(iter(sorted(INBOX_CLAUDE.glob("task-022A-DIAG*.json"), key=lambda p: p.stat().st_mtime, reverse=True)), None)
+    invalid_022a_path, _ = find_latest_matching_reply(OUTBOX_CODEX, "022A", "022A", is_invalid_codex_reply)
+
+    current_updated = "> Atualizado em: 2026-04-04 (021B homologado; 022A emitido para formalizar o contrato de abertura de R5)"
+    cycle_value = "| Ciclo ativo | 22 |"
+    phase_value = "| Fase em andamento | 021B homologado — 022A pendente de producao do CODEX LOCAL |"
+    next_value = "| Próxima etapa | CODEX LOCAL formaliza o contrato de abertura de R5 no 022A |"
+    claude_value = "| Status inbox_claude | vazio (021B homologado) |"
+    codex_value = f"| Status inbox_codex_local | {latest_task_022a.name} pendente |" if latest_task_022a else "| Status inbox_codex_local | vazio |"
+    latest_commit = "orq: instrucao 022A para codex local"
+    current_action = "| Acao em curso | CODEX LOCAL formaliza o contrato de abertura de R5 com base em EV1, EV2, EV3 e VC1-VC4 |"
+    result_21b = "| 21B | HOMOLOGADO | base de abertura de R5 confirmada; ciclo 22 pode ser discutido |"
+    result_22a = "| 22A | PENDENTE | contrato de abertura de R5 ainda nao produzido |"
+
+    if invalid_022a_path or latest_task_022a_diag:
+        current_updated = "> Atualizado em: 2026-04-04 (021B homologado; 022A bloqueado por reply generico; diagnostico 022A emitido automaticamente)"
+        phase_value = "| Fase em andamento | 022A bloqueado por reply generico do CODEX LOCAL — diagnostico local pendente |"
+        next_value = "| Próxima etapa | Claude Local diagnostica o caminho do 022A e libera retry limpo do CODEX LOCAL |"
+        if latest_task_022a_diag:
+            claude_value = f"| Status inbox_claude | {latest_task_022a_diag.name} pendente |"
+        else:
+            claude_value = "| Status inbox_claude | vazio (reply 022A generico detectado; diagnostico ainda nao emitido) |"
+        codex_value = "| Status inbox_codex_local | vazio (task 022A arquivada apos reply generico) |"
+        latest_commit = "orq: diagnostico 022A para claude"
+        current_action = "| Acao em curso | Claude Local diagnostica por que o prompt do 022A chegou incompleto ao CODEX LOCAL |"
+        result_22a = "| 22A | BLOQUEADO | reply generico do CODEX LOCAL; diagnostico local pendente |"
+
+    lines = replace_line_starting_with(lines, "> Atualizado em:", current_updated)
+    lines = replace_line_starting_with(lines, "| Ciclo ativo |", cycle_value)
+    lines = replace_line_starting_with(lines, "| Fase em andamento |", phase_value)
+    lines = replace_line_starting_with(lines, "| Próxima etapa |", next_value)
+    lines = replace_line_starting_with(lines, "| Status inbox_claude |", claude_value)
+    lines = replace_line_starting_with(lines, "| Status inbox_codex_local |", codex_value)
+    lines = replace_line_starting_with(lines, "| coordination/inbox_claude/ |", claude_value.replace("| Status inbox_claude | ", "| coordination/inbox_claude/ | "))
+    lines = replace_line_starting_with(lines, "| coordination/inbox_codex_local/ |", codex_value.replace("| Status inbox_codex_local | ", "| coordination/inbox_codex_local/ | "))
+    lines = replace_line_starting_with(lines, "| Acao em curso |", current_action)
+    lines = replace_line_starting_with(lines, "| 21B |", result_21b)
+    lines = replace_line_starting_with(lines, "| 22A |", result_22a)
+
+    joined = "\n".join(lines)
+    joined = re.sub(r"## Ultimo commit relevante\s+```.*?```", f"## Ultimo commit relevante\n\n```\n{latest_commit}\n```", joined, flags=re.S)
+    STATE_MD.write_text(joined + ("\n" if not joined.endswith("\n") else ""), encoding="utf-8")
+
+
 def process_complete_020a(state):
     reply_path, reply_data = find_latest_complete_reply(OUTBOX_CODEX, "020A", "020A")
     if not reply_path or not valid_020a(reply_data):
@@ -701,6 +902,58 @@ def process_complete_021a(state):
     return True
 
 
+def process_complete_021b(state):
+    reply_path, reply_data = find_latest_matching_reply(OUTBOX_CLAUDE, "021B", "021B", valid_021b)
+    if not reply_path:
+        return False
+
+    reply_id = reply_data.get("reply_id") or reply_path.stem
+    if reply_id in state["processed_reply_ids"]:
+        return False
+
+    if task_or_reply_exists("task-022A-", INBOX_CODEX) or task_or_reply_exists("reply-022A-", OUTBOX_CODEX):
+        state["processed_reply_ids"].append(reply_id)
+        save_state(state)
+        return False
+
+    created_task = create_022a_task(reply_path)
+    reply_data["status"] = "processed"
+    save_json(reply_path, reply_data)
+    archived = archive_tasks("task-021B", INBOX_CLAUDE, ARCHIVE_CLAUDE)
+    update_state_after_021b(created_task.name)
+    state["processed_reply_ids"].append(reply_id)
+    save_state(state)
+    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *archived], "orq: instrucao 022A para codex local")
+    log(f"021B processado pelo supervisor. Task 022A emitida: {created_task.name}")
+    return True
+
+
+def process_invalid_022a(state):
+    reply_path, reply_data = find_latest_matching_reply(OUTBOX_CODEX, "022A", "022A", is_invalid_codex_reply)
+    if not reply_path:
+        return False
+
+    reply_id = reply_data.get("reply_id") or reply_path.stem
+    if reply_id in state["processed_reply_ids"]:
+        return False
+
+    if task_or_reply_exists("task-022A-DIAG-", INBOX_CLAUDE) or task_or_reply_exists("reply-022A-DIAG-", OUTBOX_CLAUDE):
+        state["processed_reply_ids"].append(reply_id)
+        save_state(state)
+        return False
+
+    created_task = create_022a_diag_task(reply_path)
+    reply_data["status"] = "processed"
+    save_json(reply_path, reply_data)
+    archived = archive_tasks("task-022A", INBOX_CODEX, ARCHIVE_CODEX)
+    state["processed_reply_ids"].append(reply_id)
+    save_state(state)
+    reconcile_state_md()
+    commit_push([created_task, reply_path, STATE_MD, STATE_FILE, *archived], "orq: diagnostico 022A para claude")
+    log(f"022A invalido processado pelo supervisor. Task diagnostica emitida: {created_task.name}")
+    return True
+
+
 def process_once():
     git_pull_ff_only()
     state = load_state()
@@ -727,6 +980,16 @@ def process_once():
     state = load_state()
     if process_complete_021a(state):
         changed = True
+
+    state = load_state()
+    if process_complete_021b(state):
+        changed = True
+
+    state = load_state()
+    if process_invalid_022a(state):
+        changed = True
+
+    reconcile_state_md()
 
     return changed
 
