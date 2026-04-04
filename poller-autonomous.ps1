@@ -92,7 +92,13 @@ function Invoke-ClaudeCLI {
     $output = ""
     try {
         Push-Location $WorkingDir
-        $output = & $ClaudeCLI -p (Get-Content $PromptFile -Raw) 2>&1 | Out-String
+        # Chama node.js diretamente para evitar interpretacao de caracteres especiais
+        # (|, >, < etc.) pelo cmd.exe ao invocar claude.cmd via argumento -p.
+        # Prompt passado via stdin elimina qualquer ambiguidade de parsing.
+        $NpmDir  = Split-Path $ClaudeCLI
+        $NodeExe = if (Test-Path "$NpmDir\node.exe") { "$NpmDir\node.exe" } else { "node" }
+        $CliJs   = "$NpmDir\node_modules\@anthropic-ai\claude-code\cli.js"
+        $output  = (Get-Content $PromptFile -Raw) | & $NodeExe $CliJs --print 2>&1 | Out-String
         Pop-Location
     } catch {
         Pop-Location
