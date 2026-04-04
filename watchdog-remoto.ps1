@@ -36,6 +36,25 @@ function Get-SupervisorProcess {
         }
 }
 
+function Get-ProcessCreationTime {
+    param([Parameter(Mandatory = $true)]$ProcessRecord)
+
+    $raw = $ProcessRecord.CreationDate
+    if (-not $raw) {
+        throw "CreationDate ausente no processo."
+    }
+
+    if ($raw -is [datetime]) {
+        return $raw
+    }
+
+    try {
+        return [datetime]$raw
+    } catch {
+        return [Management.ManagementDateTimeConverter]::ToDateTime([string]$raw)
+    }
+}
+
 function Restart-TrackedPythonProcess {
     param(
         [Parameter(Mandatory = $true)][string]$Pattern,
@@ -57,7 +76,7 @@ function Restart-TrackedPythonProcess {
     }
 
     try {
-        $created = [Management.ManagementDateTimeConverter]::ToDateTime($proc.CreationDate)
+        $created = Get-ProcessCreationTime -ProcessRecord $proc
         $scriptWrite = (Get-Item $ScriptPath).LastWriteTime
         if ($scriptWrite -le $created) {
             return $false
