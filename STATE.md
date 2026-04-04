@@ -7,10 +7,10 @@
 | Campo | Valor |
 |---|---|
 | Ciclo ativo | 20 |
-| Fase em andamento | ciclo 20 homologado — 021A pendente de producao do CODEX LOCAL |
-| Próxima etapa | CODEX LOCAL produz a base documental de abertura condicional de R5 no 021A |
-| Status inbox_claude | vazio (020B homologado) |
-| Status inbox_codex_local | task-021A-20260404T133410Z.json pendente |
+| Fase em andamento | 021A bloqueado por reply generico do CODEX LOCAL — diagnostico local pendente |
+| Próxima etapa | Claude Local diagnostica o caminho do 021A e libera retry limpo do CODEX LOCAL |
+| Status inbox_claude | task-021A-DIAG-20260404T133957Z.json pendente |
+| Status inbox_codex_local | vazio (task 021A arquivada apos reply generico) |
 
 ## Resultado consolidado do ciclo 19
 
@@ -99,7 +99,7 @@ orq: retry limpo 020A + bootstrap remoto
 | reply-020A-20260403T063700Z | processed — resposta generica, sem payload |
 | reply-020A-DIAG-20260403T073016Z | processed — usage limit, sem diagnostico util |
 | reply-020A-DIAG-RETRY-20260404T005826Z | processed — diagnostico util com causa raiz e fix confirmado |
-| Acao em curso | CODEX LOCAL prepara a base documental de abertura condicional de R5 para o ciclo 21 |
+| Acao em curso | Claude Local diagnostica por que o prompt do 021A chegou incompleto ao CODEX LOCAL |
 
 
 ## Resultado consolidado do ciclo 20
@@ -114,4 +114,4 @@ orq: retry limpo 020A + bootstrap remoto
 
 | Microfase | Veredito | Observacao |
 |---|---|---|
-| 21A | PENDENTE | base documental de abertura condicional de R5 ainda nao produzida |
+| 21A | BLOQUEADO | reply generico do CODEX LOCAL; diagnostico local pendente |
