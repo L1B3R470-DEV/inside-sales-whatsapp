@@ -7,6 +7,7 @@
 
 # Bancos de dados (grandes, binários, mudam constantemente)
 *.sqlite
+*.sqlite-shm
 *.sqlite-journal
 *.sqlite-wal
 
