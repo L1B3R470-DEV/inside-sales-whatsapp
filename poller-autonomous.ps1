@@ -220,6 +220,67 @@ function Git-CommitPush {
     return $false
 }
 
+function Resolve-ClaudeInvocation {
+    $candidates = New-Object System.Collections.Generic.List[string]
+
+    if ($ClaudeCLI) {
+        $candidates.Add($ClaudeCLI)
+    }
+
+    foreach ($name in @("claude.cmd", "claude")) {
+        $cmd = Get-Command $name -ErrorAction SilentlyContinue
+        if ($cmd -and $cmd.Source) {
+            $candidates.Add([string]$cmd.Source)
+        }
+    }
+
+    foreach ($candidate in ($candidates | Select-Object -Unique)) {
+        if (-not $candidate) { continue }
+        if (-not (Test-Path $candidate)) { continue }
+
+        $ext = [System.IO.Path]::GetExtension($candidate).ToLowerInvariant()
+        if ($ext -in @(".cmd", ".bat")) {
+            $npmDir = Split-Path $candidate
+            $localNode = Join-Path $npmDir "node.exe"
+            $cliJs = Join-Path $npmDir "node_modules\@anthropic-ai\claude-code\cli.js"
+            if (Test-Path $cliJs) {
+                $nodeCmd = Get-Command "node" -ErrorAction SilentlyContinue
+                $nodeExe = if (Test-Path $localNode) { $localNode } elseif ($nodeCmd -and $nodeCmd.Source) { [string]$nodeCmd.Source } else { "node" }
+                return @{
+                    mode = "node-cli"
+                    executable = $nodeExe
+                    arguments = @($cliJs, "--print")
+                }
+            }
+
+            return @{
+                mode = "cmd-wrapper"
+                executable = $candidate
+                arguments = @("--print")
+            }
+        }
+
+        return @{
+            mode = "direct"
+            executable = $candidate
+            arguments = @("--print")
+        }
+    }
+
+    foreach ($name in @("npx.cmd", "npx")) {
+        $npx = Get-Command $name -ErrorAction SilentlyContinue
+        if ($npx -and $npx.Source) {
+            return @{
+                mode = "npx"
+                executable = [string]$npx.Source
+                arguments = @("-y", "@anthropic-ai/claude-code", "--print")
+            }
+        }
+    }
+
+    throw "Claude CLI nao encontrado em caminhos locais, PATH ou npx."
+}
+
 function Update-TaskStatus {
     param([string]$FilePath, [string]$NewStatus)
     $data = Get-Content $FilePath -Raw | ConvertFrom-Json
@@ -239,13 +300,9 @@ function Invoke-ClaudeCLI {
     $output = ""
     try {
         Push-Location $WorkingDir
-        # Chama node.js diretamente para evitar interpretacao de caracteres especiais
-        # (|, >, < etc.) pelo cmd.exe ao invocar claude.cmd via argumento -p.
-        # Prompt passado via stdin elimina qualquer ambiguidade de parsing.
-        $NpmDir  = Split-Path $ClaudeCLI
-        $NodeExe = if (Test-Path "$NpmDir\node.exe") { "$NpmDir\node.exe" } else { "node" }
-        $CliJs   = "$NpmDir\node_modules\@anthropic-ai\claude-code\cli.js"
-        $output  = (Get-Content $PromptFile -Raw) | & $NodeExe $CliJs --print 2>&1 | Out-String
+        $invocation = Resolve-ClaudeInvocation
+        Write-Log "Claude CLI resolvido via $($invocation.mode): $($invocation.executable)"
+        $output  = (Get-Content $PromptFile -Raw) | & $invocation.executable @($invocation.arguments) 2>&1 | Out-String
         Pop-Location
     } catch {
         Pop-Location
@@ -265,38 +322,41 @@ function Build-Prompt {
 
     $isCodex = $Actor -eq "CODEX_LOCAL"
 
-    if ($isCodex) {
-        # Prompt para CODEX_LOCAL: instrucao direta, sem preamble de automacao ou atribuicao de papel
-        $contextBlock = if ($ContextFiles -and $ContextFiles.Count -gt 0) {
-            "Arquivos de referencia disponiveis (leia os necessarios):`n- " + ($ContextFiles -join "`n- ")
-        } else {
-            ""
-        }
-        # FIX 021A-DIAG: separador explicito garante linha em branco entre contexto e instrucao;
-        # instrucao nula/vazia agora gera aviso em vez de prompt silenciosamente incompleto.
-        if (-not $Instruction) {
-            Write-Log "AVISO: instrucao vazia/nula para tarefa CODEX_LOCAL (ciclo $Cycle) — prompt sera incompleto" "WARN"
-        }
-        $parts = @()
-        if ($contextBlock) { $parts += $contextBlock }
-        if ($Instruction)  { $parts += $Instruction }
-        return $parts -join "`n`n"
+    if ($ContextFiles -and $ContextFiles.Count -gt 0) {
+        $contextItems = $ContextFiles -join "`n- "
     } else {
-        # Prompt para CLAUDE_LOCAL (roda no projeto real com CLAUDE.md completo)
-        $contextBlock = if ($ContextFiles -and $ContextFiles.Count -gt 0) {
-            "Arquivos de contexto da task:`n- " + ($ContextFiles -join "`n- ")
-        } else {
-            "Arquivos de contexto: nenhum"
-        }
-        $lines = @(
-            "Tarefa OpenClaw - ciclo $Cycle",
-            "Consulte BOOTSTRAP_CLAUDE_v2.md em: $BootstrapClaude",
-            $contextBlock,
-            "",
-            $Instruction
-        )
-        return $lines -join "`n"
+        $contextItems = ""
     }
+
+    if ($isCodex) {
+        if (-not $Instruction) {
+            Write-Log "AVISO: instrucao vazia para tarefa CODEX_LOCAL (ciclo $Cycle)" "WARN"
+        }
+
+        $parts = @()
+        if ($contextItems) {
+            $parts += "Arquivos de referencia disponiveis:`n- $contextItems"
+        }
+        if ($Instruction) {
+            $parts += $Instruction
+        }
+        return $parts -join "`n`n"
+    }
+
+    $contextBlock = if ($contextItems) {
+        "Arquivos de contexto da task:`n- $contextItems"
+    } else {
+        "Arquivos de contexto: nenhum"
+    }
+
+    $lines = @(
+        "Tarefa OpenClaw - ciclo $Cycle",
+        "Consulte BOOTSTRAP_CLAUDE_v2.md em: $BootstrapClaude",
+        $contextBlock,
+        "",
+        $Instruction
+    )
+    return $lines -join "`n"
 }
 
 function Persist-CurrentTask {
