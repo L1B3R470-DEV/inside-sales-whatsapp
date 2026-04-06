@@ -159,10 +159,66 @@ function normalizeForDedupe(value) {
 
 function stripEmojiCharacters(value) {
   return String(value || '')
+    .replace(/\u200D/g, '')
+    .replace(/\uFE0F/g, '')
+    .replace(/\p{Extended_Pictographic}/gu, '')
     .replace(/[\u{1F300}-\u{1FAFF}]/gu, '')
     .replace(/[\u{2600}-\u{27BF}]/gu, '')
-    .replace(/\s+/g, ' ')
+    .replace(/[ \t]{2,}/g, ' ')
     .trim();
+}
+
+function normalizeAuthorizedLink(value) {
+  return String(value || '')
+    .trim()
+    .replace(/^<+|>+$/g, '')
+    .replace(/[),.;!?]+$/g, '')
+    .replace(/\/+$/g, '')
+    .toLowerCase();
+}
+
+function getAuthorizedOutboundLinks(ctx) {
+  const staticData = $getWorkflowStaticData('global');
+  const values = [];
+  for (const candidate of [ctx?.authorizedLinks, ctx?.operatorAuthorizedLinks, ctx?.allowedLinks]) {
+    if (Array.isArray(candidate)) values.push(...candidate);
+  }
+  const staticAuthorized = staticData?.operatorAuthorizedLinks && typeof staticData.operatorAuthorizedLinks === 'object'
+    ? staticData.operatorAuthorizedLinks
+    : {};
+  if (Array.isArray(staticAuthorized.links)) values.push(...staticAuthorized.links);
+  return new Set(values.map(normalizeAuthorizedLink).filter(Boolean));
+}
+
+function stripUnauthorizedLinks(value, authorizedLinks) {
+  const allowed = authorizedLinks instanceof Set ? authorizedLinks : new Set();
+  const keepOrDrop = (match, offset, source) => {
+    const prev = offset > 0 ? String(source || '').charAt(offset - 1) : '';
+    if (prev === '@') return match;
+    return allowed.has(normalizeAuthorizedLink(match)) ? match : '';
+  };
+
+  return String(value || '')
+    .replace(/\bhttps?:\/\/[^\s<>()]+/gi, keepOrDrop)
+    .replace(/\bwww\.[^\s<>()]+/gi, keepOrDrop)
+    .replace(/\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}(?:\/[^\s<>()]*)?/gi, keepOrDrop);
+}
+
+function sanitizeOutboundText(value, options) {
+  const cfg = options && typeof options === 'object' ? options : {};
+  const maxChars = Number(cfg.maxChars || 0);
+  const authorizedLinks = cfg.authorizedLinks instanceof Set ? cfg.authorizedLinks : new Set();
+  let text = String(value || '').replace(/\r\n?/g, '\n');
+  text = stripUnauthorizedLinks(text, authorizedLinks);
+  text = stripEmojiCharacters(text)
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+  if (maxChars > 0) {
+    text = text.slice(0, maxChars).trim();
+  }
+  return text;
 }
 
 function suppressDuplicateOutbound(instance, number, replyText, messageId) {
@@ -701,8 +757,17 @@ reply = applySalutation(reply, {
   isFirstInbound: guardrails.isFirstInbound,
   inboundText: guardrails.inboundTextOriginal
 });
-reply = stripEmojiCharacters(reply);
-reply = String(reply).slice(0, Number(guardrails.maxOutputChars || 420));
+const authorizedOutboundLinks = getAuthorizedOutboundLinks(guardrails);
+reply = sanitizeOutboundText(reply, {
+  authorizedLinks: authorizedOutboundLinks,
+  maxChars: Number(guardrails.maxOutputChars || 420)
+});
+if (!reply) {
+  reply = sanitizeOutboundText(fallbackWaiting, {
+    authorizedLinks: authorizedOutboundLinks,
+    maxChars: Number(guardrails.maxOutputChars || 420)
+  });
+}
 
 const staticData = $getWorkflowStaticData('global');
 if (!staticData.customerProfiles) staticData.customerProfiles = {};
@@ -876,14 +941,20 @@ const outboundItems = [{
 
 for (const mediaItem of productMediaItems) {
   if (mediaItem?.json?.caption) {
-    mediaItem.json.caption = stripEmojiCharacters(mediaItem.json.caption);
+    mediaItem.json.caption = sanitizeOutboundText(mediaItem.json.caption, {
+      authorizedLinks: authorizedOutboundLinks,
+      maxChars: 240
+    });
   }
   outboundItems.push(mediaItem);
 }
 
 for (const mediaItem of vitrineMediaItems) {
   if (mediaItem?.json?.caption) {
-    mediaItem.json.caption = stripEmojiCharacters(mediaItem.json.caption);
+    mediaItem.json.caption = sanitizeOutboundText(mediaItem.json.caption, {
+      authorizedLinks: authorizedOutboundLinks,
+      maxChars: 240
+    });
   }
   outboundItems.push(mediaItem);
 }

@@ -1,6 +1,32 @@
 const payload = { ...$json };
 
-const text = String(payload.replyText || '').trim();
+function stripEmojiCharacters(value) {
+  return String(value || '')
+    .replace(/\u200D/g, '')
+    .replace(/\uFE0F/g, '')
+    .replace(/\p{Extended_Pictographic}/gu, '')
+    .replace(/[\u{1F300}-\u{1FAFF}]/gu, '')
+    .replace(/[\u{2600}-\u{27BF}]/gu, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
+function stripUnauthorizedLinks(value) {
+  return String(value || '')
+    .replace(/\bhttps?:\/\/[^\s<>()]+/gi, '')
+    .replace(/\bwww\.[^\s<>()]+/gi, '')
+    .replace(/\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}(?:\/[^\s<>()]*)?/gi, '');
+}
+
+function sanitizeOutboundText(value) {
+  return stripEmojiCharacters(stripUnauthorizedLinks(String(value || '').replace(/\r\n?/g, '\n')))
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
+const text = sanitizeOutboundText(payload.replyText || '');
 const inbound = String(payload.inboundTextOriginal || '').trim();
 
 if (!text || !inbound) {

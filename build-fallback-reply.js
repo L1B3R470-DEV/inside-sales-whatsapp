@@ -13,10 +13,66 @@ function normalizeForDedupe(value) {
 
 function stripEmojiCharacters(value) {
   return String(value || '')
+    .replace(/\u200D/g, '')
+    .replace(/\uFE0F/g, '')
+    .replace(/\p{Extended_Pictographic}/gu, '')
     .replace(/[\u{1F300}-\u{1FAFF}]/gu, '')
     .replace(/[\u{2600}-\u{27BF}]/gu, '')
-    .replace(/\s+/g, ' ')
+    .replace(/[ \t]{2,}/g, ' ')
     .trim();
+}
+
+function normalizeAuthorizedLink(value) {
+  return String(value || '')
+    .trim()
+    .replace(/^<+|>+$/g, '')
+    .replace(/[),.;!?]+$/g, '')
+    .replace(/\/+$/g, '')
+    .toLowerCase();
+}
+
+function getAuthorizedOutboundLinks(ctx) {
+  const staticData = $getWorkflowStaticData('global');
+  const values = [];
+  for (const candidate of [ctx?.authorizedLinks, ctx?.operatorAuthorizedLinks, ctx?.allowedLinks]) {
+    if (Array.isArray(candidate)) values.push(...candidate);
+  }
+  const staticAuthorized = staticData?.operatorAuthorizedLinks && typeof staticData.operatorAuthorizedLinks === 'object'
+    ? staticData.operatorAuthorizedLinks
+    : {};
+  if (Array.isArray(staticAuthorized.links)) values.push(...staticAuthorized.links);
+  return new Set(values.map(normalizeAuthorizedLink).filter(Boolean));
+}
+
+function stripUnauthorizedLinks(value, authorizedLinks) {
+  const allowed = authorizedLinks instanceof Set ? authorizedLinks : new Set();
+  const keepOrDrop = (match, offset, source) => {
+    const prev = offset > 0 ? String(source || '').charAt(offset - 1) : '';
+    if (prev === '@') return match;
+    return allowed.has(normalizeAuthorizedLink(match)) ? match : '';
+  };
+
+  return String(value || '')
+    .replace(/\bhttps?:\/\/[^\s<>()]+/gi, keepOrDrop)
+    .replace(/\bwww\.[^\s<>()]+/gi, keepOrDrop)
+    .replace(/\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}(?:\/[^\s<>()]*)?/gi, keepOrDrop);
+}
+
+function sanitizeOutboundText(value, options) {
+  const cfg = options && typeof options === 'object' ? options : {};
+  const maxChars = Number(cfg.maxChars || 0);
+  const authorizedLinks = cfg.authorizedLinks instanceof Set ? cfg.authorizedLinks : new Set();
+  let text = String(value || '').replace(/\r\n?/g, '\n');
+  text = stripUnauthorizedLinks(text, authorizedLinks);
+  text = stripEmojiCharacters(text)
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+  if (maxChars > 0) {
+    text = text.slice(0, maxChars).trim();
+  }
+  return text;
 }
 
 function suppressDuplicateOutbound(instance, number, replyText, messageId) {
@@ -63,7 +119,10 @@ function buildSalesBookMediaItem(instance, number, payload) {
       media: String(salesBookAsset.mediaBase64 || ''),
       mimeType: String(salesBookAsset.mimeType || payload.salesBookMimeType || 'application/pdf'),
       fileName: String(salesBookAsset.fileName || payload.salesBookFileName || 'BOOK_PROSPECCAO_VENDAS_INTERNAS.pdf'),
-      caption: stripEmojiCharacters(String(payload.salesBookCaption || salesBookAsset.caption || '').trim()),
+      caption: sanitizeOutboundText(String(payload.salesBookCaption || salesBookAsset.caption || '').trim(), {
+        authorizedLinks: authorizedOutboundLinks,
+        maxChars: 240
+      }),
       duplicateOutboundSuppressed: duplicateMedia
     }
   };
@@ -90,7 +149,10 @@ function buildVitrineMediaItems(instance, number, payload) {
         mediaType: String(asset.mediaType || 'image'),
         media: String(asset.mediaBase64 || ''),
         mimeType: String(asset.mimeType || 'image/jpeg'),
-        caption: stripEmojiCharacters(String(asset.caption || asset.label || '').trim()),
+        caption: sanitizeOutboundText(String(asset.caption || asset.label || '').trim(), {
+          authorizedLinks: authorizedOutboundLinks,
+          maxChars: 240
+        }),
         fileName: String(asset.fileName || '').trim(),
         duplicateOutboundSuppressed: duplicate
       }
@@ -193,7 +255,17 @@ function applySalutation(text, data) {
 
 let text = String(payload.fallbackText || 'Aqui e o Eduardo, Consultor de Vendas Internas da Classe Couro. Recebi sua mensagem e ja vou te atender.');
 text = applySalutation(text, payload);
-text = stripEmojiCharacters(text).slice(0, maxOutputChars);
+const authorizedOutboundLinks = getAuthorizedOutboundLinks(payload);
+text = sanitizeOutboundText(text, {
+  authorizedLinks: authorizedOutboundLinks,
+  maxChars: maxOutputChars
+});
+if (!text) {
+  text = sanitizeOutboundText('Aqui e o Eduardo, Consultor de Vendas Internas da Classe Couro. Recebi sua mensagem e ja vou te atender.', {
+    authorizedLinks: authorizedOutboundLinks,
+    maxChars: maxOutputChars
+  });
+}
 
 const instance = String(payload.instance || '');
 const number = String(payload.number || '').replace(/\D/g, '');
@@ -222,13 +294,13 @@ function buildButtonsItem(inst, num, data) {
       sendEligible: true,
       sendEligibilityReason: 'eligible',
       sendMode: 'buttons',
-      title: 'Como posso ajudar?',
-      description: 'Selecione uma opcao para agilizar seu atendimento:',
-      footer: 'Classe Couro - Atendimento',
+      title: sanitizeOutboundText('Como posso ajudar?', { authorizedLinks: authorizedOutboundLinks, maxChars: 80 }),
+      description: sanitizeOutboundText('Selecione uma opcao para agilizar seu atendimento:', { authorizedLinks: authorizedOutboundLinks, maxChars: 120 }),
+      footer: sanitizeOutboundText('Classe Couro - Atendimento', { authorizedLinks: authorizedOutboundLinks, maxChars: 80 }),
       buttons: [
-        { type: 'reply', displayText: 'Solicitar Orcamento', id: 'btn_orcamento' },
-        { type: 'reply', displayText: 'Ver Catalogo / Produtos', id: 'btn_catalogo' },
-        { type: 'reply', displayText: 'Falar com Vendedor', id: 'btn_humano' }
+        { type: 'reply', displayText: sanitizeOutboundText('Solicitar Orcamento', { authorizedLinks: authorizedOutboundLinks, maxChars: 40 }), id: 'btn_orcamento' },
+        { type: 'reply', displayText: sanitizeOutboundText('Ver Catalogo / Produtos', { authorizedLinks: authorizedOutboundLinks, maxChars: 40 }), id: 'btn_catalogo' },
+        { type: 'reply', displayText: sanitizeOutboundText('Falar com Vendedor', { authorizedLinks: authorizedOutboundLinks, maxChars: 40 }), id: 'btn_humano' }
       ]
     }
   };

@@ -100,6 +100,7 @@ Regras:
 - Use linguagem natural de vendedor, sem formalidade excessiva.
 - Respostas curtas (maximo 3 frases). Sempre termine com uma pergunta ou proximo passo.
 - Nunca use emojis.
+- Nunca inclua links, URLs, www, wa.me, w.app ou enderecos externos sem autorizacao expressa, textual e especifica do operador.
 - Nunca mencione que voce e uma IA ou assistente virtual.
 """).strip()
 
@@ -124,6 +125,16 @@ STOPWORDS = {
     'sua', 'dos', 'das', 'por', 'uma', 'uns', 'umas', 'nos', 'nas', 'que', 'vou', 'tem', 'tenho', 'saber', 'valor',
     'preco', 'prazo', 'bom', 'dia', 'boa', 'tarde', 'noite', 'ola', 'olá', 'oi'
 }
+
+RAW_AUTHORIZED_OUTBOUND_LINKS = [
+    item.strip()
+    for item in str(os.getenv('ROUTER_AUTHORIZED_OUTBOUND_LINKS', '')).split(',')
+    if item.strip()
+]
+URL_PATTERN = re.compile(r'(?i)\bhttps?://[^\s<>()]+')
+WWW_PATTERN = re.compile(r'(?i)\bwww\.[^\s<>()]+')
+DOMAIN_PATTERN = re.compile(r'(?i)\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}(?:/[^\s<>()]*)?')
+EMOJI_PATTERN = re.compile(r'[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F\u200D]', re.UNICODE)
 
 
 class EmbeddingRateLimiter:
@@ -385,6 +396,56 @@ def normalize_lid_jid(value: str) -> str:
 
 def sha_text(value: str) -> str:
     return hashlib.sha256(value.encode('utf-8')).hexdigest()
+
+
+def normalize_authorized_link(value: str) -> str:
+    return re.sub(r'/+$', '', str(value or '').strip().strip('<>').rstrip('),.;!?')).lower()
+
+
+AUTHORIZED_OUTBOUND_LINKS = {
+    normalize_authorized_link(item)
+    for item in RAW_AUTHORIZED_OUTBOUND_LINKS
+    if normalize_authorized_link(item)
+}
+
+
+def strip_emoji_characters(value: str) -> str:
+    return EMOJI_PATTERN.sub('', str(value or ''))
+
+
+def strip_unauthorized_links(value: str, authorized_links=None) -> str:
+    allowed = AUTHORIZED_OUTBOUND_LINKS if authorized_links is None else {
+        normalize_authorized_link(item)
+        for item in (authorized_links or [])
+        if normalize_authorized_link(item)
+    }
+    text = str(value or '')
+    for pattern in (URL_PATTERN, WWW_PATTERN, DOMAIN_PATTERN):
+        current = text
+
+        def _replacer(match):
+            start = match.start()
+            prev = current[start - 1] if start > 0 else ''
+            token = match.group(0)
+            if prev == '@':
+                return token
+            return token if normalize_authorized_link(token) in allowed else ''
+
+        text = pattern.sub(_replacer, text)
+    return text
+
+
+def sanitize_outbound_text(value: str, limit: int = 0, authorized_links=None) -> str:
+    text = str(value or '').replace('\r\n', '\n').replace('\r', '\n')
+    text = strip_unauthorized_links(text, authorized_links=authorized_links)
+    text = strip_emoji_characters(text)
+    text = re.sub(r'[ \t]+\n', '\n', text)
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    text = re.sub(r'[ \t]{2,}', ' ', text)
+    text = text.strip()
+    if limit > 0:
+        text = text[:limit].strip()
+    return text
 
 
 def compact_text(value: str, limit: int = 280) -> str:
@@ -677,13 +738,13 @@ def get_lead_memory(contact_key: str) -> Dict:
         'companyName': str(data.get('company_name') or '').strip(),
         'cnpj': str(data.get('cnpj') or '').strip(),
         'lastObjection': str(data.get('last_objection') or '').strip(),
-        'nextStep': str(data.get('next_step') or '').strip(),
-        'summary': str(data.get('summary') or '').strip(),
+        'nextStep': sanitize_outbound_text(data.get('next_step') or '', 220),
+        'summary': sanitize_outbound_text(data.get('summary') or '', 900),
         'answeredSlots': safe_json_loads(data.get('answered_slots'), {}) or {},
-        'openQuestion': str(data.get('open_question') or '').strip(),
+        'openQuestion': sanitize_outbound_text(data.get('open_question') or '', 220),
         'commercialMomentum': str(data.get('commercial_momentum') or '').strip(),
         'lastInboundText': str(data.get('last_inbound_text') or '').strip(),
-        'lastOutboundText': str(data.get('last_outbound_text') or '').strip(),
+        'lastOutboundText': sanitize_outbound_text(data.get('last_outbound_text') or '', 400),
         'lastRouteDecision': str(data.get('last_route_decision') or '').strip(),
         'lastProvider': str(data.get('last_provider') or '').strip(),
         'updatedAt': str(data.get('updated_at') or '').strip(),
@@ -715,13 +776,13 @@ def upsert_lead_memory(contact_key: str, patch: Dict) -> Dict:
         'companyName': compact_text(patch.get('companyName') or existing.get('companyName'), 140),
         'cnpj': digits_only(patch.get('cnpj') or existing.get('cnpj')),
         'lastObjection': compact_text(patch.get('lastObjection') or existing.get('lastObjection'), 180),
-        'nextStep': compact_text(patch.get('nextStep') or existing.get('nextStep'), 220),
-        'summary': compact_text(patch.get('summary') or existing.get('summary'), 900),
+        'nextStep': sanitize_outbound_text(patch.get('nextStep') or existing.get('nextStep'), 220),
+        'summary': sanitize_outbound_text(patch.get('summary') or existing.get('summary'), 900),
         'answeredSlots': answered_slots,
-        'openQuestion': compact_text(patch.get('openQuestion') or existing.get('openQuestion'), 220),
+        'openQuestion': sanitize_outbound_text(patch.get('openQuestion') or existing.get('openQuestion'), 220),
         'commercialMomentum': compact_text(patch.get('commercialMomentum') or existing.get('commercialMomentum'), 60),
         'lastInboundText': compact_text(patch.get('lastInboundText') or existing.get('lastInboundText'), 400),
-        'lastOutboundText': compact_text(patch.get('lastOutboundText') or existing.get('lastOutboundText'), 400),
+        'lastOutboundText': sanitize_outbound_text(patch.get('lastOutboundText') or existing.get('lastOutboundText'), 400),
         'lastRouteDecision': compact_text(patch.get('lastRouteDecision') or existing.get('lastRouteDecision'), 80),
         'lastProvider': compact_text(patch.get('lastProvider') or existing.get('lastProvider'), 80),
         'source': compact_text(patch.get('source') or existing.get('source') or 'router', 40),
@@ -1320,17 +1381,22 @@ def cache_lookup(normalized_message: str, intent: str = '') -> Dict:
         (normalized_message,),
     ).fetchone()
     if row:
+        safe_reply = sanitize_outbound_text(row['reply_text'] or '', MAX_CACHE_REPLY_CHARS)
+        now = utc_now()
         conn.execute(
             '''
             UPDATE response_cache
-            SET hit_count = hit_count + 1, last_hit_at = ?, updated_at = ?
+            SET hit_count = hit_count + 1, last_hit_at = ?, updated_at = ?, reply_text = ?, active = ?
             WHERE normalized_message = ?
             ''',
-            (utc_now(), utc_now(), normalized_message),
+            (now, now, safe_reply, 1 if safe_reply else 0, normalized_message),
         )
         conn.commit()
         conn.close()
+        if not safe_reply:
+            return {}
         out = dict(row)
+        out['reply_text'] = safe_reply
         out['lookupType'] = 'exact'
         return out
 
@@ -1365,17 +1431,22 @@ def cache_lookup(normalized_message: str, intent: str = '') -> Dict:
             best = cand
     if best and best_score >= CACHE_SEMANTIC_THRESHOLD:
         matched_msg = str(best['normalized_message'])
+        safe_reply = sanitize_outbound_text(best['reply_text'] or '', MAX_CACHE_REPLY_CHARS)
+        now = utc_now()
         conn.execute(
             '''
             UPDATE response_cache
-            SET hit_count = hit_count + 1, last_hit_at = ?, updated_at = ?
+            SET hit_count = hit_count + 1, last_hit_at = ?, updated_at = ?, reply_text = ?, active = ?
             WHERE normalized_message = ?
             ''',
-            (utc_now(), utc_now(), matched_msg),
+            (now, now, safe_reply, 1 if safe_reply else 0, matched_msg),
         )
         conn.commit()
         conn.close()
+        if not safe_reply:
+            return {}
         out = dict(best)
+        out['reply_text'] = safe_reply
         out['lookupType'] = 'semantic'
         out['semanticScore'] = round(float(best_score), 4)
         return out
@@ -1474,7 +1545,7 @@ def build_learning_memory_patch(payload: Dict, inbound: str, reply: str, intent:
 
 def learn_response(payload: Dict) -> Dict:
     inbound = str(payload.get('inboundTextOriginal') or payload.get('inboundText') or '').strip()
-    reply = str(payload.get('replyText') or '').strip()
+    reply = sanitize_outbound_text(payload.get('replyText') or '', 1200)
     intent = str(payload.get('intent') or '').strip() or detect_intent(inbound)
     confidence = float(payload.get('confidence') or 0)
     normalized_message = normalize_ascii(inbound)
@@ -1499,7 +1570,7 @@ def learn_response(payload: Dict) -> Dict:
                 str(memory_snapshot.get('leadStage') or ''),
                 route_decision,
                 inbound[:1200],
-                reply[:1200],
+                reply,
                 json.dumps(payload.get('extractedEntities') or payload.get('llmStructuredData') or {}, ensure_ascii=False),
                 json.dumps(payload.get('customerMemoryUpdate') or {}, ensure_ascii=False),
                 now,
@@ -1533,7 +1604,16 @@ def learn_response(payload: Dict) -> Dict:
     ]):
         reason = 'fallback_reply'
     else:
-        cache_reply = reply[:MAX_CACHE_REPLY_CHARS]
+        cache_reply = sanitize_outbound_text(reply, MAX_CACHE_REPLY_CHARS)
+        if not cache_reply:
+            reason = 'sanitized_empty'
+            return {
+                'stored': False,
+                'reason': reason,
+                'normalizedMessage': normalized_message,
+                'leadMemoryUpdated': bool(memory_snapshot),
+                'memoryGuidance': build_memory_guidance(memory_snapshot),
+            }
         conn = db()
         conn.execute(
             '''
@@ -1774,7 +1854,7 @@ def route_message(payload: Dict) -> Dict:
         result = {
             'routeDecision': route_decision,
             'cacheHit': True,
-            'cachedReplyText': str(cached.get('reply_text') or ''),
+            'cachedReplyText': sanitize_outbound_text(cached.get('reply_text') or '', MAX_CACHE_REPLY_CHARS),
             'routeIntent': str(cached.get('intent') or effective_intent),
             'cacheLookupType': lookup_type,
             'cacheSemanticScore': float(cached.get('semanticScore') or 0),
@@ -1833,7 +1913,7 @@ def route_message(payload: Dict) -> Dict:
                 rag_context=rag_summary,
                 memory_context='\n'.join(memory_guidance),
             )
-            llm_reply_text = llm_result.get('text', '')
+            llm_reply_text = sanitize_outbound_text(llm_result.get('text', ''), MAX_CACHE_REPLY_CHARS)
             llm_provider = llm_result.get('provider', 'none')
             llm_model = llm_result.get('model', 'none')
             llm_latency_ms = llm_result.get('latency_ms', 0)
@@ -1880,7 +1960,7 @@ def route_message(payload: Dict) -> Dict:
         'memoryGuidance': memory_guidance,
         'audioTranscription': audio_transcription,
         # Dual-LLM fields
-        'llmReplyText': llm_reply_text,
+        'llmReplyText': sanitize_outbound_text(llm_reply_text, MAX_CACHE_REPLY_CHARS),
         'llmProvider': llm_provider,
         'llmModel': llm_model,
         'llmLatencyMs': llm_latency_ms,
@@ -2512,12 +2592,15 @@ def record_message(contact_key: str, direction: str, message_text: str,
                    route_decision: str = ''):
     if not contact_key or not message_text:
         return
+    safe_text = sanitize_outbound_text(message_text, 2000) if str(direction or '').strip().lower() == 'outbound' else str(message_text or '')[:2000]
+    if not safe_text:
+        return
     conn = db()
     conn.execute(
         '''INSERT INTO conversation_history
            (contact_key, direction, message_text, intent, complexity, lead_score, route_decision, created_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-        (contact_key, direction, message_text[:2000], intent, complexity, lead_score, route_decision, utc_now()),
+        (contact_key, direction, safe_text, intent, complexity, lead_score, route_decision, utc_now()),
     )
     conn.commit()
     conn.close()
@@ -2538,7 +2621,47 @@ def get_conversation_history(contact_key: str, limit: int = 0) -> List[Dict]:
         (contact_key, f'-{CONVERSATION_HISTORY_HOURS} hours', limit),
     ).fetchall()
     conn.close()
-    return [dict(r) for r in reversed(rows)]
+    out = []
+    for row in reversed(rows):
+        item = dict(row)
+        if str(item.get('direction') or '').strip().lower() == 'outbound':
+            item['message_text'] = sanitize_outbound_text(item.get('message_text') or '', 2000)
+        out.append(item)
+    return out
+
+
+def purge_disallowed_outbound_artifacts():
+    conn = db()
+
+    def _rewrite_table(table: str, key_col: str, text_cols: List[str], where: str = ''):
+        select_cols = [key_col] + [col for col in text_cols if col != key_col]
+        rows = conn.execute(
+            f"SELECT {', '.join(select_cols)} FROM {table} {where}"
+        ).fetchall()
+        changed = 0
+        for row in rows:
+            payload = {}
+            for col in text_cols:
+                raw = row[col]
+                safe = sanitize_outbound_text(raw or '', 0)
+                if safe != str(raw or ''):
+                    payload[col] = safe
+            if payload:
+                assignments = ', '.join([f'{col} = ?' for col in payload.keys()])
+                conn.execute(
+                    f'UPDATE {table} SET {assignments} WHERE {key_col} = ?',
+                    (*payload.values(), row[key_col]),
+                )
+                changed += 1
+        return changed
+
+    _rewrite_table('response_cache', 'normalized_message', ['reply_text'])
+    _rewrite_table('conversation_history', 'rowid', ['message_text'], "WHERE direction = 'outbound'")
+    _rewrite_table('lead_memory', 'contact_key', ['summary', 'open_question', 'last_outbound_text', 'next_step'])
+    _rewrite_table('learning_events', 'id', ['reply_text'])
+
+    conn.commit()
+    conn.close()
 
 
 CONTEXT_CARRY_TRIGGERS = {
@@ -2590,6 +2713,7 @@ def main():
         log.warning('single_instance_lock_active', action='skip_start')
         return
     ensure_db()
+    purge_disallowed_outbound_artifacts()
     watcher = threading.Thread(target=watch_loop, daemon=True)
     watcher.start()
     log.info('router_starting', host='0.0.0.0', port=8091)

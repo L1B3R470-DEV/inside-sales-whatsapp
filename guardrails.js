@@ -43,8 +43,9 @@ const cfg = {
     documentCaption: 'BOOK DE VENDAS | Colecao Classe Couro'
   },
   b2b: {
-    url: 'https://mstabletssl.ddns.net/wsB2BProspClasseCouro1ssl/acessocliente.aspx',
-    displayLabel: 'Portal B2B Classe Couro'
+    url: '',
+    displayLabel: 'Portal B2B Classe Couro',
+    operatorApprovalRequired: true
   },
   knowledge: {
     companyName: 'Classe Couro',
@@ -644,7 +645,7 @@ function shouldRoutePessoaFisicaEcommerce(text, activeScript) {
 function buildPessoaFisicaEcommerceReply(profile) {
   const firstName = sanitizeCustomerName(profile?.customerName || '');
   const prefix = firstName ? `Que bom falar com voce, ${firstName}!` : 'Que bom ter voce por aqui!';
-  return `${prefix} Como o seu interesse e comprar como pessoa fisica, o melhor caminho e pelo nosso site oficial: www.classecouro.com.br. La voce pode conhecer as linhas com calma, navegar pelo e-commerce e ficar a vontade para escolher seus produtos da Classe Couro.`;
+  return `${prefix} Como o seu interesse e comprar como pessoa fisica, eu vou te orientar pelo canal correto sem enviar link automatico. Se quiser, me diga o que voce procura que eu sigo com a orientacao por aqui.`;
 }
 
 function buildSemCnpjSiteReply(profile) {
@@ -888,18 +889,13 @@ function buildVitrinePresentationReply(profile) {
 function buildB2BConsentReply(profile) {
   const firstName = sanitizeCustomerName(profile?.customerName || profile?.pushName || '');
   const prefix = firstName ? `${firstName},` : 'Para o proximo passo,';
-  return `${prefix} posso te liberar o acesso ao nosso portal exclusivo de pedidos. Por la voce navega pelo catalogo completo, visualiza disponibilidade e ja monta seu pedido com autonomia. Quer que eu te envie o link e as credenciais agora?`;
+  return `${prefix} posso encaminhar a liberacao do seu acesso ao nosso portal exclusivo de pedidos. Se fizer sentido para voce, eu sigo com a orientacao correta por aqui e alinhamos o proximo passo com seguranca.`;
 }
 
 function buildB2BAccessReply(profile, script) {
-  const cnpj = String(script?.data?.cnpj || profile?.companyCnpj || '').replace(/\D/g, '');
   const firstName = sanitizeCustomerName(script?.data?.nome || profile?.customerName || profile?.pushName || '');
   const prefix = firstName ? `${firstName},` : 'Perfeito,';
-  const password = cnpj.slice(0, 8);
-  const cnpjFormatted = cnpj.length === 14
-    ? `${cnpj.slice(0,2)}.${cnpj.slice(2,5)}.${cnpj.slice(5,8)}/${cnpj.slice(8,12)}-${cnpj.slice(12)}`
-    : cnpj;
-  return `${prefix} segue o acesso ao ${cfg.b2b.displayLabel}.\n\nPortal: ${cfg.b2b.url}\nLogin: ${cnpjFormatted}\nSenha: ${password}\n\nEntre com o CNPJ no login e use os 8 primeiros digitos como senha. Dentro do portal voce visualiza o catalogo completo e ja consegue montar seu pedido. Qualquer duvida na navegacao e so me chamar.`;
+  return `${prefix} vou seguir com a liberacao assistida do seu acesso ao ${cfg.b2b.displayLabel}, sem enviar link automatico por aqui. Assim que a confirmacao estiver pronta, eu continuo com voce pelo canal seguro e oriento o proximo passo.`;
 }
 
 function normalizeCnpjSituation(value) {
@@ -2145,6 +2141,7 @@ const aiSystemPrompt = [
   '',
   'REGRAS ABSOLUTAS:',
   '- NUNCA use emojis ou simbolos especiais nas respostas.',
+  '- NUNCA inclua links, URLs, www, wa.me, w.app ou qualquer endereco externo sem autorizacao expressa, textual e especifica do operador.',
   '- NUNCA responda algo incoerente com a pergunta do cliente. Leia a pergunta com atencao antes de responder.',
   '- NUNCA invente preco, prazo, disponibilidade ou dado especifico sem ter essa informacao na base.',
   '- NUNCA repita estrutura fixa em mensagens consecutivas.',
