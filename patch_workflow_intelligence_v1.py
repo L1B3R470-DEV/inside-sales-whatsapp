@@ -118,6 +118,16 @@ def patch_nodes_json(nodes_text: str):
                 params['jsonBody'] = openai_json_body
                 changed = True
 
+            # The downstream Extract Reply node already knows how to recover from
+            # OpenAI request failures using router-generated text/fallbacks, so
+            # the HTTP request must never abort the whole execution.
+            if node.get('continueOnFail') is not True:
+                node['continueOnFail'] = True
+                changed = True
+            if node.get('onError') != 'continueRegularOutput':
+                node['onError'] = 'continueRegularOutput'
+                changed = True
+
             # Keep retry/backoff hardening
             if node.get('retryOnFail') is not True:
                 node['retryOnFail'] = True
@@ -199,5 +209,6 @@ for n in nodes:
     if n.get('name') == 'OpenAI Responses':
         b = n.get('parameters', {}).get('jsonBody', '')
         print('openai_dynamic_prompt=' + str('aiSystemPrompt' in b and 'aiUserPrompt' in b))
+        print('openai_continue_on_fail=' + str(n.get('continueOnFail') is True and n.get('onError') == 'continueRegularOutput'))
 
 conn.close()
