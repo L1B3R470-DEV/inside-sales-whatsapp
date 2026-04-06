@@ -158,6 +158,7 @@ def generate_sales_reply(
     conversation_history: Optional[List[Dict]] = None,
     max_tokens: int = 300,
     rag_context: str = '',
+    memory_context: str = '',
 ) -> Dict:
     messages = []
     if conversation_history:
@@ -167,10 +168,13 @@ def generate_sales_reply(
             if text:
                 messages.append({'role': role, 'content': text})
 
-    user_content = (
-        f"Contexto de produtos/servicos:\n{rag_context}\n\nMensagem do cliente:\n{user_message}"
-        if rag_context else user_message
-    )
+    sections = []
+    if memory_context:
+        sections.append(f"Contexto comercial ja confirmado:\n{memory_context}")
+    if rag_context:
+        sections.append(f"Contexto de produtos/servicos:\n{rag_context}")
+    sections.append(f"Mensagem do cliente:\n{user_message}")
+    user_content = '\n\n'.join(sections)
     messages.append({'role': 'user', 'content': user_content})
 
     client = _get_anthropic()
@@ -239,11 +243,17 @@ def extract_structured(
     max_tokens: int = 200,
 ) -> Dict:
     default_schema = (
+        "- nome_contato: string (nome do lead, se mencionado)\n"
         "- nome_empresa: string (nome da empresa, se mencionado)\n"
         "- cnpj: string (CNPJ se mencionado, apenas digitos)\n"
         "- cidade: string (cidade/estado se mencionado)\n"
         "- produtos_interesse: array de strings (produtos mencionados)\n"
+        "- product_focus: string (categoria principal do interesse, ex: bolsas, carteiras, cintos)\n"
+        "- categoria_produto: string (categoria mais especifica, se houver)\n"
         "- quantidade: string (quantidade/volume mencionado)\n"
+        "- objecao_principal: string (objeção comercial, se houver)\n"
+        "- proximo_passo: string (melhor proximo passo comercial sugerido)\n"
+        "- etapa_sugerida: string (novo|qualificando|proposta|negociacao|fechamento|pos_venda)\n"
         "- intent: string (saudacao|orcamento|catalogo|prazo|pagamento|reclamacao|geral)\n"
         "- urgencia: string (baixa|media|alta)"
     )

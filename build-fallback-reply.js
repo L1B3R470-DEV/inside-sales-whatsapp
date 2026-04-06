@@ -237,6 +237,19 @@ const outboundItems = [{
     confidence: Number(payload.cacheHit ? 0.99 : 0.7),
     routeDecision: String(payload.routeDecision || ''),
     messageComplexity: String(payload.messageComplexity || ''),
+    customerName: String(payload.customerName || '').trim(),
+    leadStage: String(payload.leadStage || '').trim(),
+    followUpQuestion: String(payload.followUpQuestion || '').trim(),
+    productFocusResolved: String(payload.productFocusResolved || '').trim(),
+    productCategoryDetected: String(payload.productCategoryDetected || '').trim(),
+    customerMemoryUpdate: payload.customerMemoryUpdate && typeof payload.customerMemoryUpdate === 'object'
+      ? payload.customerMemoryUpdate
+      : {},
+    extractedEntities: payload.extractedEntities && typeof payload.extractedEntities === 'object'
+      ? payload.extractedEntities
+      : {},
+    llmProvider: String(payload.llmProvider || '').trim(),
+    llmModel: String(payload.llmModel || '').trim(),
     duplicateOutboundSuppressed: duplicateOutbound
   }
 }];

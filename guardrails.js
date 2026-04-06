@@ -1892,6 +1892,18 @@ const llmModel = String(input.llmModel || '').trim();
 const llmLatencyMs = Number(input.llmLatencyMs || 0);
 const llmStructuredData = input.llmStructuredData || {};
 const llmLeadScore = input.llmLeadScore || {};
+const leadMemory = input.leadMemory && typeof input.leadMemory === 'object' ? input.leadMemory : {};
+const memoryGuidance = Array.isArray(input.memoryGuidance)
+  ? input.memoryGuidance.map((line) => String(line || '').trim()).filter(Boolean)
+  : [];
+const answeredSlots = leadMemory.answeredSlots && typeof leadMemory.answeredSlots === 'object'
+  ? leadMemory.answeredSlots
+  : {};
+const answeredSlotsSummary = Object.entries(answeredSlots)
+  .map(([key, value]) => `${key}=${String(value || '').trim()}`)
+  .filter((line) => !/=$/i.test(line))
+  .slice(0, 6)
+  .join(' | ');
 const detectedIntent = routeIntent || intentDetection.intent;
 const detectedIntentScore = intentDetection.score;
 const extractedEntities = extractEntities(inboundText);
@@ -1973,6 +1985,15 @@ let profile = staticData.customerProfiles[recipientNumber] || {
 if (profile.customerName) {
   profile.customerName = sanitizeCustomerName(profile.customerName);
 }
+if (leadMemory.customerName) {
+  profile.customerName = sanitizeCustomerName(leadMemory.customerName);
+  profile.customerNameSource = profile.customerNameSource || 'router_memory';
+}
+if (leadMemory.summary) profile.notes = String(leadMemory.summary).trim();
+if (leadMemory.nextStep) profile.nextStep = String(leadMemory.nextStep).trim();
+if (leadMemory.leadStage) profile.leadStage = String(leadMemory.leadStage).trim();
+if (leadMemory.productFocus) profile.lastProductFocus = String(leadMemory.productFocus).trim();
+if (leadMemory.productCategory) profile.lastProductCategory = String(leadMemory.productCategory).trim();
 
 const previousMessageCount = Number(profile.messageCount || 0);
 const identifiedName = extractSelfIdentifiedName(inboundText);
@@ -1993,6 +2014,8 @@ const semanticInboundText = quotedInboundText
   ? `${inboundText}\n${quotedInboundText}`
   : inboundText;
 const productSignals = detectProductFocusSignals(semanticInboundText, extractedEntities, profile);
+if (!productSignals.productFocus && leadMemory.productFocus) productSignals.productFocus = String(leadMemory.productFocus).trim();
+if (!productSignals.productCategory && leadMemory.productCategory) productSignals.productCategory = String(leadMemory.productCategory).trim();
 if (productSignals.productFocus) profile.lastProductFocus = productSignals.productFocus;
 if (productSignals.productCategory) profile.lastProductCategory = productSignals.productCategory;
 if (productSignals.linePreference) profile.lastProductLinePreference = productSignals.linePreference;
@@ -2093,7 +2116,11 @@ const customerSnapshot = [
   `Lead score: ${leadScore}`,
   `Estagio atual do lead: ${profile.leadStage || 'novo'}`,
   `Resumo operacional salvo: ${String(profile.notes || '').slice(0, 220) || 'nenhum'}`,
-  `Proximo passo salvo: ${String(profile.nextStep || '').slice(0, 180) || 'nenhum'}`
+  `Proximo passo salvo: ${String(profile.nextStep || '').slice(0, 180) || 'nenhum'}`,
+  `Memoria persistente do router: ${String(leadMemory.summary || '').slice(0, 220) || 'nenhuma'}`,
+  `Campos ja respondidos: ${answeredSlotsSummary || 'nenhum'}`,
+  `Pergunta comercial em aberto: ${String(leadMemory.openQuestion || input.contextCarryover?.pendingQuestion || '').slice(0, 180) || 'nenhuma'}`,
+  `Momento comercial persistido: ${String(leadMemory.commercialMomentum || '').trim() || 'indefinido'}`
 ].join('\n');
 
 const aiSystemPrompt = [
@@ -2113,6 +2140,8 @@ const aiSystemPrompt = [
   '- Antes de redigir a resposta, releia internamente a pergunta do cliente e confirme que sua resposta responde diretamente aquilo.',
   '- Se o cliente marcou (Respondeu a) uma mensagem anterior, interprete a mensagem marcada como contexto de escolha ou selecao de produto e responda de acordo.',
   '- Revise o historico recente para garantir coerencia: nao repita informacoes ja dadas, nao pergunte o que ja foi respondido.',
+  '- Se a memoria persistente listar campos ja respondidos, trate esses dados como confirmados e nao pergunte novamente.',
+  '- Se houver pergunta comercial em aberto na memoria, interprete a mensagem atual como resposta a essa pergunta antes de abrir nova qualificacao.',
   '- Se o cliente ja informou produto, quantidade ou preferencia no historico, use esse contexto na resposta atual.',
   '- Em perguntas de produto, seja direto, consultivo e contextual. Nao faca perguntas genericas se o produto ja foi indicado.',
   '- Se o cliente pergunta como fazer o pedido ou demonstra que ja fez escolhas, conduza diretamente ao proximo passo (B2B ou contato humano).',
@@ -2174,6 +2203,9 @@ const aiUserPrompt = [
   `Categoria de produto detectada agora: ${productCatalogBlock.categoryDetected || 'nenhuma'}`,
   `Resumo RAG do roteador: ${ragContextSummary || 'nenhum'}`,
   `Top score RAG: ${ragTopScore ? ragTopScore.toFixed(3) : '0.000'}`,
+  `Memoria do router disponivel: ${Object.keys(leadMemory).length > 0 ? 'sim' : 'nao'}`,
+  `Pergunta pendente no router: ${String(input.contextCarryover?.pendingQuestion || leadMemory.openQuestion || '').slice(0, 180) || 'nenhuma'}`,
+  `Campos respondidos no router: ${answeredSlotsSummary || 'nenhum'}`,
   `Scripts mandatorios aplicaveis agora: ${dynamicBlock.mandatoryMatchedCount || 0}`,
   mandatoryDirectiveMatched
     ? `Objetivo mandatorio: ${String(primaryMandatoryDirective.objective || '').slice(0, 220)}`
@@ -2181,6 +2213,9 @@ const aiUserPrompt = [
   mandatoryDirectiveMatched && Array.isArray(primaryMandatoryDirective.questions) && primaryMandatoryDirective.questions[0]
     ? `Pergunta-chave inicial: ${String(primaryMandatoryDirective.questions[0]).slice(0, 220)}`
     : 'Pergunta-chave inicial: n/a',
+  '',
+  'Memoria operacional adicional do router:',
+  memoryGuidance.length > 0 ? `- ${memoryGuidance.join('\n- ')}` : '- nenhuma',
   '',
   'Responda no formato JSON solicitado no system prompt.'
 ].join('\n');
@@ -2276,6 +2311,9 @@ return [{
     ragContextLines,
     ragContextSummary,
     ragTopScore,
+    contextCarryover: input.contextCarryover || {},
+    leadMemory,
+    memoryGuidance,
     routerOk,
     aiSystemPrompt,
     aiUserPrompt,

@@ -532,6 +532,20 @@ function enforceMandatoryDirective(replyText, ctx) {
   return text.trim();
 }
 
+function looksMechanicalReply(text) {
+  const norm = normalizeForDedupe(text);
+  if (!norm) return true;
+  const genericSnippets = [
+    'qual produto voce quer priorizar agora',
+    'qual e sua necessidade principal agora',
+    'quero te ajudar da forma mais assertiva possivel',
+    'como posso te ajudar melhor neste primeiro momento',
+    'voce quer comecar por carteiras cintos ou ambos',
+    'voce precisa mais de cintos carteiras ou ambos'
+  ];
+  return genericSnippets.some((snippet) => norm.includes(snippet));
+}
+
 const sensitiveIntents = new Set(['pos_venda_reclamacao', 'troca_devolucao', 'cancelamento']);
 const customerName = String(guardrails.customerName || '').trim();
 
@@ -554,6 +568,7 @@ const llmReplyText = String(guardrails.llmReplyText || '').trim();
 const llmProvider = String(guardrails.llmProvider || '').trim();
 const llmStructuredData = guardrails.llmStructuredData || {};
 const llmLeadScore = guardrails.llmLeadScore || {};
+const routeDecision = String(guardrails.routeDecision || '').trim();
 
 // Merge structured extraction data from dual-LLM
 if (llmStructuredData && typeof llmStructuredData === 'object' && Object.keys(llmStructuredData).length > 0) {
@@ -615,6 +630,17 @@ if (response?.error || response?.statusCode >= 400) {
     reply = buildRuleBasedReply(guardrails);
     humanReason = humanReason || 'empty_model_reply';
   }
+}
+
+const routerOwnsReplyText = Boolean(llmReplyText) && /^rag_claude$|^claude_direct$/i.test(routeDecision);
+if (routerOwnsReplyText && !modelRequestedHuman) {
+  reply = llmReplyText;
+  confidence = Math.max(confidence, 0.74);
+  modelRaw = `[router-${llmProvider || 'anthropic'}] ${llmReplyText}`;
+} else if (llmReplyText && looksMechanicalReply(reply)) {
+  reply = llmReplyText;
+  confidence = Math.max(confidence, 0.68);
+  modelRaw = `[dual-llm-refine:${llmProvider || 'router'}] ${llmReplyText}`;
 }
 
 const minConfidence = Number(guardrails.minConfidenceForAutoSend || 0.4);
@@ -827,6 +853,12 @@ const outboundItems = [{
     humanReason,
     routeDecision: String(guardrails.routeDecision || ''),
     messageComplexity: String(guardrails.messageComplexity || ''),
+    customerName,
+    productFocusResolved: String(guardrails.productFocusResolved || ''),
+    productCategoryDetected: String(guardrails.productCategoryDetected || ''),
+    followUpQuestion: String(followUpQuestion || '').trim(),
+    customerMemoryUpdate: memoryUpdate,
+    extractedEntities,
     llmProvider: llmProvider || 'openai',
     llmModel: String(guardrails.llmModel || ''),
     llmStructuredData: extractedEntities,
