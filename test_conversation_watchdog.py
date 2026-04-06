@@ -27,6 +27,7 @@ EVOLUTION_REMOTE_JID_RE = re.compile(r"""remoteJid["']?\s*[:=]\s*["']([^"']+)["'
 EVOLUTION_FROM_ME_RE = re.compile(r"""fromMe["']?\s*[:=]\s*(true|false)""", re.IGNORECASE)
 EVOLUTION_NOT_READ_RE = re.compile(r"""not read messages\s+([^\s]+)""", re.IGNORECASE)
 EVOLUTION_SENDING_RE = re.compile(r"""Sending message to\s+([^\s]+)""", re.IGNORECASE)
+EVOLUTION_DB_ID_RE = re.compile(r'"id"\s*:\s*"([^"]+)"', re.IGNORECASE)
 
 
 def utc_now() -> datetime:
@@ -61,6 +62,29 @@ def parse_ts(value: str | None) -> Optional[datetime]:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
+
+
+def boolish(value) -> Optional[bool]:
+    if isinstance(value, bool):
+        return value
+    text = str(value or "").strip().lower()
+    if text in {"true", "1", "yes", "on"}:
+        return True
+    if text in {"false", "0", "no", "off"}:
+        return False
+    return None
+
+
+def jsonish(value):
+    if isinstance(value, (dict, list)):
+        return value
+    text = str(value or "").strip()
+    if not text or text[:1] not in {"{", "["}:
+        return value
+    try:
+        return json.loads(text)
+    except Exception:
+        return value
 
 
 def compact_json(value: Dict) -> str:
@@ -116,6 +140,9 @@ class WatchdogConfig:
     evolution_base_url: str
     evolution_api_key: str
     evolution_instance: str
+    evolution_db_container: str
+    evolution_db_name: str
+    evolution_db_user: str
     workflow_id: str
     response_timeout_seconds: int
     recovery_grace_seconds: int
@@ -442,6 +469,158 @@ def read_evolution_signals(cfg: WatchdogConfig, state: Dict) -> Dict[str, List[D
     return {"inbound": inbound, "outbound": outbound}
 
 
+def read_evolution_db_signals(cfg: WatchdogConfig, state: Dict) -> Dict[str, List[Dict]]:
+    bootstrap_done = bool(state.get("bootstrapCompleted"))
+    lookback_seconds = cfg.docker_log_lookback_seconds if bootstrap_done else cfg.bootstrap_log_lookback_seconds
+    threshold = utc_now() - timedelta(seconds=max(60, lookback_seconds))
+    exact_like = f"%{cfg.authorized_number}@s.whatsapp.net%"
+    variant_like = f"%{cfg.authorized_number}:%@s.whatsapp.net%"
+    sql = f"""
+WITH message_rows AS (
+  SELECT 'message' AS src, to_jsonb(m)::text AS payload
+  FROM "Message" m
+  WHERE COALESCE(key::text,'') LIKE '{exact_like}'
+     OR COALESCE(key::text,'') LIKE '{variant_like}'
+     OR COALESCE(participant::text,'') LIKE '{exact_like}'
+     OR COALESCE(participant::text,'') LIKE '{variant_like}'
+  ORDER BY COALESCE(to_jsonb(m)->>'createdAt', to_jsonb(m)->>'updatedAt', '') DESC
+  LIMIT 80
+),
+message_update_rows AS (
+  SELECT 'message_update' AS src, to_jsonb(mu)::text AS payload
+  FROM "MessageUpdate" mu
+  WHERE COALESCE("remoteJid"::text,'') LIKE '{exact_like}'
+     OR COALESCE("remoteJid"::text,'') LIKE '{variant_like}'
+     OR COALESCE(participant::text,'') LIKE '{exact_like}'
+     OR COALESCE(participant::text,'') LIKE '{variant_like}'
+  ORDER BY COALESCE(to_jsonb(mu)->>'createdAt', to_jsonb(mu)->>'updatedAt', '') DESC
+  LIMIT 120
+)
+SELECT src || E'\\t' || payload FROM message_rows
+UNION ALL
+SELECT src || E'\\t' || payload FROM message_update_rows;
+""".strip()
+    cp = run_command(
+        [
+            "docker",
+            "exec",
+            "-i",
+            cfg.evolution_db_container,
+            "psql",
+            "-U",
+            cfg.evolution_db_user,
+            "-d",
+            cfg.evolution_db_name,
+            "-At",
+            "-F",
+            "\t",
+            "-c",
+            sql,
+        ],
+        timeout=25,
+    )
+    if cp.returncode != 0:
+        append_log(cfg, "ERROR", "watchdog_db_source_failed", stderr=(cp.stderr or "").strip()[:1200])
+        return {"inbound": [], "outbound": []}
+
+    authorized_jid_re = build_authorized_jid_regex(cfg.authorized_number)
+    inbound: List[Dict] = []
+    outbound: List[Dict] = []
+    emitted = {"inbound": set(), "outbound": set()}
+
+    def matches_authorized(value: str | None) -> bool:
+        return bool(authorized_jid_re.search(str(value or "")))
+
+    def append_signal(direction: str, event_key: str, created_dt: datetime, raw: str, text: str = ""):
+        dedupe_key = f"{event_key}|{created_dt.replace(microsecond=0).isoformat()}"
+        if dedupe_key in emitted[direction]:
+            return
+        emitted[direction].add(dedupe_key)
+        bucket = inbound if direction == "inbound" else outbound
+        bucket.append({
+            "event_key": event_key,
+            "created_at": created_dt.isoformat(),
+            "created_dt": created_dt,
+            "source": "evolution_db",
+            "text": str(text or ""),
+            "raw": raw,
+        })
+
+    for raw_line in (cp.stdout or "").splitlines():
+        if "\t" not in raw_line:
+            continue
+        src, payload_text = raw_line.split("\t", 1)
+        payload = jsonish(payload_text)
+        if not isinstance(payload, dict):
+            continue
+
+        row_created_dt = (
+            parse_ts(payload.get("createdAt"))
+            or parse_ts(payload.get("updatedAt"))
+            or parse_ts(payload.get("messageTimestamp"))
+            or utc_now()
+        )
+        if row_created_dt < threshold:
+            continue
+
+        key_payload = jsonish(payload.get("key"))
+        if not isinstance(key_payload, dict):
+            key_payload = {}
+        remote_jid = str(
+            payload.get("remoteJid")
+            or key_payload.get("remoteJid")
+            or payload.get("participant")
+            or ""
+        ).strip()
+        participant = str(payload.get("participant") or "").strip()
+        if not matches_authorized(remote_jid) and not matches_authorized(participant):
+            continue
+
+        from_me = boolish(payload.get("fromMe"))
+        if from_me is None:
+            from_me = boolish(key_payload.get("fromMe"))
+        if from_me is None:
+            raw_from_me = EVOLUTION_FROM_ME_RE.search(payload_text)
+            if raw_from_me:
+                from_me = raw_from_me.group(1).lower() == "true"
+
+        row_id = str(payload.get("id") or key_payload.get("id") or "").strip()
+        if not row_id:
+            row_id_match = EVOLUTION_DB_ID_RE.search(payload_text)
+            row_id = row_id_match.group(1) if row_id_match else sha1_text(payload_text)[:16]
+
+        text = str(
+            payload.get("conversation")
+            or payload.get("text")
+            or payload.get("body")
+            or ""
+        ).strip()
+        if src == "message":
+            if from_me is True:
+                append_signal("outbound", f"evolution-db-send:message:{row_id}", row_created_dt, payload_text, text)
+            elif from_me is False:
+                append_signal("inbound", f"evolution-db:message:{row_id}", row_created_dt, payload_text, text)
+            continue
+
+        if src == "message_update":
+            if from_me is True:
+                append_signal("outbound", f"evolution-db-send:update:{row_id}", row_created_dt, payload_text, text)
+            elif from_me is False:
+                append_signal("inbound", f"evolution-db:update:{row_id}", row_created_dt, payload_text, text)
+
+    append_log(
+        cfg,
+        "INFO",
+        "watchdog_db_source_scan",
+        inboundCount=len(inbound),
+        outboundCount=len(outbound),
+        bootstrapDone=bootstrap_done,
+    )
+    inbound.sort(key=lambda item: item.get("created_dt") or utc_now())
+    outbound.sort(key=lambda item: item.get("created_dt") or utc_now())
+    return {"inbound": inbound, "outbound": outbound}
+
+
 def query_n8n_recent(cfg: WatchdogConfig) -> List[Dict]:
     script = (
         "import sqlite3, json\n"
@@ -530,7 +709,7 @@ def classify_cause(router_ok: bool, evolution_state: Dict[str, str], n8n_state: 
         log_dt = item.get("created_dt") or utc_now()
         if log_dt >= event["created_dt"]:
             return "router_processed_no_outbound"
-    return "pre_router_flow_gap" if event.get("source") == "evolution_log" else "processing_stalled"
+    return "pre_router_flow_gap" if event.get("source") in {"evolution_log", "evolution_db"} else "processing_stalled"
 
 
 def attempt_recovery(cfg: WatchdogConfig, cause: str) -> str:
@@ -705,16 +884,29 @@ def process_pending_event(cfg: WatchdogConfig, state: Dict, event: Dict, router_
 def process_once(cfg: WatchdogConfig, state: Dict):
     router_messages = fetch_router_messages(cfg)
     route_logs = fetch_route_logs(cfg)
-    evolution_signals = read_evolution_signals(cfg, state)
+    evolution_log_signals = read_evolution_signals(cfg, state)
+    evolution_db_signals = read_evolution_db_signals(cfg, state)
+    evolution_inbound = list(evolution_db_signals["inbound"]) + list(evolution_log_signals["inbound"])
+    evolution_outbound = list(evolution_db_signals["outbound"]) + list(evolution_log_signals["outbound"])
     system_state = {
         "router_ok": check_router_health(cfg),
         "evolution_state": get_container_state("evolution"),
         "n8n_state": get_container_state("n8n"),
         "n8n_recent": query_n8n_recent(cfg),
     }
-    inbound_events = build_inbound_events(router_messages, evolution_signals["inbound"])
+    inbound_events = build_inbound_events(router_messages, evolution_inbound)
+    append_log(
+        cfg,
+        "INFO",
+        "watchdog_cycle_summary",
+        routerInboundCount=len([msg for msg in router_messages if (msg.get("direction") or "") == "inbound"]),
+        evolutionInboundCount=len(evolution_inbound),
+        evolutionOutboundCount=len(evolution_outbound),
+        inboundEventCount=len(inbound_events),
+        pendingEventCount=len(state.get("events") or {}),
+    )
     for event in inbound_events:
-        process_pending_event(cfg, state, event, router_messages, route_logs, evolution_signals["outbound"], system_state)
+        process_pending_event(cfg, state, event, router_messages, route_logs, evolution_outbound, system_state)
     state["bootstrapCompleted"] = True
 
 
@@ -753,6 +945,9 @@ def main():
     parser.add_argument("--evolution-base-url", default="http://localhost:8080")
     parser.add_argument("--evolution-instance", default="ATENDIMENTO_VENDAS_CLEAN")
     parser.add_argument("--evolution-api-key", default="")
+    parser.add_argument("--evolution-db-container", default="evolution-postgres")
+    parser.add_argument("--evolution-db-name", default="evolution")
+    parser.add_argument("--evolution-db-user", default="evolution")
     parser.add_argument("--workflow-id", default="zN3heKJVLO8w4dG6")
     parser.add_argument("--response-timeout-seconds", type=int, default=75)
     parser.add_argument("--recovery-grace-seconds", type=int, default=35)
@@ -775,6 +970,9 @@ def main():
         evolution_base_url=args.evolution_base_url,
         evolution_api_key=evolution_api_key,
         evolution_instance=args.evolution_instance,
+        evolution_db_container=args.evolution_db_container,
+        evolution_db_name=args.evolution_db_name,
+        evolution_db_user=args.evolution_db_user,
         workflow_id=args.workflow_id,
         response_timeout_seconds=max(30, args.response_timeout_seconds),
         recovery_grace_seconds=max(10, args.recovery_grace_seconds),
