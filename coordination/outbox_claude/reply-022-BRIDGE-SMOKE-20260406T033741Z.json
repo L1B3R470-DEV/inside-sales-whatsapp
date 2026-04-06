@@ -1,0 +1,9 @@
+﻿{
+    "reply_id":  "reply-022-BRIDGE-SMOKE-20260406T003758Z",
+    "source_task_id":  "task-022-BRIDGE-SMOKE-20260406T033741Z",
+    "actor":  "claude_local",
+    "cycle":  "022-BRIDGE-SMOKE",
+    "output":  "node.exe : node:internal/modules/cjs/loader:1459\r\nNo C:\\Users\\murdo\\workspace-integration\\poller-autonomous.ps1:248 caractere:53\r\n+ ... et-Content $PromptFile -Raw) | \u0026 $NodeExe $CliJs --print 2\u003e\u00261 | Out-S ...\r\n+                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\r\n    + CategoryInfo          : NotSpecified: (node:internal/modules/cjs/loader:1459:String) [], RemoteException\r\n    + FullyQualifiedErrorId : NativeCommandError\r\n \r\n  throw err;\r\n  ^\r\n\r\nError: Cannot find module \u0027C:\\Users\\User\\AppData\\Roaming\\npm\\node_modules\\@anthropic-ai\\claude-code\\cli.js\u0027\r\n    at Module._resolveFilename (node:internal/modules/cjs/loader:1456:15)\r\n    at defaultResolveImpl (node:internal/modules/cjs/loader:1066:19)\r\n    at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1071:22)\r\n    at Module._load (node:internal/modules/cjs/loader:1242:25)\r\n    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)\r\n    at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)\r\n    at node:internal/main/run_main_module:33:47 {\r\n  code: \u0027MODULE_NOT_FOUND\u0027,\r\n  requireStack: []\r\n}\r\n\r\nNode.js v24.14.1",
+    "status":  "complete",
+    "produced_at":  "2026-04-06T00:37:58.9064626-03:00"
+}
