@@ -1,0 +1,24 @@
+﻿{
+    "task_id":  "task-022A-DIAG-RETRY-20260404T202012Z-REROUTE-20260404T182159Z",
+    "target_actor":  "codex_local",
+    "cycle":  "022A-DIAG",
+    "instruction":  "Retry unico do diagnostico do 022A. O reply anterior do diagnostico foi generico e nao investigou o caminho real do prompt. Sua missao e identificar por que o CODEX LOCAL respondeu de forma incompleta ao 022A em vez de produzir o payload esperado do contrato de abertura de R5. Compare o caminho bem-sucedido do 021A/021B com o 022A falho e localize o ponto exato da regressao no caminho local do CODEX LOCAL. Verifique obrigatoriamente: poller-autonomous.ps1; qualquer funcao Build-Prompt ou equivalente; current_task_codex_local.txt/json; temp_prompt.txt se existir; coordination/_archive/inbox_codex_local/task-022A-20260404T182446Z.json; coordination/outbox_codex_local/reply-022A-20260404T152521Z.json; coordination/outbox_claude/reply-021B-20260404T143857Z.json; logs locais relevantes do poller. Red lines absolutas: nao tocar em producao, bridge, .mcp.json do projeto real, projeto real, R2, R6. Se precisar editar algo, faca a menor correcao segura. Se precisar reiniciar tarefa agendada/processo local, faca de modo controlado. Nao crie novo retry do 022A sem concluir o diagnostico. Formato obrigatorio da resposta: INICIO DO RELATORIO / STATUS GERAL / DIAGNOSTICO / CORRECOES APLICADAS / VALIDACAO / GIT / CONCLUSAO / FIM DO RELATORIO. Campos minimos: concluido, risco_operacional_atual, causa_raiz_identificada, ponto_exato_da_regressao, evidencias_objetivas, arquivos_logs_inspecionados, arquivos_alterados, processos_reiniciados, prompt_final_do_022A_esta_materialmente_completo_sim_nao, 022A_apto_para_retry_valido_sim_nao, mudancas_commitadas_sim_nao, commit_hash, push_realizado_sim_nao, bloqueio_remanescente, proximo_passo_sugerido. Nao responda com hipotese vaga; eu preciso do ponto exato da regressao do 022A.",
+    "context_files":  [
+                          "STATE.md",
+                          "coordination/_archive/inbox_codex_local/task-022A-20260404T182446Z.json",
+                          "coordination/outbox_codex_local/reply-022A-20260404T152521Z.json",
+                          "coordination/outbox_claude/reply-022A-DIAG-20260404T171358Z.json",
+                          "coordination/outbox_claude/reply-021B-20260404T143857Z.json",
+                          "cycle21-input/cycle-021A-r5-conditional-opening-basis.json"
+                      ],
+    "output_path":  "coordination/outbox_claude/reply-022A-DIAG-RETRY-20260404T202012Z.json",
+    "red_lines":  [
+                      "no_production_write",
+                      "no_bridge_write",
+                      "no_mcp_json_write",
+                      "no_r2_reopen",
+                      "no_r6_reopen"
+                  ],
+    "status":  "accepted",
+    "created_at":  "2026-04-04T21:22:00.1424833Z"
+}
