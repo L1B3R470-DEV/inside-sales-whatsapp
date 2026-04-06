@@ -23,6 +23,10 @@ EMOJI_RE = re.compile(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]+", re.UNICODE)
 MULTISPACE_RE = re.compile(r"[ \t]{2,}")
 EVOLUTION_HEADER_TS_RE = re.compile(r"\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+[A-Z][a-z]{2}\s+\d{2}\s+\d{4}\s+\d{2}:\d{2}:\d{2}\b")
 EVOLUTION_DATE_TIME_RE = re.compile(r"date_time:\s*'([^']+)'")
+EVOLUTION_REMOTE_JID_RE = re.compile(r"""remoteJid["']?\s*[:=]\s*["']([^"']+)["']""", re.IGNORECASE)
+EVOLUTION_FROM_ME_RE = re.compile(r"""fromMe["']?\s*[:=]\s*(true|false)""", re.IGNORECASE)
+EVOLUTION_NOT_READ_RE = re.compile(r"""not read messages\s+([^\s]+)""", re.IGNORECASE)
+EVOLUTION_SENDING_RE = re.compile(r"""Sending message to\s+([^\s]+)""", re.IGNORECASE)
 
 
 def utc_now() -> datetime:
@@ -336,6 +340,11 @@ def parse_evolution_timestamp(value: str | None) -> Optional[datetime]:
         return None
 
 
+def build_authorized_jid_regex(number: str) -> re.Pattern:
+    digits = digits_only(number)
+    return re.compile(rf"{re.escape(digits)}(?::\d+)?@s\.whatsapp\.net", re.IGNORECASE)
+
+
 def read_evolution_signals(cfg: WatchdogConfig, state: Dict) -> Dict[str, List[Dict]]:
     bootstrap_done = bool(state.get("bootstrapCompleted"))
     lookback_seconds = cfg.docker_log_lookback_seconds if bootstrap_done else cfg.bootstrap_log_lookback_seconds
@@ -344,46 +353,92 @@ def read_evolution_signals(cfg: WatchdogConfig, state: Dict) -> Dict[str, List[D
     inbound: List[Dict] = []
     outbound: List[Dict] = []
     seen = state.setdefault("seenEvolutionLines", {})
+    emitted = {"inbound": set(), "outbound": set()}
     now_iso = utc_now_iso()
-    target = f"{cfg.authorized_number}@s.whatsapp.net"
+    authorized_jid_re = build_authorized_jid_regex(cfg.authorized_number)
     current_log_dt: Optional[datetime] = None
     current_signal_dt: Optional[datetime] = None
-    for raw_line in output.splitlines():
+    pending_remote_jid: Optional[str] = None
+    pending_remote_jid_line = -9999
+
+    def matches_authorized_jid(value: str | None) -> bool:
+        return bool(authorized_jid_re.search(str(value or "")))
+
+    def append_inbound(event_line: str, event_dt: datetime, raw: str, marker: str):
+        dedupe_key = (marker, event_dt.replace(microsecond=0).isoformat())
+        if dedupe_key in emitted["inbound"]:
+            return
+        line_hash = sha1_text(f"inbound:{event_line}")
+        if line_hash in seen:
+            return
+        emitted["inbound"].add(dedupe_key)
+        seen[line_hash] = now_iso
+        inbound.append({
+            "event_key": f"evolution:{line_hash}",
+            "created_at": event_dt.isoformat(),
+            "created_dt": event_dt,
+            "source": "evolution_log",
+            "text": "",
+            "raw": raw,
+        })
+
+    def append_outbound(event_line: str, event_dt: datetime, raw: str, marker: str):
+        dedupe_key = (marker, event_dt.replace(microsecond=0).isoformat())
+        if dedupe_key in emitted["outbound"]:
+            return
+        line_hash = sha1_text(f"outbound:{event_line}")
+        if line_hash in seen:
+            return
+        emitted["outbound"].add(dedupe_key)
+        seen[line_hash] = now_iso
+        outbound.append({
+            "event_key": f"evolution-send:{line_hash}",
+            "created_at": event_dt.isoformat(),
+            "created_dt": event_dt,
+            "source": "evolution_log",
+            "raw": raw,
+        })
+
+    for idx, raw_line in enumerate(output.splitlines()):
         line = raw_line.strip()
         if not line:
             continue
         header_match = EVOLUTION_HEADER_TS_RE.search(line)
         if header_match:
             current_log_dt = parse_evolution_timestamp(header_match.group(0))
+            current_signal_dt = None
         date_match = EVOLUTION_DATE_TIME_RE.search(line)
         if date_match:
             parsed_signal_dt = parse_evolution_timestamp(date_match.group(1))
             if parsed_signal_dt:
                 current_signal_dt = parsed_signal_dt
-        line_hash = sha1_text(line)
-        if line_hash in seen:
+
+        send_match = EVOLUTION_SENDING_RE.search(line)
+        if send_match and matches_authorized_jid(send_match.group(1)):
+            send_dt = current_log_dt or current_signal_dt or utc_now()
+            append_outbound(line, send_dt, line, send_match.group(1))
             continue
-        event_dt = current_signal_dt or current_log_dt or utc_now()
-        event_at = event_dt.isoformat()
-        if f"sender: '{target}'" in line or f"originalSelfAuthorUserJidString: '{target}'" in line:
-            seen[line_hash] = now_iso
-            inbound.append({
-                "event_key": f"evolution:{line_hash}",
-                "created_at": event_at,
-                "created_dt": event_dt,
-                "source": "evolution_log",
-                "text": "",
-                "raw": line,
-            })
-        elif f"Sending message to {target}" in line:
-            seen[line_hash] = now_iso
-            outbound.append({
-                "event_key": f"evolution-send:{line_hash}",
-                "created_at": event_at,
-                "created_dt": event_dt,
-                "source": "evolution_log",
-                "raw": line,
-            })
+
+        unread_match = EVOLUTION_NOT_READ_RE.search(line)
+        if unread_match and matches_authorized_jid(unread_match.group(1)):
+            unread_dt = current_log_dt or current_signal_dt or utc_now()
+            append_inbound(line, unread_dt, line, unread_match.group(1))
+            continue
+
+        remote_match = EVOLUTION_REMOTE_JID_RE.search(line)
+        if remote_match and matches_authorized_jid(remote_match.group(1)):
+            pending_remote_jid = remote_match.group(1)
+            pending_remote_jid_line = idx
+
+        from_me_match = EVOLUTION_FROM_ME_RE.search(line)
+        if from_me_match and pending_remote_jid and (idx - pending_remote_jid_line) <= 6:
+            event_dt = current_signal_dt or current_log_dt or utc_now()
+            if from_me_match.group(1).lower() == "false":
+                append_inbound(f"{pending_remote_jid}|{idx}", event_dt, f"{pending_remote_jid} {line}", pending_remote_jid)
+            else:
+                append_outbound(f"{pending_remote_jid}|{idx}", event_dt, f"{pending_remote_jid} {line}", pending_remote_jid)
+            pending_remote_jid = None
+            pending_remote_jid_line = -9999
     return {"inbound": inbound, "outbound": outbound}
 
 
