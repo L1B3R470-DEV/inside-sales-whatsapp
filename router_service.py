@@ -2076,7 +2076,10 @@ def maybe_refresh_knowledge(force: bool = False):
     if not INGEST_LOCK.acquire(blocking=False):
         return
     try:
-        run_ingest_cycle()
+        try:
+            run_ingest_cycle()
+        except Exception as exc:
+            log.error('refresh_knowledge_failed', error=str(exc))
     finally:
         INGEST_LOCK.release()
 
