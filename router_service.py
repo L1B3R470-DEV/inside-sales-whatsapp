@@ -2128,9 +2128,51 @@ def route_endpoint():
     payload = request.get_json(force=True, silent=True) or {}
     try:
         resolved_payload = resolve_recipient_payload(payload)
-        decision = route_message(resolved_payload)
         blocked_set = get_all_blocked_numbers()
         allowed_set = get_all_always_allowed_numbers()
+        recipient_number = digits_only(resolved_payload.get('number') or resolved_payload.get('customerNumber'))
+        if allowed_set and recipient_number not in allowed_set:
+            return jsonify({
+                **resolved_payload,
+                'routeDecision': 'test_gate_blocked',
+                'cacheHit': False,
+                'cachedReplyText': '',
+                'routeIntent': '',
+                'messageComplexity': 'blocked',
+                'leadScore': 0,
+                'ragContextLines': [],
+                'ragContextSummary': '',
+                'ragTopScore': 0,
+                'conversationHistory': [],
+                'contextCarryover': {
+                    'answeringOpenQuestion': False,
+                    'carriedIntent': '',
+                    'conversationTurns': 0,
+                    'effectiveIntent': '',
+                    'isContextCarry': False,
+                    'maxLeadScore': 0,
+                    'memoryLeadStage': '',
+                    'pendingQuestion': '',
+                },
+                'leadMemory': {},
+                'memoryGuidance': [],
+                'audioTranscription': {
+                    'ok': False,
+                    'reason': 'test_gate_blocked',
+                    'text': '',
+                },
+                'llmReplyText': '',
+                'llmProvider': '',
+                'llmModel': '',
+                'llmLatencyMs': 0,
+                'llmStructuredData': {},
+                'llmLeadScore': {},
+                'blockedByTestGate': True,
+                'routerOk': True,
+                'dynamicBlockedNumbers': list(blocked_set),
+                'dynamicAlwaysAllowedNumbers': list(allowed_set),
+            })
+        decision = route_message(resolved_payload)
         return jsonify({
             **resolved_payload,
             **decision,
