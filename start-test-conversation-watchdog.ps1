@@ -10,6 +10,8 @@ param(
   [int]$ResponseTimeoutSeconds = 75,
   [int]$RecoveryGraceSeconds = 35,
   [int]$PollIntervalSeconds = 8,
+  [int]$DockerLogLookbackSeconds = 180,
+  [int]$BootstrapLogLookbackSeconds = 7200,
   [switch]$Once,
   [switch]$DrySend
 )
@@ -39,7 +41,9 @@ $args = @(
   "--workflow-id", $WorkflowId,
   "--response-timeout-seconds", "$ResponseTimeoutSeconds",
   "--recovery-grace-seconds", "$RecoveryGraceSeconds",
-  "--poll-interval-seconds", "$PollIntervalSeconds"
+  "--poll-interval-seconds", "$PollIntervalSeconds",
+  "--docker-log-lookback-seconds", "$DockerLogLookbackSeconds",
+  "--bootstrap-log-lookback-seconds", "$BootstrapLogLookbackSeconds"
 )
 
 if ($Once) { $args += "--once" }

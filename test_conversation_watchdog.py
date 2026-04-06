@@ -21,6 +21,8 @@ WWW_RE = re.compile(r"\bwww\.[^\s<>()]+", re.IGNORECASE)
 DOMAIN_RE = re.compile(r"\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}(?:\/[^\s<>()]*)?", re.IGNORECASE)
 EMOJI_RE = re.compile(r"[\U0001F300-\U0001FAFF\u2600-\u27BF]+", re.UNICODE)
 MULTISPACE_RE = re.compile(r"[ \t]{2,}")
+EVOLUTION_HEADER_TS_RE = re.compile(r"\b(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+[A-Z][a-z]{2}\s+\d{2}\s+\d{4}\s+\d{2}:\d{2}:\d{2}\b")
+EVOLUTION_DATE_TIME_RE = re.compile(r"date_time:\s*'([^']+)'")
 
 
 def utc_now() -> datetime:
@@ -116,6 +118,7 @@ class WatchdogConfig:
     poll_interval_seconds: int
     contingency_cooldown_seconds: int
     docker_log_lookback_seconds: int
+    bootstrap_log_lookback_seconds: int
     once: bool
     dry_send: bool
 
@@ -311,27 +314,55 @@ def get_container_state(name: str) -> Dict[str, str]:
     return {"status": status.strip(), "health": health.strip()}
 
 
+def parse_evolution_timestamp(value: str | None) -> Optional[datetime]:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    iso_dt = parse_ts(text)
+    if iso_dt:
+        return iso_dt
+    try:
+        dt = datetime.strptime(text, "%a %b %d %Y %H:%M:%S")
+        return dt.replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
 def read_evolution_signals(cfg: WatchdogConfig, state: Dict) -> Dict[str, List[Dict]]:
-    cp = run_command(["docker", "logs", "evolution", "--since", f"{cfg.docker_log_lookback_seconds}s"], timeout=25)
+    bootstrap_done = bool(state.get("bootstrapCompleted"))
+    lookback_seconds = cfg.docker_log_lookback_seconds if bootstrap_done else cfg.bootstrap_log_lookback_seconds
+    cp = run_command(["docker", "logs", "evolution", "--since", f"{lookback_seconds}s"], timeout=25)
     output = (cp.stdout or "") + "\n" + (cp.stderr or "")
     inbound: List[Dict] = []
     outbound: List[Dict] = []
     seen = state.setdefault("seenEvolutionLines", {})
     now_iso = utc_now_iso()
     target = f"{cfg.authorized_number}@s.whatsapp.net"
+    current_log_dt: Optional[datetime] = None
+    current_signal_dt: Optional[datetime] = None
     for raw_line in output.splitlines():
         line = raw_line.strip()
         if not line:
             continue
+        header_match = EVOLUTION_HEADER_TS_RE.search(line)
+        if header_match:
+            current_log_dt = parse_evolution_timestamp(header_match.group(0))
+        date_match = EVOLUTION_DATE_TIME_RE.search(line)
+        if date_match:
+            parsed_signal_dt = parse_evolution_timestamp(date_match.group(1))
+            if parsed_signal_dt:
+                current_signal_dt = parsed_signal_dt
         line_hash = sha1_text(line)
         if line_hash in seen:
             continue
+        event_dt = current_signal_dt or current_log_dt or utc_now()
+        event_at = event_dt.isoformat()
         if f"sender: '{target}'" in line or f"originalSelfAuthorUserJidString: '{target}'" in line:
             seen[line_hash] = now_iso
             inbound.append({
                 "event_key": f"evolution:{line_hash}",
-                "created_at": now_iso,
-                "created_dt": parse_ts(now_iso),
+                "created_at": event_at,
+                "created_dt": event_dt,
                 "source": "evolution_log",
                 "text": "",
                 "raw": line,
@@ -340,8 +371,8 @@ def read_evolution_signals(cfg: WatchdogConfig, state: Dict) -> Dict[str, List[D
             seen[line_hash] = now_iso
             outbound.append({
                 "event_key": f"evolution-send:{line_hash}",
-                "created_at": now_iso,
-                "created_dt": parse_ts(now_iso),
+                "created_at": event_at,
+                "created_dt": event_dt,
                 "source": "evolution_log",
                 "raw": line,
             })
@@ -621,6 +652,7 @@ def process_once(cfg: WatchdogConfig, state: Dict):
     inbound_events = build_inbound_events(router_messages, evolution_signals["inbound"])
     for event in inbound_events:
         process_pending_event(cfg, state, event, router_messages, route_logs, evolution_signals["outbound"], system_state)
+    state["bootstrapCompleted"] = True
 
 
 def acquire_lock(cfg: WatchdogConfig):
@@ -664,6 +696,7 @@ def main():
     parser.add_argument("--poll-interval-seconds", type=int, default=8)
     parser.add_argument("--contingency-cooldown-seconds", type=int, default=120)
     parser.add_argument("--docker-log-lookback-seconds", type=int, default=180)
+    parser.add_argument("--bootstrap-log-lookback-seconds", type=int, default=7200)
     parser.add_argument("--once", action="store_true")
     parser.add_argument("--dry-send", action="store_true")
     args = parser.parse_args()
@@ -685,6 +718,7 @@ def main():
         poll_interval_seconds=max(3, args.poll_interval_seconds),
         contingency_cooldown_seconds=max(30, args.contingency_cooldown_seconds),
         docker_log_lookback_seconds=max(60, args.docker_log_lookback_seconds),
+        bootstrap_log_lookback_seconds=max(args.docker_log_lookback_seconds, args.bootstrap_log_lookback_seconds),
         once=bool(args.once),
         dry_send=bool(args.dry_send),
     )
