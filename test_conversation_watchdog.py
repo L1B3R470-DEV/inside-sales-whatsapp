@@ -204,7 +204,15 @@ def save_state(cfg: WatchdogConfig, state: Dict):
 
 
 def run_command(command: List[str], timeout: int = 30) -> subprocess.CompletedProcess:
-    return subprocess.run(command, capture_output=True, text=True, timeout=timeout, check=False)
+    return subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout,
+        check=False,
+    )
 
 
 def db_conn(path: Path) -> sqlite3.Connection:
