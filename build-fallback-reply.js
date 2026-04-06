@@ -56,6 +56,8 @@ function buildSalesBookMediaItem(instance, number, payload) {
     json: {
       instance,
       number: sendNumber,
+      sendEligible: true,
+      sendEligibilityReason: 'eligible',
       sendMode: 'media',
       mediaType: 'document',
       media: String(salesBookAsset.mediaBase64 || ''),
@@ -82,6 +84,8 @@ function buildVitrineMediaItems(instance, number, payload) {
       json: {
         instance,
         number: duplicate ? '' : number,
+        sendEligible: !duplicate,
+        sendEligibilityReason: duplicate ? 'duplicate_suppressed' : 'eligible',
         sendMode: 'media',
         mediaType: String(asset.mediaType || 'image'),
         media: String(asset.mediaBase64 || ''),
@@ -193,8 +197,10 @@ text = stripEmojiCharacters(text).slice(0, maxOutputChars);
 
 const instance = String(payload.instance || '');
 const number = String(payload.number || '').replace(/\D/g, '');
-const duplicateOutbound = suppressDuplicateOutbound(instance, number, text, payload.messageId);
-const sendNumber = duplicateOutbound ? '' : number;
+const sendEligible = Boolean(payload.sendEligible === true && number);
+const sendEligibilityReason = String(payload.sendEligibilityReason || '').trim() || (sendEligible ? 'eligible' : 'blocked');
+const duplicateOutbound = sendEligible ? suppressDuplicateOutbound(instance, number, text, payload.messageId) : false;
+const sendNumber = (sendEligible && !duplicateOutbound) ? number : '';
 
 // --- Interactive buttons for qualification (Evolution API sendButtons) ---
 function shouldSendButtons(data) {
@@ -213,6 +219,8 @@ function buildButtonsItem(inst, num, data) {
     json: {
       instance: inst,
       number: num,
+      sendEligible: true,
+      sendEligibilityReason: 'eligible',
       sendMode: 'buttons',
       title: 'Como posso ajudar?',
       description: 'Selecione uma opcao para agilizar seu atendimento:',
@@ -237,6 +245,8 @@ const outboundItems = [{
     confidence: Number(payload.cacheHit ? 0.99 : 0.7),
     routeDecision: String(payload.routeDecision || ''),
     messageComplexity: String(payload.messageComplexity || ''),
+    sendEligible,
+    sendEligibilityReason,
     customerName: String(payload.customerName || '').trim(),
     leadStage: String(payload.leadStage || '').trim(),
     followUpQuestion: String(payload.followUpQuestion || '').trim(),
@@ -255,27 +265,27 @@ const outboundItems = [{
 }];
 
 // Append interactive buttons after text reply on first contact / greetings
-var buttonsItem = buildButtonsItem(instance, number, payload);
+var buttonsItem = buildButtonsItem(instance, sendNumber, payload);
 if (buttonsItem) {
   outboundItems.push(buttonsItem);
 }
 
-if (Boolean(payload.sendSalesBookPdf) && number) {
-  const mediaItem = buildSalesBookMediaItem(instance, number, payload);
+if (Boolean(payload.sendSalesBookPdf) && sendNumber) {
+  const mediaItem = buildSalesBookMediaItem(instance, sendNumber, payload);
   if (mediaItem) {
     outboundItems.push(mediaItem);
 
     const staticData = $getWorkflowStaticData('global');
     if (!staticData.customerProfiles) staticData.customerProfiles = {};
-    const profile = staticData.customerProfiles[number] || {};
+    const profile = staticData.customerProfiles[sendNumber] || {};
     profile.salesBookLastSentAt = new Date().toISOString();
     profile.salesBookLastFileName = String(mediaItem.json.fileName || '');
-    staticData.customerProfiles[number] = profile;
+    staticData.customerProfiles[sendNumber] = profile;
   }
 }
 
-if (Boolean(payload.sendVitrineAssets) && number) {
-  for (const mediaItem of buildVitrineMediaItems(instance, number, payload)) {
+if (Boolean(payload.sendVitrineAssets) && sendNumber) {
+  for (const mediaItem of buildVitrineMediaItems(instance, sendNumber, payload)) {
     outboundItems.push(mediaItem);
   }
 }

@@ -286,6 +286,8 @@ function buildProductMediaItems(instance, number, ctx, maxItems) {
       json: {
         instance,
         number: duplicate ? '' : number,
+        sendEligible: !duplicate,
+        sendEligibilityReason: duplicate ? 'duplicate_suppressed' : 'eligible',
         sendMode: 'media',
         mediaType: 'image',
         media: String(entry.mediaBase64 || ''),
@@ -312,6 +314,8 @@ function buildVitrineMediaItems(instance, number, ctx) {
       json: {
         instance,
         number: duplicate ? '' : number,
+        sendEligible: !duplicate,
+        sendEligibilityReason: duplicate ? 'duplicate_suppressed' : 'eligible',
         sendMode: 'media',
         mediaType: String(asset.mediaType || 'image'),
         media: String(asset.mediaBase64 || ''),
@@ -710,8 +714,10 @@ const number = String(guardrails.number || '').replace(/\D/g, '');
 const instance = String(guardrails.instance || '');
 const pushName = String(guardrails.pushName || 'Cliente');
 const nowIso = new Date().toISOString();
-const duplicateOutbound = suppressDuplicateOutbound(instance, number, reply, guardrails.messageId);
-const sendNumber = duplicateOutbound ? '' : number;
+const sendEligible = Boolean(guardrails.sendEligible === true && number);
+const sendEligibilityReason = String(guardrails.sendEligibilityReason || '').trim() || (sendEligible ? 'eligible' : 'blocked');
+const duplicateOutbound = sendEligible ? suppressDuplicateOutbound(instance, number, reply, guardrails.messageId) : false;
+const sendNumber = (sendEligible && !duplicateOutbound) ? number : '';
 const productMediaItems = (!needsHuman && sendNumber)
   ? buildProductMediaItems(instance, number, guardrails, resolveRequestedMediaCount(guardrails))
   : [];
@@ -848,6 +854,8 @@ const outboundItems = [{
     confidence,
     needsHuman,
     requiresHumanCall,
+    sendEligible,
+    sendEligibilityReason,
     insideSalesOwnNumber: String(guardrails.insideSalesOwnNumber || ''),
     leadStage,
     humanReason,

@@ -22,6 +22,8 @@ const cfg = {
   unresolvedRecipientMessage: 'Aqui é o Eduardo, Consultor de Vendas Internas da Classe Couro. Tive uma instabilidade para identificar seu contato neste momento, mas já estou cuidando disso. Pode repetir sua mensagem, por favor?',
   missingKeyMessage: 'Aqui é o Eduardo, Consultor de Vendas Internas da Classe Couro. Nosso atendimento automático está em ajuste neste momento, mas seu contato já foi registrado e vou seguir com você por aqui.',
   blockedNumberMessage: '',
+  testModeOnlyAllowedNumbers: true,
+  testModeSilentDrop: true,
   // Safety denylist for accidental recipients. Extend/adjust as needed.
   blockedNumbers: [
     '557599991111',
@@ -1911,6 +1913,8 @@ const humanPriority = ['pos_venda_reclamacao', 'troca_devolucao', 'cancelamento'
 
 let allowAi = true;
 let blockReason = '';
+let sendEligible = true;
+let sendEligibilityReason = 'eligible';
 const ignoredNumbers = getIgnoredNumbersSet(staticData, input.dynamicBlockedNumbers);
 const alwaysAllowedNumbers = getAlwaysAllowedNumbersSet(staticData, input.dynamicAlwaysAllowedNumbers);
 const alwaysAllowedNumber = Boolean(recipientNumber && alwaysAllowedNumbers.has(recipientNumber));
@@ -1918,10 +1922,21 @@ const alwaysAllowedNumber = Boolean(recipientNumber && alwaysAllowedNumbers.has(
 if (!recipientNumber) {
   allowAi = false;
   blockReason = 'no_recipient';
+  outboundNumber = '';
+  sendEligible = false;
+  sendEligibilityReason = 'no_recipient';
+} else if (cfg.testModeOnlyAllowedNumbers && !alwaysAllowedNumber) {
+  allowAi = false;
+  blockReason = 'test_gate_not_allowed';
+  outboundNumber = '';
+  sendEligible = false;
+  sendEligibilityReason = 'test_gate_not_allowed';
 } else if (ignoredNumbers.has(recipientNumber)) {
   allowAi = false;
   blockReason = 'blocked_number';
   outboundNumber = '';
+  sendEligible = false;
+  sendEligibilityReason = 'blocked_number';
 } else if (!inBusinessHours) {
   allowAi = false;
   blockReason = 'out_of_hours';
@@ -2220,19 +2235,21 @@ const aiUserPrompt = [
   'Responda no formato JSON solicitado no system prompt.'
 ].join('\n');
 
-const fallbackText = blockReason === 'blocked_number'
-  ? cfg.blockedNumberMessage
-  : blockReason === 'mandatory_script'
-    ? mandatoryScriptReply
-  : blockReason === 'cache_hit'
-    ? cachedReplyText
-  : (blockReason === 'volume' || blockReason === 'ai_minute_limit' || blockReason === 'ai_cooldown')
-  ? cfg.highVolumeMessage
-  : blockReason === 'no_recipient'
-    ? cfg.unresolvedRecipientMessage
-    : blockReason === 'missing_key'
-      ? cfg.missingKeyMessage
-      : cfg.outOfHoursMessage;
+const fallbackText = (!sendEligible && cfg.testModeSilentDrop)
+  ? ''
+  : blockReason === 'blocked_number'
+    ? cfg.blockedNumberMessage
+    : blockReason === 'mandatory_script'
+      ? mandatoryScriptReply
+    : blockReason === 'cache_hit'
+      ? cachedReplyText
+    : (blockReason === 'volume' || blockReason === 'ai_minute_limit' || blockReason === 'ai_cooldown')
+      ? cfg.highVolumeMessage
+      : blockReason === 'no_recipient'
+        ? cfg.unresolvedRecipientMessage
+        : blockReason === 'missing_key'
+          ? cfg.missingKeyMessage
+          : cfg.outOfHoursMessage;
 
 const salesBookAsset = staticData.salesBookAsset && typeof staticData.salesBookAsset === 'object'
   ? staticData.salesBookAsset
@@ -2262,8 +2279,11 @@ return [{
     quotedMessageId: input.quotedMessageId || '',
     promptInput: inboundText,
     allowAi,
+    sendEligible,
+    sendEligibilityReason,
     alwaysAllowedNumber,
     blockReason,
+    testModeOnlyAllowedNumbers: Boolean(cfg.testModeOnlyAllowedNumbers),
     maxOutputChars: cfg.maxOutputChars,
     maxOutputTokens: cfg.maxOutputTokens,
     maxAiCallsPerMinute: cfg.maxAiCallsPerMinute,
