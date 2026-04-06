@@ -12,7 +12,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 from urllib import error, request
 
 
@@ -28,6 +28,10 @@ EVOLUTION_FROM_ME_RE = re.compile(r"""fromMe["']?\s*[:=]\s*(true|false)""", re.I
 EVOLUTION_NOT_READ_RE = re.compile(r"""not read messages\s+([^\s]+)""", re.IGNORECASE)
 EVOLUTION_SENDING_RE = re.compile(r"""Sending message to\s+([^\s]+)""", re.IGNORECASE)
 EVOLUTION_DB_ID_RE = re.compile(r'"id"\s*:\s*"([^"]+)"', re.IGNORECASE)
+EVOLUTION_SENDER_PN_FROM_RE = re.compile(
+    r"""(?:"from"|remoteJid)["']?\s*[:=]\s*["'](?P<jid>[^"']+@lid)["'].*?sender_pn["']?\s*[:=]\s*["'](?P<number>\d+)@s\.whatsapp\.net["']""",
+    re.IGNORECASE,
+)
 
 
 def utc_now() -> datetime:
@@ -40,6 +44,36 @@ def utc_now_iso() -> str:
 
 def digits_only(value: str) -> str:
     return re.sub(r"\D", "", str(value or ""))
+
+
+def normalize_lid_jid(value: str | None) -> str:
+    jid = str(value or "").strip().lower()
+    if not jid.endswith("@lid"):
+        return jid
+    return re.sub(r":\d+(?=@lid$)", "", jid)
+
+
+def build_number_variants(number: str) -> List[str]:
+    digits = digits_only(number)
+    if not digits:
+        return []
+    variants = {digits}
+    national = digits[2:] if digits.startswith("55") and len(digits) > 10 else digits
+    if national:
+        variants.add(national)
+    if len(national) in {10, 11}:
+        area = national[:2]
+        subscriber = national[2:]
+        if area and subscriber:
+            variants.add(f"55{area}{subscriber}")
+            variants.add(f"{area}{subscriber}")
+            if len(subscriber) == 9 and subscriber.startswith("9"):
+                variants.add(area + subscriber[1:])
+                variants.add(f"55{area}{subscriber[1:]}")
+            if len(subscriber) == 8:
+                variants.add(area + "9" + subscriber)
+                variants.add(f"55{area}9{subscriber}")
+    return sorted({digits_only(item) for item in variants if digits_only(item)}, key=len, reverse=True)
 
 
 def parse_ts(value: str | None) -> Optional[datetime]:
@@ -202,6 +236,7 @@ def load_state(cfg: WatchdogConfig) -> Dict:
             "events": {},
             "seenEvolutionLines": {},
             "lastContingencySentAt": "",
+            "authorizedRemoteLids": {},
         }
     try:
         return json.loads(cfg.state_path.read_text(encoding="utf-8"))
@@ -210,6 +245,7 @@ def load_state(cfg: WatchdogConfig) -> Dict:
             "events": {},
             "seenEvolutionLines": {},
             "lastContingencySentAt": "",
+            "authorizedRemoteLids": {},
         }
 
 
@@ -229,8 +265,16 @@ def save_state(cfg: WatchdogConfig, state: Dict):
         if seen_at and seen_at < utc_now() - timedelta(hours=6):
             continue
         pruned_lines[key] = value
+    known_lids = state.get("authorizedRemoteLids") or {}
+    pruned_lids = {}
+    for key, value in known_lids.items():
+        seen_at = parse_ts(value)
+        if seen_at and seen_at < utc_now() - timedelta(days=2):
+            continue
+        pruned_lids[normalize_lid_jid(key)] = value
     state["events"] = pruned_events
     state["seenEvolutionLines"] = pruned_lines
+    state["authorizedRemoteLids"] = pruned_lids
     cfg.state_path.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
@@ -353,6 +397,10 @@ def get_container_state(name: str) -> Dict[str, str]:
     return {"status": status.strip(), "health": health.strip()}
 
 
+def sql_escape(value: str) -> str:
+    return str(value or "").replace("'", "''")
+
+
 def parse_evolution_timestamp(value: str | None) -> Optional[datetime]:
     text = str(value or "").strip()
     if not text:
@@ -368,8 +416,107 @@ def parse_evolution_timestamp(value: str | None) -> Optional[datetime]:
 
 
 def build_authorized_jid_regex(number: str) -> re.Pattern:
-    digits = digits_only(number)
-    return re.compile(rf"{re.escape(digits)}(?::\d+)?@s\.whatsapp\.net", re.IGNORECASE)
+    parts = [
+        rf"{re.escape(candidate)}(?::\d+)?@s\.whatsapp\.net"
+        for candidate in build_number_variants(number)
+    ]
+    if not parts:
+        parts = [r"$^"]
+    return re.compile("|".join(parts), re.IGNORECASE)
+
+
+def remember_authorized_lids(state: Dict, lids: Set[str]) -> Set[str]:
+    now_iso = utc_now_iso()
+    bucket = state.setdefault("authorizedRemoteLids", {})
+    added: Set[str] = set()
+    for lid in lids:
+        normalized = normalize_lid_jid(lid)
+        if not normalized.endswith("@lid"):
+            continue
+        if normalized not in bucket:
+            added.add(normalized)
+        bucket[normalized] = now_iso
+    return added
+
+
+def load_known_authorized_lids(cfg: WatchdogConfig, state: Dict) -> Set[str]:
+    known = {
+        normalize_lid_jid(jid)
+        for jid in (state.get("authorizedRemoteLids") or {}).keys()
+        if normalize_lid_jid(jid).endswith("@lid")
+    }
+    variants = set(build_number_variants(cfg.authorized_number))
+    if not variants:
+        return known
+
+    conn: Optional[sqlite3.Connection] = None
+    try:
+        conn = db_conn(cfg.router_db_path)
+        rows = conn.execute(
+            """
+            SELECT remote_jid, phone_number, resolved_jid
+            FROM lid_mappings
+            ORDER BY updated_at DESC
+            LIMIT 1000
+            """
+        ).fetchall()
+    except sqlite3.Error:
+        rows = []
+    finally:
+        if conn is not None:
+            conn.close()
+
+    for row in rows:
+        phone_number = digits_only(row["phone_number"])
+        resolved_jid = digits_only(row["resolved_jid"])
+        if phone_number in variants or resolved_jid in variants:
+            jid = normalize_lid_jid(row["remote_jid"])
+            if jid.endswith("@lid"):
+                known.add(jid)
+    return known
+
+
+def discover_authorized_lids_from_output(output: str, cfg: WatchdogConfig) -> Set[str]:
+    variants = set(build_number_variants(cfg.authorized_number))
+    if not variants:
+        return set()
+    discovered: Set[str] = set()
+    for raw_line in str(output or "").splitlines():
+        line = raw_line.strip()
+        if not line or "sender_pn" not in line or "@lid" not in line:
+            continue
+        match = EVOLUTION_SENDER_PN_FROM_RE.search(line)
+        if not match:
+            continue
+        if digits_only(match.group("number")) not in variants:
+            continue
+        discovered.add(normalize_lid_jid(match.group("jid")))
+    return {jid for jid in discovered if jid.endswith("@lid")}
+
+
+def build_message_where_clauses(cfg: WatchdogConfig, known_lids: Set[str]) -> Dict[str, str]:
+    patterns: List[str] = []
+    for candidate in build_number_variants(cfg.authorized_number):
+        patterns.append(f"%{candidate}@s.whatsapp.net%")
+        patterns.append(f"%{candidate}:%@s.whatsapp.net%")
+    for lid in sorted({normalize_lid_jid(item) for item in known_lids if normalize_lid_jid(item).endswith('@lid')}):
+        patterns.append(f"%{lid}%")
+    patterns = list(dict.fromkeys(patterns))
+    if not patterns:
+        patterns = [f"%{cfg.authorized_number}@s.whatsapp.net%"]
+
+    def join(column: str) -> str:
+        return " OR ".join(
+            f"COALESCE({column},'') LIKE '{sql_escape(pattern)}'"
+            for pattern in patterns
+        )
+
+    return {
+        "message_key": join("key::text"),
+        "message_participant": join("participant::text"),
+        "update_remote": join('"remoteJid"::text'),
+        "update_participant": join("participant::text"),
+    }
 
 
 def read_evolution_signals(cfg: WatchdogConfig, state: Dict) -> Dict[str, List[Dict]]:
@@ -383,12 +530,26 @@ def read_evolution_signals(cfg: WatchdogConfig, state: Dict) -> Dict[str, List[D
     emitted = {"inbound": set(), "outbound": set()}
     now_iso = utc_now_iso()
     authorized_jid_re = build_authorized_jid_regex(cfg.authorized_number)
+    known_authorized_lids = load_known_authorized_lids(cfg, state)
+    newly_discovered_lids = remember_authorized_lids(state, discover_authorized_lids_from_output(output, cfg))
+    if newly_discovered_lids:
+        append_log(
+            cfg,
+            "INFO",
+            "watchdog_authorized_lids_discovered",
+            count=len(newly_discovered_lids),
+            lids=sorted(newly_discovered_lids)[:12],
+        )
+    known_authorized_lids.update(load_known_authorized_lids(cfg, state))
     current_log_dt: Optional[datetime] = None
     current_signal_dt: Optional[datetime] = None
     pending_remote_jid: Optional[str] = None
     pending_remote_jid_line = -9999
 
     def matches_authorized_jid(value: str | None) -> bool:
+        normalized = normalize_lid_jid(value)
+        if normalized.endswith("@lid") and normalized in known_authorized_lids:
+            return True
         return bool(authorized_jid_re.search(str(value or "")))
 
     def append_inbound(event_line: str, event_dt: datetime, raw: str, marker: str):
@@ -454,7 +615,7 @@ def read_evolution_signals(cfg: WatchdogConfig, state: Dict) -> Dict[str, List[D
 
         remote_match = EVOLUTION_REMOTE_JID_RE.search(line)
         if remote_match and matches_authorized_jid(remote_match.group(1)):
-            pending_remote_jid = remote_match.group(1)
+            pending_remote_jid = normalize_lid_jid(remote_match.group(1))
             pending_remote_jid_line = idx
 
         from_me_match = EVOLUTION_FROM_ME_RE.search(line)
@@ -473,26 +634,22 @@ def read_evolution_db_signals(cfg: WatchdogConfig, state: Dict) -> Dict[str, Lis
     bootstrap_done = bool(state.get("bootstrapCompleted"))
     lookback_seconds = cfg.docker_log_lookback_seconds if bootstrap_done else cfg.bootstrap_log_lookback_seconds
     threshold = utc_now() - timedelta(seconds=max(60, lookback_seconds))
-    exact_like = f"%{cfg.authorized_number}@s.whatsapp.net%"
-    variant_like = f"%{cfg.authorized_number}:%@s.whatsapp.net%"
+    known_authorized_lids = load_known_authorized_lids(cfg, state)
+    where = build_message_where_clauses(cfg, known_authorized_lids)
     sql = f"""
 WITH message_rows AS (
   SELECT 'message' AS src, to_jsonb(m)::text AS payload
   FROM "Message" m
-  WHERE COALESCE(key::text,'') LIKE '{exact_like}'
-     OR COALESCE(key::text,'') LIKE '{variant_like}'
-     OR COALESCE(participant::text,'') LIKE '{exact_like}'
-     OR COALESCE(participant::text,'') LIKE '{variant_like}'
+  WHERE {where["message_key"]}
+     OR {where["message_participant"]}
   ORDER BY COALESCE(to_jsonb(m)->>'createdAt', to_jsonb(m)->>'updatedAt', '') DESC
   LIMIT 80
 ),
 message_update_rows AS (
   SELECT 'message_update' AS src, to_jsonb(mu)::text AS payload
   FROM "MessageUpdate" mu
-  WHERE COALESCE("remoteJid"::text,'') LIKE '{exact_like}'
-     OR COALESCE("remoteJid"::text,'') LIKE '{variant_like}'
-     OR COALESCE(participant::text,'') LIKE '{exact_like}'
-     OR COALESCE(participant::text,'') LIKE '{variant_like}'
+  WHERE {where["update_remote"]}
+     OR {where["update_participant"]}
   ORDER BY COALESCE(to_jsonb(mu)->>'createdAt', to_jsonb(mu)->>'updatedAt', '') DESC
   LIMIT 120
 )
@@ -529,6 +686,9 @@ SELECT src || E'\\t' || payload FROM message_update_rows;
     emitted = {"inbound": set(), "outbound": set()}
 
     def matches_authorized(value: str | None) -> bool:
+        normalized = normalize_lid_jid(value)
+        if normalized.endswith("@lid") and normalized in known_authorized_lids:
+            return True
         return bool(authorized_jid_re.search(str(value or "")))
 
     def append_signal(direction: str, event_key: str, created_dt: datetime, raw: str, text: str = ""):
@@ -566,13 +726,13 @@ SELECT src || E'\\t' || payload FROM message_update_rows;
         key_payload = jsonish(payload.get("key"))
         if not isinstance(key_payload, dict):
             key_payload = {}
-        remote_jid = str(
+        remote_jid = normalize_lid_jid(str(
             payload.get("remoteJid")
             or key_payload.get("remoteJid")
             or payload.get("participant")
             or ""
-        ).strip()
-        participant = str(payload.get("participant") or "").strip()
+        ).strip())
+        participant = normalize_lid_jid(str(payload.get("participant") or "").strip())
         if not matches_authorized(remote_jid) and not matches_authorized(participant):
             continue
 
@@ -615,6 +775,7 @@ SELECT src || E'\\t' || payload FROM message_update_rows;
         inboundCount=len(inbound),
         outboundCount=len(outbound),
         bootstrapDone=bootstrap_done,
+        knownLidCount=len(known_authorized_lids),
     )
     inbound.sort(key=lambda item: item.get("created_dt") or utc_now())
     outbound.sort(key=lambda item: item.get("created_dt") or utc_now())
