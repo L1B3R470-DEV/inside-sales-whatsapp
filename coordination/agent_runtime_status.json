@@ -1,16 +1,16 @@
 {
-    "updated_at":  "2026-04-06T00:34:28.4802489-03:00",
+    "updated_at":  "2026-04-06T00:34:42.2532906-03:00",
     "actors":  {
                    "claude_local":  {
                                         "status":  "ok",
                                         "available":  true,
                                         "provider":  "Anthropic",
-                                        "last_seen_at":  "2026-04-06T00:34:28.4540159-03:00",
+                                        "last_seen_at":  "2026-04-06T00:34:42.1819474-03:00",
                                         "last_limit_hit_at":  "2026-04-04T18:28:48.8901572-03:00",
                                         "session_renews_at":  "",
                                         "reset_hint":  "",
-                                        "last_task_id":  "task-022-INFRA-DEPLOY-20260406T033355Z",
-                                        "last_reply_id":  "reply-022-INFRA-DEPLOY-20260406T003428Z",
+                                        "last_task_id":  "task-022A-DIAG-RETRY-20260404T212808Z-REROUTE-20260406T033437Z",
+                                        "last_reply_id":  "reply-022A-DIAG-20260406T003442Z",
                                         "source":  "orq-supervisor"
                                     },
                    "codex_local":  {
