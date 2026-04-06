@@ -1,0 +1,16 @@
+{
+  "task_id": "task-022-BRIDGE-SMOKE-20260406T033741Z",
+  "target_actor": "claude_local",
+  "cycle": "022-BRIDGE-SMOKE",
+  "instruction": "Smoke test unico do bridge no PC LOCAL. Nao tocar em producao. Apenas execute e retorne: hostname, whoami, pwd, git -C \"C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\" rev-parse --short HEAD, e o resultado de Invoke-RestMethod http://localhost:8091/health. Se algum comando falhar, reporte o erro objetivo e pare.",
+  "context_files": [
+    "STATE.md"
+  ],
+  "output_path": "coordination/outbox_claude/reply-022-BRIDGE-SMOKE-20260406T033741Z.json",
+  "red_lines": [
+    "no_production_write",
+    "no_real_leads"
+  ],
+  "status": "pending",
+  "created_at": "2026-04-06T03:37:41Z"
+}
