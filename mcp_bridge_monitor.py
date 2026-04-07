@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from mcp.server.fastmcp import FastMCP
+from ai_capacity_registry import summarize_registry
 
 
 BRIDGE_ROOT = Path(os.getenv("CLAUDE_BRIDGE_ROOT", r"C:\AUTOMACAO\cowork\claude_bridge"))
@@ -134,6 +135,12 @@ def tail_autopilot_log(lines: int = 40) -> List[str]:
         return []
     content = LOG_FILE.read_text(encoding="utf-8-sig", errors="ignore").splitlines()
     return content[-n:]
+
+
+@mcp.tool()
+def ai_capacity_status() -> Dict[str, Any]:
+    """Retorna estado de uso/disponibilidade e recrutamento dinamico das IAs monitoradas."""
+    return summarize_registry()
 
 
 if __name__ == "__main__":

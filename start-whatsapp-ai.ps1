@@ -11,4 +11,8 @@ docker compose pull
 docker compose up -d
 docker compose ps
 
+powershell -ExecutionPolicy Bypass -File ".\start-ai-capacity-monitor.ps1" `
+  -ProjectDir "C:\Users\User\Desktop\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES" `
+  -RuntimeRoot "C:\AUTOMACAO"
+
 

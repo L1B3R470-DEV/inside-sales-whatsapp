@@ -9,6 +9,12 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 from dotenv import load_dotenv
+from ai_capacity_registry import (
+    STATUS_AVAILABLE,
+    STATUS_DEGRADED,
+    mark_agent_heartbeat,
+    update_agent_status,
+)
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
@@ -80,6 +86,13 @@ def ensure_dirs() -> None:
             "seen_master_tasks": [],
             "created_subtasks": [],
             "created_at": now_iso(),
+            "status": STATUS_AVAILABLE,
+            "reason": "bootstrap",
+            "last_heartbeat_at": "",
+            "last_success_at": "",
+            "last_error_at": "",
+            "last_error": "",
+            "last_task_id": "",
         }
         STATE_FILE.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -173,6 +186,24 @@ def save_state(state: Dict) -> None:
     write_json(STATE_FILE, state)
 
 
+def heartbeat_autopilot(state: Dict, *, status: str = STATUS_AVAILABLE, reason: str = "poll_loop") -> None:
+    stamp = now_iso()
+    state["status"] = status
+    state["reason"] = reason
+    state["last_heartbeat_at"] = stamp
+    save_state(state)
+    mark_agent_heartbeat(
+        "claude_autopilot_pc_lbn",
+        status=status,
+        reason=reason,
+        metadata={
+            "seen_replies": len(state.get("seen_replies", []) or []),
+            "created_subtasks": len(state.get("created_subtasks", []) or []),
+            "last_task_id": state.get("last_task_id", ""),
+        },
+    )
+
+
 def normalize_text(value: str) -> str:
     text = str(value or "").lower()
     text = text.encode("ascii", "ignore").decode("ascii")
@@ -202,6 +233,7 @@ def ack_outbox_replies(state: Dict) -> int:
 
         seen.add(reply_id)
         changed += 1
+        state["last_task_id"] = str(reply.get("task_id") or reply_id)
         write_log(f"ACK criado para {reply_id}")
 
     if changed:
@@ -378,6 +410,7 @@ def process_master_tasks(state: Dict) -> int:
             for idx, st in enumerate(subtasks, start=1):
                 created_file = create_subtask_file(master, st, idx, total)
                 created.add(created_file.name)
+                state["last_task_id"] = created_file.stem
                 write_log(f"Subtarefa criada: {created_file.name}")
 
             seen.add(master_id)
@@ -403,13 +436,47 @@ def main() -> None:
         return
     atexit.register(release_lock)
     write_log("Autopilot iniciado.")
+    update_agent_status(
+        "claude_autopilot_pc_lbn",
+        status=STATUS_AVAILABLE,
+        availability=True,
+        reason="autopilot_started",
+    )
     while True:
         state = load_state()
-        a = ack_outbox_replies(state)
-        b = process_master_tasks(state)
-        if a or b:
+        try:
+            heartbeat_autopilot(state)
+            a = ack_outbox_replies(state)
+            b = process_master_tasks(state)
+            if a or b:
+                state["last_success_at"] = now_iso()
+                state["last_error"] = ""
+                save_state(state)
+                mark_agent_heartbeat(
+                    "claude_autopilot_pc_lbn",
+                    status=STATUS_AVAILABLE,
+                    reason="work_processed",
+                    metadata={
+                        "acked_count": a,
+                        "created_subtasks_count": b,
+                    },
+                )
+            time.sleep(POLL_SECONDS)
+        except Exception as exc:
+            state["status"] = STATUS_DEGRADED
+            state["reason"] = "loop_failed"
+            state["last_error_at"] = now_iso()
+            state["last_error"] = str(exc)
             save_state(state)
-        time.sleep(POLL_SECONDS)
+            update_agent_status(
+                "claude_autopilot_pc_lbn",
+                status=STATUS_DEGRADED,
+                availability=True,
+                reason="loop_failed",
+                metadata={"error": str(exc)},
+            )
+            write_log(f"Falha no loop do autopilot: {exc}")
+            time.sleep(POLL_SECONDS)
 
 
 if __name__ == "__main__":
