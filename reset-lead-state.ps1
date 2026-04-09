@@ -6,7 +6,8 @@ param(
   [string]$WorkflowId = "zN3heKJVLO8w4dG6",
   [switch]$DryRun,
   [switch]$SkipBackup,
-  [switch]$SkipRestart
+  [switch]$SkipRestart,
+  [switch]$ExclusiveAllowlist
 )
 
 $venvPython = Join-Path $ProjectDir ".venv-router\Scripts\python.exe"
@@ -24,5 +25,6 @@ $argsList = @(
 if ($DryRun) { $argsList += "--dry-run" }
 if ($SkipBackup) { $argsList += "--skip-backup" }
 if ($SkipRestart) { $argsList += "--skip-restart" }
+if ($ExclusiveAllowlist) { $argsList += "--exclusive-allowlist" }
 
 & $pythonExe @argsList

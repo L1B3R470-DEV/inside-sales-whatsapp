@@ -1,0 +1,9 @@
+{
+  "keep_images_count": 3332,
+  "keep_images_bytes": 643370052,
+  "drop_images_count": 52197,
+  "drop_images_bytes": 9556353434,
+  "non_image_count": 2683,
+  "non_image_bytes": 2949595280,
+  "artifacts_dir": "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\artifacts\\image_cleanup"
+}

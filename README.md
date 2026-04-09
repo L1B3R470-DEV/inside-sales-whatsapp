@@ -5,6 +5,13 @@
 - Prioridade operacional: `Cache -> RAG -> GPT`
 - Distribuição de inteligência: `70% regras/cache`, `20% RAG`, `10% IA`
 
+## Topologia operacional obrigatoria
+- `PC CLS` (`100.113.13.27`) e a origem unica das IAs operacionais do atendente.
+- `PC CLS` (`100.113.13.27`) hospeda o Docker operacional do projeto.
+- `PC LBN` (`100.101.106.95`) e somente interface interativa, coordenacao humana e distribuicao manual de prompts.
+- O Docker do `PC LBN` nao participa do runtime real do atendente.
+- Definicao estrutural detalhada: [ATTENDANT_RUNTIME_TOPOLOGY.md](C:\Users\User\Desktop\PROJETO%20ATENDIMENTO%20WHATSAPP%20INSIDE%20SALES\ATTENDANT_RUNTIME_TOPOLOGY.md)
+
 ## Pastas
 ### Código-fonte
 - `C:\Users\User\Desktop\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES`

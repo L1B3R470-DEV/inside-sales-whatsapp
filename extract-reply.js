@@ -105,7 +105,14 @@ function composeSalutation(number, customerName, workTimezone, isFirstInbound, c
 }
 
 function applySalutation(replyText, ctx) {
+  if (Boolean(ctx?.skipAutomaticSalutation)) {
+    return String(replyText || '').replace(/\s+/g, ' ').trim();
+  }
   const body = stripLeadingSalutation(replyText);
+  const firstName = toFirstName(String(ctx?.customerName || ''));
+  const earlyBody = normalizeForDedupe(String(body || '').slice(0, 120));
+  const hasEarlyNameMention = Boolean(firstName) && earlyBody.includes(normalizeForDedupe(firstName));
+  const startsWithCommercialLead = /^(perfeito|certo|entendi|otimo|ótimo|seu pre-cadastro|estou te enviando|para te ajudar)/i.test(String(body || ''));
   const number = String(ctx?.number || '').replace(/\D/g, '');
   if (!number) return body;
 
@@ -130,10 +137,10 @@ function applySalutation(replyText, ctx) {
   let finalText = body;
   cadence.count = Number(cadence.count || 0) + 1;
 
-  if (shouldSalute) {
+  if (shouldSalute && !(hasEarlyNameMention && startsWithCommercialLead)) {
     const prefix = composeSalutation(
       number,
-      String(ctx?.customerName || ''),
+      hasEarlyNameMention ? '' : String(ctx?.customerName || ''),
       String(ctx?.workTimezone || 'America/Bahia'),
       Boolean(ctx?.isFirstInbound),
       cadence
@@ -159,10 +166,66 @@ function normalizeForDedupe(value) {
 
 function stripEmojiCharacters(value) {
   return String(value || '')
+    .replace(/\u200D/g, '')
+    .replace(/\uFE0F/g, '')
+    .replace(/\p{Extended_Pictographic}/gu, '')
     .replace(/[\u{1F300}-\u{1FAFF}]/gu, '')
     .replace(/[\u{2600}-\u{27BF}]/gu, '')
-    .replace(/\s+/g, ' ')
+    .replace(/[ \t]{2,}/g, ' ')
     .trim();
+}
+
+function normalizeAuthorizedLink(value) {
+  return String(value || '')
+    .trim()
+    .replace(/^<+|>+$/g, '')
+    .replace(/[),.;!?]+$/g, '')
+    .replace(/\/+$/g, '')
+    .toLowerCase();
+}
+
+function getAuthorizedOutboundLinks(ctx) {
+  const staticData = $getWorkflowStaticData('global');
+  const values = [];
+  for (const candidate of [ctx?.authorizedLinks, ctx?.operatorAuthorizedLinks, ctx?.allowedLinks]) {
+    if (Array.isArray(candidate)) values.push(...candidate);
+  }
+  const staticAuthorized = staticData?.operatorAuthorizedLinks && typeof staticData.operatorAuthorizedLinks === 'object'
+    ? staticData.operatorAuthorizedLinks
+    : {};
+  if (Array.isArray(staticAuthorized.links)) values.push(...staticAuthorized.links);
+  return new Set(values.map(normalizeAuthorizedLink).filter(Boolean));
+}
+
+function stripUnauthorizedLinks(value, authorizedLinks) {
+  const allowed = authorizedLinks instanceof Set ? authorizedLinks : new Set();
+  const keepOrDrop = (match, offset, source) => {
+    const prev = offset > 0 ? String(source || '').charAt(offset - 1) : '';
+    if (prev === '@') return match;
+    return allowed.has(normalizeAuthorizedLink(match)) ? match : '';
+  };
+
+  return String(value || '')
+    .replace(/\bhttps?:\/\/[^\s<>()]+/gi, keepOrDrop)
+    .replace(/\bwww\.[^\s<>()]+/gi, keepOrDrop)
+    .replace(/\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}(?:\/[^\s<>()]*)?/gi, keepOrDrop);
+}
+
+function sanitizeOutboundText(value, options) {
+  const cfg = options && typeof options === 'object' ? options : {};
+  const maxChars = Number(cfg.maxChars || 0);
+  const authorizedLinks = cfg.authorizedLinks instanceof Set ? cfg.authorizedLinks : new Set();
+  let text = String(value || '').replace(/\r\n?/g, '\n');
+  text = stripUnauthorizedLinks(text, authorizedLinks);
+  text = stripEmojiCharacters(text)
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+  if (maxChars > 0) {
+    text = text.slice(0, maxChars).trim();
+  }
+  return text;
 }
 
 function suppressDuplicateOutbound(instance, number, replyText, messageId) {
@@ -175,13 +238,17 @@ function suppressDuplicateOutbound(instance, number, replyText, messageId) {
     if (Number(ts || 0) < (nowMs - ttlMs)) delete staticData.outboundRecent[k];
   }
 
-  const key = `${String(instance || '')}:${String(number || '')}:${normalizeForDedupe(replyText)}:${String(messageId || '')}`;
-  const lastTs = Number(staticData.outboundRecent[key] || 0);
-  if (lastTs && (nowMs - lastTs) < (1000 * 45)) {
+  const normalizedReply = normalizeForDedupe(replyText);
+  const exactKey = `${String(instance || '')}:${String(number || '')}:${normalizedReply}:${String(messageId || '')}`;
+  const semanticKey = `${String(instance || '')}:${String(number || '')}:${normalizedReply}`;
+  const lastExactTs = Number(staticData.outboundRecent[exactKey] || 0);
+  const lastSemanticTs = Number(staticData.outboundRecent[semanticKey] || 0);
+  if ((lastExactTs && (nowMs - lastExactTs) < (1000 * 45)) || (lastSemanticTs && (nowMs - lastSemanticTs) < (1000 * 120))) {
     return true;
   }
 
-  staticData.outboundRecent[key] = nowMs;
+  staticData.outboundRecent[exactKey] = nowMs;
+  staticData.outboundRecent[semanticKey] = nowMs;
   return false;
 }
 
@@ -286,7 +353,10 @@ function buildProductMediaItems(instance, number, ctx, maxItems) {
       json: {
         instance,
         number: duplicate ? '' : number,
+        sendEligible: !duplicate,
+        sendEligibilityReason: duplicate ? 'duplicate_suppressed' : 'eligible',
         sendMode: 'media',
+        delayMs: Number(entry.delayMs || ctx?.productMediaDelayMs || 1800),
         mediaType: 'image',
         media: String(entry.mediaBase64 || ''),
         mimeType: String(entry.mimeType || 'image/jpeg'),
@@ -305,14 +375,17 @@ function buildVitrineMediaItems(instance, number, ctx) {
   const items = Array.isArray(vitrineAssets.items) ? vitrineAssets.items : [];
   if (items.length === 0) return [];
 
-  return items.slice(0, 3).map((asset) => {
+  return items.slice(0, 5).map((asset) => {
     const label = `[vitrine] ${String(asset.fileName || asset.label || '')}`;
     const duplicate = suppressDuplicateOutbound(instance, number, label, `${ctx?.messageId || ''}:${asset.label || ''}`);
     return {
       json: {
         instance,
         number: duplicate ? '' : number,
+        sendEligible: !duplicate,
+        sendEligibilityReason: duplicate ? 'duplicate_suppressed' : 'eligible',
         sendMode: 'media',
+        delayMs: Number(asset.delayMs || ctx?.vitrineDelayMs || 7200),
         mediaType: String(asset.mediaType || 'image'),
         media: String(asset.mediaBase64 || ''),
         mimeType: String(asset.mimeType || 'image/jpeg'),
@@ -322,6 +395,31 @@ function buildVitrineMediaItems(instance, number, ctx) {
       }
     };
   }).filter((item) => String(item.json.media || '').trim());
+}
+
+function buildOrderChoiceButtonsItem(instance, number, ctx, delayMs) {
+  if (!number || !ctx || !ctx.sendOrderChoiceButtons) return null;
+  const duplicate = suppressDuplicateOutbound(instance, number, '[order-choice-buttons]', `${ctx?.messageId || ''}:order-choice-buttons`);
+  if (duplicate) return null;
+
+  return {
+    json: {
+      instance,
+      number,
+      sendEligible: true,
+      sendEligibilityReason: 'eligible',
+      sendMode: 'buttons',
+      delayMs: Number(delayMs || ctx?.orderChoiceButtonsDelayMs || 12200),
+      title: 'Como voce prefere seguir com o pedido?',
+      description: 'Escolha se quer montar seu pedido direto no portal B2B ou seguir com o apoio do Eduardo neste canal.',
+      footer: 'Classe Couro - Pedido inicial',
+      buttons: [
+        { type: 'reply', displayText: 'Pedir pelo site B2B', id: 'btn_pedido_b2b' },
+        { type: 'reply', displayText: 'Montar com Eduardo', id: 'btn_pedido_eduardo' }
+      ],
+      duplicateOutboundSuppressed: false
+    }
+  };
 }
 
 function buildRuleBasedReply(ctx) {
@@ -532,6 +630,20 @@ function enforceMandatoryDirective(replyText, ctx) {
   return text.trim();
 }
 
+function looksMechanicalReply(text) {
+  const norm = normalizeForDedupe(text);
+  if (!norm) return true;
+  const genericSnippets = [
+    'qual produto voce quer priorizar agora',
+    'qual e sua necessidade principal agora',
+    'quero te ajudar da forma mais assertiva possivel',
+    'como posso te ajudar melhor neste primeiro momento',
+    'voce quer comecar por carteiras cintos ou ambos',
+    'voce precisa mais de cintos carteiras ou ambos'
+  ];
+  return genericSnippets.some((snippet) => norm.includes(snippet));
+}
+
 const sensitiveIntents = new Set(['pos_venda_reclamacao', 'troca_devolucao', 'cancelamento']);
 const customerName = String(guardrails.customerName || '').trim();
 
@@ -554,6 +666,7 @@ const llmReplyText = String(guardrails.llmReplyText || '').trim();
 const llmProvider = String(guardrails.llmProvider || '').trim();
 const llmStructuredData = guardrails.llmStructuredData || {};
 const llmLeadScore = guardrails.llmLeadScore || {};
+const routeDecision = String(guardrails.routeDecision || '').trim();
 
 // Merge structured extraction data from dual-LLM
 if (llmStructuredData && typeof llmStructuredData === 'object' && Object.keys(llmStructuredData).length > 0) {
@@ -617,6 +730,17 @@ if (response?.error || response?.statusCode >= 400) {
   }
 }
 
+const routerOwnsReplyText = Boolean(llmReplyText) && /^rag_claude$|^claude_direct$/i.test(routeDecision);
+if (routerOwnsReplyText && !modelRequestedHuman) {
+  reply = llmReplyText;
+  confidence = Math.max(confidence, 0.74);
+  modelRaw = `[router-${llmProvider || 'anthropic'}] ${llmReplyText}`;
+} else if (llmReplyText && looksMechanicalReply(reply)) {
+  reply = llmReplyText;
+  confidence = Math.max(confidence, 0.68);
+  modelRaw = `[dual-llm-refine:${llmProvider || 'router'}] ${llmReplyText}`;
+}
+
 const minConfidence = Number(guardrails.minConfidenceForAutoSend || 0.4);
 const lowConfidence = confidence < minConfidence;
 const intentSensitive = sensitiveIntents.has(intent);
@@ -669,10 +793,20 @@ reply = applySalutation(reply, {
   customerName,
   workTimezone: guardrails.workTimezone,
   isFirstInbound: guardrails.isFirstInbound,
-  inboundText: guardrails.inboundTextOriginal
+  inboundText: guardrails.inboundTextOriginal,
+  skipAutomaticSalutation: Boolean(guardrails.skipAutomaticSalutation)
 });
-reply = stripEmojiCharacters(reply);
-reply = String(reply).slice(0, Number(guardrails.maxOutputChars || 420));
+const authorizedOutboundLinks = getAuthorizedOutboundLinks(guardrails);
+reply = sanitizeOutboundText(reply, {
+  authorizedLinks: authorizedOutboundLinks,
+      maxChars: Number(guardrails.maxOutputChars || 1800)
+});
+if (!reply) {
+  reply = sanitizeOutboundText(fallbackWaiting, {
+    authorizedLinks: authorizedOutboundLinks,
+      maxChars: Number(guardrails.maxOutputChars || 1800)
+  });
+}
 
 const staticData = $getWorkflowStaticData('global');
 if (!staticData.customerProfiles) staticData.customerProfiles = {};
@@ -684,8 +818,10 @@ const number = String(guardrails.number || '').replace(/\D/g, '');
 const instance = String(guardrails.instance || '');
 const pushName = String(guardrails.pushName || 'Cliente');
 const nowIso = new Date().toISOString();
-const duplicateOutbound = suppressDuplicateOutbound(instance, number, reply, guardrails.messageId);
-const sendNumber = duplicateOutbound ? '' : number;
+const sendEligible = Boolean(guardrails.sendEligible === true && number);
+const sendEligibilityReason = String(guardrails.sendEligibilityReason || '').trim() || (sendEligible ? 'eligible' : 'blocked');
+const duplicateOutbound = sendEligible ? suppressDuplicateOutbound(instance, number, reply, guardrails.messageId) : false;
+const sendNumber = (sendEligible && !duplicateOutbound) ? number : '';
 const productMediaItems = (!needsHuman && sendNumber)
   ? buildProductMediaItems(instance, number, guardrails, resolveRequestedMediaCount(guardrails))
   : [];
@@ -816,36 +952,82 @@ const outboundItems = [{
     instance,
     number: sendNumber,
     sendMode: 'text',
+    delayMs: Number(guardrails.replyDelayMs || 1200),
     replyText: reply,
     inboundTextOriginal: String(guardrails.inboundTextOriginal || ''),
     intent,
     confidence,
     needsHuman,
     requiresHumanCall,
+    sendEligible,
+    sendEligibilityReason,
     insideSalesOwnNumber: String(guardrails.insideSalesOwnNumber || ''),
     leadStage,
     humanReason,
     routeDecision: String(guardrails.routeDecision || ''),
     messageComplexity: String(guardrails.messageComplexity || ''),
+    customerName,
+    productFocusResolved: String(guardrails.productFocusResolved || ''),
+    productCategoryDetected: String(guardrails.productCategoryDetected || ''),
+    followUpQuestion: String(followUpQuestion || '').trim(),
+    customerMemoryUpdate: memoryUpdate,
+    extractedEntities,
     llmProvider: llmProvider || 'openai',
     llmModel: String(guardrails.llmModel || ''),
     llmStructuredData: extractedEntities,
-    duplicateOutboundSuppressed: duplicateOutbound
+    duplicateOutboundSuppressed: duplicateOutbound,
+    skipAutomaticSalutation: Boolean(guardrails.skipAutomaticSalutation)
   }
 }];
 
 for (const mediaItem of productMediaItems) {
   if (mediaItem?.json?.caption) {
-    mediaItem.json.caption = stripEmojiCharacters(mediaItem.json.caption);
+    mediaItem.json.caption = sanitizeOutboundText(mediaItem.json.caption, {
+      authorizedLinks: authorizedOutboundLinks,
+      maxChars: 240
+    });
   }
   outboundItems.push(mediaItem);
 }
 
+if (Boolean(guardrails.sendVitrineAssets) && sendNumber) {
+  const vitrinePrelude = 'Para te ajudar a visualizar melhor o potencial da marca no ponto de venda, eu tambem posso te mostrar uma vitrine de referencia. Isso costuma facilitar bastante, porque voce consegue imaginar com mais clareza como os produtos da Classe Couro podem valorizar a apresentacao da sua loja, chamar mais atencao do cliente final e construir uma percepcao mais forte de desejo e qualidade. Quando o mix esta bem montado, a vitrine praticamente comeca a vender antes mesmo da abordagem.';
+  const duplicatePrelude = suppressDuplicateOutbound(instance, sendNumber, vitrinePrelude, `${guardrails.messageId || ''}:vitrine-prelude`);
+  if (!duplicatePrelude) {
+    outboundItems.push({
+      json: {
+        instance,
+        number: sendNumber,
+        sendMode: 'text',
+        delayMs: Number(guardrails.vitrinePreludeDelayMs || 5200),
+        replyText: vitrinePrelude,
+        sendEligible: true,
+        sendEligibilityReason: 'eligible',
+        duplicateOutboundSuppressed: false,
+        skipAutomaticSalutation: true
+      }
+    });
+  }
+}
+
+let vitrineDelayCursor = Number(guardrails.vitrineFirstAssetDelayMs || 7200);
 for (const mediaItem of vitrineMediaItems) {
   if (mediaItem?.json?.caption) {
-    mediaItem.json.caption = stripEmojiCharacters(mediaItem.json.caption);
+    mediaItem.json.caption = sanitizeOutboundText(mediaItem.json.caption, {
+      authorizedLinks: authorizedOutboundLinks,
+      maxChars: 240
+    });
   }
+  mediaItem.json.delayMs = Number(mediaItem?.json?.delayMs || vitrineDelayCursor);
+  vitrineDelayCursor += Number(guardrails.vitrineDelayStepMs || 1800);
   outboundItems.push(mediaItem);
+}
+
+const orderChoiceButtonsItem = (!needsHuman && sendNumber)
+  ? buildOrderChoiceButtonsItem(instance, sendNumber, guardrails, vitrineDelayCursor + 800)
+  : null;
+if (orderChoiceButtonsItem) {
+  outboundItems.push(orderChoiceButtonsItem);
 }
 
 return outboundItems;

@@ -1,0 +1,31 @@
+{
+  "sourceOfTruth": "workflow_static_data",
+  "generatedBy": "sync scripts",
+  "salesBook": {
+    "version": "book_v1",
+    "fileName": "BOOK_PROSPECCAO_VENDAS_INTERNAS.pdf",
+    "caption": "BOOK DE VENDAS | Colecao Classe Couro"
+  },
+  "vitrineAssets": [
+    {
+      "version": "vitrine_v1",
+      "fileName": "VITRINE_CLASSE.png",
+      "label": "VITRINE DE REFERENCIA"
+    },
+    {
+      "version": "pedido_2000_feminino_v1",
+      "fileName": "SUGESTAO_PEDIDO_2000_FEMININO.pdf",
+      "label": "VITRINE R$ 2.000"
+    },
+    {
+      "version": "pedido_4000_feminino_v1",
+      "fileName": "SUGESTAO_PEDIDO_4000_FEMININO.pdf",
+      "label": "VITRINE R$ 4.000"
+    },
+    {
+      "version": "pedido_6000_feminino_v1",
+      "fileName": "SUGESTAO_PEDIDO_6000_FEMININO.pdf",
+      "label": "VITRINE R$ 6.000"
+    }
+  ]
+}

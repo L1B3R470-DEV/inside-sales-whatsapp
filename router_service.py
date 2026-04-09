@@ -18,6 +18,7 @@ import subprocess
 import threading
 import time
 import unicodedata
+import uuid
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -68,10 +69,12 @@ OPENAI_TRANSCRIBE_PROMPT = os.getenv(
 ).strip()
 OPENAI_TRANSCRIBE_TIMEOUT_SECONDS = int(os.getenv('ROUTER_OPENAI_TRANSCRIBE_TIMEOUT_SECONDS', '35'))
 MAX_AUDIO_BYTES = int(os.getenv('ROUTER_MAX_AUDIO_BYTES', str(25 * 1024 * 1024)))
-WATCH_INTERVAL_SECONDS = int(os.getenv('ROUTER_WATCH_INTERVAL_SECONDS', '900'))
-MAX_CACHE_REPLY_CHARS = int(os.getenv('ROUTER_MAX_CACHE_REPLY_CHARS', '520'))
+WATCH_INTERVAL_SECONDS = int(os.getenv('ROUTER_WATCH_INTERVAL_SECONDS', '300'))
+INGEST_REFRESH_ON_ROUTE_SECONDS = int(os.getenv('ROUTER_INGEST_REFRESH_ON_ROUTE_SECONDS', '90'))
+MAX_CACHE_REPLY_CHARS = int(os.getenv('ROUTER_MAX_CACHE_REPLY_CHARS', '1800'))
 LID_LOG_SCAN_SECONDS = int(os.getenv('ROUTER_LID_LOG_SCAN_SECONDS', '1800'))
 LID_LOG_SCAN_LINES = int(os.getenv('ROUTER_LID_LOG_SCAN_LINES', '2500'))
+ROUTER_ENFORCE_TEST_GATE = str(os.getenv('ROUTER_ENFORCE_TEST_GATE', 'false')).strip().lower() in {'1', 'true', 'yes', 'on'}
 
 TEXT_EXTENSIONS = {'.txt', '.md', '.csv', '.json', '.log', '.xml', '.html', '.htm'}
 OFFICE_XML_EXTENSIONS = {'.docx', '.xlsx'}
@@ -90,17 +93,16 @@ EMBED_RATE_LIMIT_BURST = int(os.getenv('ROUTER_EMBED_RATE_LIMIT_BURST', '10'))
 LID_CACHE_TTL_SECONDS = int(os.getenv('ROUTER_LID_CACHE_TTL_SECONDS', '3600'))
 
 # --- Dual-LLM: SDR persona system prompt for Claude/GPT reply generation ---
-SDR_SYSTEM_PROMPT = os.getenv('SDR_SYSTEM_PROMPT', """Voce e Eduardo, Consultor de Vendas Internas da Classe Couro, uma empresa B2B de acessorios de couro para revenda.
+def _load_sdr_prompt() -> str:
+    env_val = os.getenv('SDR_SYSTEM_PROMPT', '').strip()
+    if env_val:
+        return env_val
+    prompt_file = ROOT_DIR / 'sdr_prompt.txt'
+    if prompt_file.exists():
+        return prompt_file.read_text(encoding='utf-8').strip()
+    return 'Voce e Eduardo, Consultor de Vendas Internas da Classe Couro.'
 
-Regras:
-- Responda de forma profissional, objetiva e cordial via WhatsApp.
-- Nunca invente precos, prazos ou disponibilidade. Se nao souber, diga que vai verificar.
-- Foque em qualificar o lead: descubra produto, quantidade, cidade/estado, prazo.
-- Use linguagem natural de vendedor, sem formalidade excessiva.
-- Respostas curtas (maximo 3 frases). Sempre termine com uma pergunta ou proximo passo.
-- Nunca use emojis.
-- Nunca mencione que voce e uma IA ou assistente virtual.
-""").strip()
+SDR_SYSTEM_PROMPT = _load_sdr_prompt()
 
 SAFE_CACHE_INTENTS = {
     'saudacao',
@@ -114,7 +116,7 @@ SAFE_CACHE_INTENTS = {
 
 CACHE_MIN_CONFIDENCE_LEARN = float(os.getenv('ROUTER_CACHE_MIN_CONFIDENCE_LEARN', '0.62'))
 CACHE_SEMANTIC_ENABLED = str(os.getenv('ROUTER_CACHE_SEMANTIC_ENABLED', 'true')).strip().lower() in {'1', 'true', 'yes', 'on'}
-CACHE_SEMANTIC_THRESHOLD = float(os.getenv('ROUTER_CACHE_SEMANTIC_THRESHOLD', '0.84'))
+CACHE_SEMANTIC_THRESHOLD = float(os.getenv('ROUTER_CACHE_SEMANTIC_THRESHOLD', '0.78'))
 CACHE_SEMANTIC_CANDIDATE_LIMIT = int(os.getenv('ROUTER_CACHE_SEMANTIC_CANDIDATE_LIMIT', '120'))
 
 STOPWORDS = {
@@ -123,6 +125,16 @@ STOPWORDS = {
     'sua', 'dos', 'das', 'por', 'uma', 'uns', 'umas', 'nos', 'nas', 'que', 'vou', 'tem', 'tenho', 'saber', 'valor',
     'preco', 'prazo', 'bom', 'dia', 'boa', 'tarde', 'noite', 'ola', 'olá', 'oi'
 }
+
+RAW_AUTHORIZED_OUTBOUND_LINKS = [
+    item.strip()
+    for item in str(os.getenv('ROUTER_AUTHORIZED_OUTBOUND_LINKS', '')).split(',')
+    if item.strip()
+]
+URL_PATTERN = re.compile(r'(?i)\bhttps?://[^\s<>()]+')
+WWW_PATTERN = re.compile(r'(?i)\bwww\.[^\s<>()]+')
+DOMAIN_PATTERN = re.compile(r'(?i)\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}(?:/[^\s<>()]*)?')
+EMOJI_PATTERN = re.compile(r'[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F\u200D]', re.UNICODE)
 
 
 class EmbeddingRateLimiter:
@@ -207,10 +219,54 @@ class LidCache:
 
 lid_cache = LidCache(LID_CACHE_TTL_SECONDS)
 
+ATTENDANT_OPERATIONAL_HOST_ROLE = os.getenv('ATTENDANT_OPERATIONAL_HOST_ROLE', 'PC_CLS').strip() or 'PC_CLS'
+ATTENDANT_OPERATIONAL_HOST_IP = os.getenv('ATTENDANT_OPERATIONAL_HOST_IP', '100.113.13.27').strip() or '100.113.13.27'
+ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE = os.getenv('ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE', ATTENDANT_OPERATIONAL_HOST_ROLE).strip() or ATTENDANT_OPERATIONAL_HOST_ROLE
+ATTENDANT_OPERATIONAL_DOCKER_HOST_IP = os.getenv('ATTENDANT_OPERATIONAL_DOCKER_HOST_IP', ATTENDANT_OPERATIONAL_HOST_IP).strip() or ATTENDANT_OPERATIONAL_HOST_IP
+ATTENDANT_INTERACTIVE_HOST_ROLE = os.getenv('ATTENDANT_INTERACTIVE_HOST_ROLE', 'PC_LBN').strip() or 'PC_LBN'
+ATTENDANT_INTERACTIVE_HOST_IP = os.getenv('ATTENDANT_INTERACTIVE_HOST_IP', '100.101.106.95').strip() or '100.101.106.95'
+ATTENDANT_INTERACTIVE_MODE_ONLY = os.getenv('ATTENDANT_INTERACTIVE_MODE_ONLY', 'true').strip().lower() in {'1', 'true', 'yes', 'on'}
+ATTENDANT_REJECT_LBN_AS_RUNTIME = os.getenv('ATTENDANT_REJECT_LBN_AS_RUNTIME', 'true').strip().lower() in {'1', 'true', 'yes', 'on'}
+ATTENDANT_REJECT_LBN_DOCKER = os.getenv('ATTENDANT_REJECT_LBN_DOCKER', 'true').strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def topology_metadata() -> Dict:
+    return {
+        'operationalHostRole': ATTENDANT_OPERATIONAL_HOST_ROLE,
+        'operationalHostIp': ATTENDANT_OPERATIONAL_HOST_IP,
+        'operationalDockerHostRole': ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE,
+        'operationalDockerHostIp': ATTENDANT_OPERATIONAL_DOCKER_HOST_IP,
+        'interactiveHostRole': ATTENDANT_INTERACTIVE_HOST_ROLE,
+        'interactiveHostIp': ATTENDANT_INTERACTIVE_HOST_IP,
+        'interactiveModeOnly': ATTENDANT_INTERACTIVE_MODE_ONLY,
+        'rejectLbnAsRuntime': ATTENDANT_REJECT_LBN_AS_RUNTIME,
+        'rejectLbnDocker': ATTENDANT_REJECT_LBN_DOCKER,
+    }
+
+
+def validate_topology() -> None:
+    if ATTENDANT_OPERATIONAL_HOST_ROLE != 'PC_CLS' or ATTENDANT_OPERATIONAL_HOST_IP != '100.113.13.27':
+        raise RuntimeError(
+            f"invalid_operational_ai_topology role={ATTENDANT_OPERATIONAL_HOST_ROLE} ip={ATTENDANT_OPERATIONAL_HOST_IP}"
+        )
+    if ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE != 'PC_CLS' or ATTENDANT_OPERATIONAL_DOCKER_HOST_IP != '100.113.13.27':
+        raise RuntimeError(
+            f"invalid_operational_docker_topology role={ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE} ip={ATTENDANT_OPERATIONAL_DOCKER_HOST_IP}"
+        )
+    if ATTENDANT_INTERACTIVE_HOST_ROLE != 'PC_LBN' or ATTENDANT_INTERACTIVE_HOST_IP != '100.101.106.95':
+        raise RuntimeError(
+            f"invalid_interactive_topology role={ATTENDANT_INTERACTIVE_HOST_ROLE} ip={ATTENDANT_INTERACTIVE_HOST_IP}"
+        )
+    if not ATTENDANT_REJECT_LBN_AS_RUNTIME or not ATTENDANT_REJECT_LBN_DOCKER:
+        raise RuntimeError('invalid_topology_guardrails reject_lbn_flags_disabled')
+
 app = Flask(__name__)
 openai_client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 qdrant = None
 SINGLE_INSTANCE_MUTEX_HANDLE = None
+LAST_INGEST_AT = ''
+LAST_INGEST_EPOCH = 0
+INGEST_LOCK = threading.Lock()
 
 
 def acquire_single_instance_lock() -> bool:
@@ -352,7 +408,25 @@ def transcribe_inbound_audio(payload: Dict) -> Dict:
             'model': OPENAI_TRANSCRIBE_MODEL,
         }
     except (urllib.error.URLError, urllib.error.HTTPError) as exc:
-        return {'ok': False, 'reason': f'audio_download_failed:{exc}', 'text': ''}
+        # retry once after short delay for transient network failures
+        try:
+            time.sleep(2)
+            audio_bytes, mime_type, file_name = _read_audio_bytes_from_payload(inbound_audio)
+            suffix = _safe_audio_suffix(file_name, mime_type)
+            with tempfile.NamedTemporaryFile(suffix=suffix, delete=True) as tmp:
+                tmp.write(audio_bytes)
+                tmp.flush()
+                with open(tmp.name, 'rb') as fh:
+                    resp = openai_client.audio.transcriptions.create(
+                        model=OPENAI_TRANSCRIBE_MODEL,
+                        file=fh,
+                        response_format='json',
+                        prompt=OPENAI_TRANSCRIBE_PROMPT if OPENAI_TRANSCRIBE_PROMPT else None,
+                    )
+            text = str(getattr(resp, 'text', '') or '').strip()
+            return {'ok': bool(text), 'reason': 'ok_retry' if text else 'empty_transcript_retry', 'text': text, 'model': OPENAI_TRANSCRIBE_MODEL}
+        except Exception:
+            return {'ok': False, 'reason': f'audio_download_failed:{exc}', 'text': ''}
     except Exception as exc:
         return {'ok': False, 'reason': f'transcription_failed:{exc}', 'text': ''}
 
@@ -381,6 +455,130 @@ def normalize_lid_jid(value: str) -> str:
 
 def sha_text(value: str) -> str:
     return hashlib.sha256(value.encode('utf-8')).hexdigest()
+
+
+def normalize_authorized_link(value: str) -> str:
+    return re.sub(r'/+$', '', str(value or '').strip().strip('<>').rstrip('),.;!?')).lower()
+
+
+AUTHORIZED_OUTBOUND_LINKS = {
+    normalize_authorized_link(item)
+    for item in RAW_AUTHORIZED_OUTBOUND_LINKS
+    if normalize_authorized_link(item)
+}
+
+
+def strip_emoji_characters(value: str) -> str:
+    return EMOJI_PATTERN.sub('', str(value or ''))
+
+
+def strip_unauthorized_links(value: str, authorized_links=None) -> str:
+    allowed = AUTHORIZED_OUTBOUND_LINKS if authorized_links is None else {
+        normalize_authorized_link(item)
+        for item in (authorized_links or [])
+        if normalize_authorized_link(item)
+    }
+    text = str(value or '')
+    for pattern in (URL_PATTERN, WWW_PATTERN, DOMAIN_PATTERN):
+        current = text
+
+        def _replacer(match):
+            start = match.start()
+            prev = current[start - 1] if start > 0 else ''
+            token = match.group(0)
+            if prev == '@':
+                return token
+            return token if normalize_authorized_link(token) in allowed else ''
+
+        text = pattern.sub(_replacer, text)
+    return text
+
+
+def sanitize_outbound_text(value: str, limit: int = 0, authorized_links=None) -> str:
+    text = str(value or '').replace('\r\n', '\n').replace('\r', '\n')
+    text = strip_unauthorized_links(text, authorized_links=authorized_links)
+    text = strip_emoji_characters(text)
+    text = re.sub(r'[ \t]+\n', '\n', text)
+    text = re.sub(r'\n{3,}', '\n\n', text)
+    text = re.sub(r'[ \t]{2,}', ' ', text)
+    text = text.strip()
+    if limit > 0:
+        text = text[:limit].strip()
+    return text
+
+
+def compact_text(value: str, limit: int = 280) -> str:
+    return re.sub(r'\s+', ' ', str(value or '')).strip()[:limit]
+
+
+def safe_json_loads(value, default):
+    if isinstance(value, (dict, list)):
+        return value
+    raw = str(value or '').strip()
+    if not raw:
+        return default
+    try:
+        return json.loads(raw)
+    except Exception:
+        return default
+
+
+def extract_last_question(text: str) -> str:
+    raw = str(text or '').strip()
+    if not raw or '?' not in raw:
+        return ''
+    questions = re.findall(r'([^?]{6,220}\?)', raw)
+    if questions:
+        return compact_text(questions[-1], 220)
+    return compact_text(raw.rsplit('?', 1)[0] + '?', 220)
+
+
+def infer_quantity_hint(text: str, structured: Dict) -> str:
+    data = structured or {}
+    for key in ('quantity', 'quantidade', 'volume', 'quantity_hint'):
+        value = compact_text(data.get(key), 80)
+        if value:
+            return value
+    match = re.search(r'\b(\d{1,4})\s*(unidades?|pecas?|itens?|kits?|bolsas?|carteiras?|cintos?)\b', normalize_text(text))
+    if match:
+        return compact_text(f'{match.group(1)} {match.group(2)}', 80)
+    return ''
+
+
+def infer_city_hint(text: str, structured: Dict) -> str:
+    data = structured or {}
+    for key in ('city', 'cidade', 'cityHint', 'cidadeHint', 'location'):
+        value = compact_text(data.get(key), 80)
+        if value:
+            return value
+    match = re.search(r'\b(?:em|para)\s+([a-zà-ÿ]{3,}(?:\s+[a-zà-ÿ]{2,}){0,2})(?:\s*[-/]\s*([a-z]{2}))?\b', normalize_text(text))
+    if match:
+        city = compact_text(match.group(1), 60)
+        uf = compact_text(match.group(2), 4).upper()
+        return f'{city}/{uf}' if city and uf else city
+    return ''
+
+
+def summarize_answered_slots(answered_slots: Dict) -> str:
+    if not isinstance(answered_slots, dict):
+        return ''
+    labels = {
+        'productFocus': 'produto',
+        'productCategory': 'categoria',
+        'quantityHint': 'quantidade',
+        'cityHint': 'cidade',
+        'companyName': 'empresa',
+        'cnpj': 'cnpj',
+        'customerName': 'nome',
+        'audienceHint': 'publico',
+        'objection': 'objecao',
+    }
+    parts = []
+    for key, label in labels.items():
+        value = compact_text(answered_slots.get(key), 90)
+        if value:
+            parts.append(f'{label}={value}')
+    return ' | '.join(parts[:6])
 
 
 def db() -> sqlite3.Connection:
@@ -515,6 +713,47 @@ def ensure_db():
         );
         CREATE INDEX IF NOT EXISTS idx_conv_history_contact_key ON conversation_history(contact_key);
         CREATE INDEX IF NOT EXISTS idx_conv_history_created_at ON conversation_history(created_at);
+
+        CREATE TABLE IF NOT EXISTS lead_memory (
+          contact_key TEXT PRIMARY KEY,
+          customer_name TEXT DEFAULT '',
+          lead_stage TEXT DEFAULT '',
+          last_intent TEXT DEFAULT '',
+          product_focus TEXT DEFAULT '',
+          product_category TEXT DEFAULT '',
+          quantity_hint TEXT DEFAULT '',
+          city_hint TEXT DEFAULT '',
+          company_name TEXT DEFAULT '',
+          cnpj TEXT DEFAULT '',
+          last_objection TEXT DEFAULT '',
+          next_step TEXT DEFAULT '',
+          summary TEXT DEFAULT '',
+          answered_slots TEXT DEFAULT '{}',
+          open_question TEXT DEFAULT '',
+          commercial_momentum TEXT DEFAULT '',
+          last_inbound_text TEXT DEFAULT '',
+          last_outbound_text TEXT DEFAULT '',
+          last_route_decision TEXT DEFAULT '',
+          last_provider TEXT DEFAULT '',
+          updated_at TEXT NOT NULL,
+          learned_at TEXT NOT NULL,
+          source TEXT DEFAULT 'router'
+        );
+
+        CREATE TABLE IF NOT EXISTS learning_events (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          contact_key TEXT NOT NULL,
+          intent TEXT DEFAULT '',
+          lead_stage TEXT DEFAULT '',
+          route_decision TEXT DEFAULT '',
+          inbound_text TEXT DEFAULT '',
+          reply_text TEXT DEFAULT '',
+          structured_data TEXT DEFAULT '{}',
+          memory_update TEXT DEFAULT '{}',
+          created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_learning_events_contact_key ON learning_events(contact_key);
+        CREATE INDEX IF NOT EXISTS idx_learning_events_created_at ON learning_events(created_at);
         '''
     )
     if not has_column(conn, 'rag_chunks', 'file_name'):
@@ -525,6 +764,173 @@ def ensure_db():
         conn.execute('ALTER TABLE rag_chunks ADD COLUMN normalized_text TEXT')
     conn.commit()
     conn.close()
+
+
+def get_lead_memory(contact_key: str) -> Dict:
+    if not contact_key:
+        return {}
+    conn = db()
+    row = conn.execute(
+        '''
+        SELECT contact_key, customer_name, lead_stage, last_intent, product_focus, product_category,
+               quantity_hint, city_hint, company_name, cnpj, last_objection, next_step, summary,
+               answered_slots, open_question, commercial_momentum, last_inbound_text, last_outbound_text,
+               last_route_decision, last_provider, updated_at, learned_at, source
+        FROM lead_memory
+        WHERE contact_key = ?
+        ''',
+        (contact_key,),
+    ).fetchone()
+    conn.close()
+    if not row:
+        return {}
+    data = dict(row)
+    return {
+        'contactKey': str(data.get('contact_key') or '').strip(),
+        'customerName': str(data.get('customer_name') or '').strip(),
+        'leadStage': str(data.get('lead_stage') or '').strip(),
+        'lastIntent': str(data.get('last_intent') or '').strip(),
+        'productFocus': str(data.get('product_focus') or '').strip(),
+        'productCategory': str(data.get('product_category') or '').strip(),
+        'quantityHint': str(data.get('quantity_hint') or '').strip(),
+        'cityHint': str(data.get('city_hint') or '').strip(),
+        'companyName': str(data.get('company_name') or '').strip(),
+        'cnpj': str(data.get('cnpj') or '').strip(),
+        'lastObjection': str(data.get('last_objection') or '').strip(),
+        'nextStep': sanitize_outbound_text(data.get('next_step') or '', 220),
+        'summary': sanitize_outbound_text(data.get('summary') or '', 900),
+        'answeredSlots': safe_json_loads(data.get('answered_slots'), {}) or {},
+        'openQuestion': sanitize_outbound_text(data.get('open_question') or '', 220),
+        'commercialMomentum': str(data.get('commercial_momentum') or '').strip(),
+        'lastInboundText': str(data.get('last_inbound_text') or '').strip(),
+        'lastOutboundText': sanitize_outbound_text(data.get('last_outbound_text') or '', 400),
+        'lastRouteDecision': str(data.get('last_route_decision') or '').strip(),
+        'lastProvider': str(data.get('last_provider') or '').strip(),
+        'updatedAt': str(data.get('updated_at') or '').strip(),
+        'learnedAt': str(data.get('learned_at') or '').strip(),
+        'source': str(data.get('source') or '').strip(),
+    }
+
+
+def upsert_lead_memory(contact_key: str, patch: Dict) -> Dict:
+    if not contact_key:
+        return {}
+    existing = get_lead_memory(contact_key)
+    answered_slots = dict(existing.get('answeredSlots') or {})
+    incoming_slots = patch.get('answeredSlots') if isinstance(patch.get('answeredSlots'), dict) else {}
+    for key, value in incoming_slots.items():
+        clean = compact_text(value, 120)
+        if clean:
+            answered_slots[key] = clean
+
+    merged = {
+        'contactKey': contact_key,
+        'customerName': compact_text(patch.get('customerName') or existing.get('customerName'), 120),
+        'leadStage': compact_text(patch.get('leadStage') or existing.get('leadStage'), 60),
+        'lastIntent': compact_text(patch.get('lastIntent') or existing.get('lastIntent'), 60),
+        'productFocus': compact_text(patch.get('productFocus') or existing.get('productFocus'), 90),
+        'productCategory': compact_text(patch.get('productCategory') or existing.get('productCategory'), 90),
+        'quantityHint': compact_text(patch.get('quantityHint') or existing.get('quantityHint'), 90),
+        'cityHint': compact_text(patch.get('cityHint') or existing.get('cityHint'), 90),
+        'companyName': compact_text(patch.get('companyName') or existing.get('companyName'), 140),
+        'cnpj': digits_only(patch.get('cnpj') or existing.get('cnpj')),
+        'lastObjection': compact_text(patch.get('lastObjection') or existing.get('lastObjection'), 180),
+        'nextStep': sanitize_outbound_text(patch.get('nextStep') or existing.get('nextStep'), 220),
+        'summary': sanitize_outbound_text(patch.get('summary') or existing.get('summary'), 900),
+        'answeredSlots': answered_slots,
+        'openQuestion': sanitize_outbound_text(patch.get('openQuestion') or existing.get('openQuestion'), 220),
+        'commercialMomentum': compact_text(patch.get('commercialMomentum') or existing.get('commercialMomentum'), 60),
+        'lastInboundText': compact_text(patch.get('lastInboundText') or existing.get('lastInboundText'), 400),
+        'lastOutboundText': sanitize_outbound_text(patch.get('lastOutboundText') or existing.get('lastOutboundText'), 400),
+        'lastRouteDecision': compact_text(patch.get('lastRouteDecision') or existing.get('lastRouteDecision'), 80),
+        'lastProvider': compact_text(patch.get('lastProvider') or existing.get('lastProvider'), 80),
+        'source': compact_text(patch.get('source') or existing.get('source') or 'router', 40),
+    }
+    now = utc_now()
+    conn = db()
+    conn.execute(
+        '''
+        INSERT INTO lead_memory (
+          contact_key, customer_name, lead_stage, last_intent, product_focus, product_category,
+          quantity_hint, city_hint, company_name, cnpj, last_objection, next_step, summary,
+          answered_slots, open_question, commercial_momentum, last_inbound_text, last_outbound_text,
+          last_route_decision, last_provider, updated_at, learned_at, source
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(contact_key) DO UPDATE SET
+          customer_name = excluded.customer_name,
+          lead_stage = excluded.lead_stage,
+          last_intent = excluded.last_intent,
+          product_focus = excluded.product_focus,
+          product_category = excluded.product_category,
+          quantity_hint = excluded.quantity_hint,
+          city_hint = excluded.city_hint,
+          company_name = excluded.company_name,
+          cnpj = excluded.cnpj,
+          last_objection = excluded.last_objection,
+          next_step = excluded.next_step,
+          summary = excluded.summary,
+          answered_slots = excluded.answered_slots,
+          open_question = excluded.open_question,
+          commercial_momentum = excluded.commercial_momentum,
+          last_inbound_text = excluded.last_inbound_text,
+          last_outbound_text = excluded.last_outbound_text,
+          last_route_decision = excluded.last_route_decision,
+          last_provider = excluded.last_provider,
+          updated_at = excluded.updated_at,
+          learned_at = excluded.learned_at,
+          source = excluded.source
+        ''',
+        (
+            contact_key,
+            merged['customerName'],
+            merged['leadStage'],
+            merged['lastIntent'],
+            merged['productFocus'],
+            merged['productCategory'],
+            merged['quantityHint'],
+            merged['cityHint'],
+            merged['companyName'],
+            merged['cnpj'],
+            merged['lastObjection'],
+            merged['nextStep'],
+            merged['summary'],
+            json.dumps(merged['answeredSlots'], ensure_ascii=False),
+            merged['openQuestion'],
+            merged['commercialMomentum'],
+            merged['lastInboundText'],
+            merged['lastOutboundText'],
+            merged['lastRouteDecision'],
+            merged['lastProvider'],
+            now,
+            now,
+            merged['source'],
+        ),
+    )
+    conn.commit()
+    conn.close()
+    merged['updatedAt'] = now
+    merged['learnedAt'] = now
+    return merged
+
+
+def build_memory_guidance(memory: Dict) -> List[str]:
+    if not isinstance(memory, dict) or not memory:
+        return []
+    lines: List[str] = []
+    answered_summary = summarize_answered_slots(memory.get('answeredSlots') or {})
+    if answered_summary:
+        lines.append(f'Campos ja respondidos pelo lead: {answered_summary}. Nao pergunte novamente esses pontos.')
+    if memory.get('openQuestion'):
+        lines.append(f'Pergunta comercial em aberto: {memory["openQuestion"]}')
+    if memory.get('nextStep'):
+        lines.append(f'Proximo passo comercial salvo: {memory["nextStep"]}')
+    if memory.get('summary'):
+        lines.append(f'Resumo persistente da conversa: {compact_text(memory["summary"], 260)}')
+    if memory.get('lastObjection'):
+        lines.append(f'Objecao ativa do lead: {memory["lastObjection"]}')
+    if memory.get('commercialMomentum'):
+        lines.append(f'Momento comercial atual: {memory["commercialMomentum"]}')
+    return lines[:6]
 
 
 def get_lid_mapping(remote_jid: str) -> Dict:
@@ -1034,17 +1440,22 @@ def cache_lookup(normalized_message: str, intent: str = '') -> Dict:
         (normalized_message,),
     ).fetchone()
     if row:
+        safe_reply = sanitize_outbound_text(row['reply_text'] or '', MAX_CACHE_REPLY_CHARS)
+        now = utc_now()
         conn.execute(
             '''
             UPDATE response_cache
-            SET hit_count = hit_count + 1, last_hit_at = ?, updated_at = ?
+            SET hit_count = hit_count + 1, last_hit_at = ?, updated_at = ?, reply_text = ?, active = ?
             WHERE normalized_message = ?
             ''',
-            (utc_now(), utc_now(), normalized_message),
+            (now, now, safe_reply, 1 if safe_reply else 0, normalized_message),
         )
         conn.commit()
         conn.close()
+        if not safe_reply:
+            return {}
         out = dict(row)
+        out['reply_text'] = safe_reply
         out['lookupType'] = 'exact'
         return out
 
@@ -1079,17 +1490,22 @@ def cache_lookup(normalized_message: str, intent: str = '') -> Dict:
             best = cand
     if best and best_score >= CACHE_SEMANTIC_THRESHOLD:
         matched_msg = str(best['normalized_message'])
+        safe_reply = sanitize_outbound_text(best['reply_text'] or '', MAX_CACHE_REPLY_CHARS)
+        now = utc_now()
         conn.execute(
             '''
             UPDATE response_cache
-            SET hit_count = hit_count + 1, last_hit_at = ?, updated_at = ?
+            SET hit_count = hit_count + 1, last_hit_at = ?, updated_at = ?, reply_text = ?, active = ?
             WHERE normalized_message = ?
             ''',
-            (utc_now(), utc_now(), matched_msg),
+            (now, now, safe_reply, 1 if safe_reply else 0, matched_msg),
         )
         conn.commit()
         conn.close()
+        if not safe_reply:
+            return {}
         out = dict(best)
+        out['reply_text'] = safe_reply
         out['lookupType'] = 'semantic'
         out['semanticScore'] = round(float(best_score), 4)
         return out
@@ -1098,56 +1514,191 @@ def cache_lookup(normalized_message: str, intent: str = '') -> Dict:
     return {}
 
 
+def build_learning_memory_patch(payload: Dict, inbound: str, reply: str, intent: str) -> Dict:
+    structured = payload.get('extractedEntities')
+    if not isinstance(structured, dict):
+        structured = payload.get('llmStructuredData') if isinstance(payload.get('llmStructuredData'), dict) else {}
+    memory_update = payload.get('customerMemoryUpdate') if isinstance(payload.get('customerMemoryUpdate'), dict) else {}
+
+    product_focus = compact_text(
+        payload.get('productFocusResolved') or structured.get('product_focus') or structured.get('productFocus'),
+        90,
+    )
+    product_category = compact_text(
+        payload.get('productCategoryDetected') or structured.get('categoria_produto') or structured.get('productCategory'),
+        90,
+    )
+    last_objection = compact_text(
+        structured.get('objecao_principal') or structured.get('objection') or structured.get('objectionHint'),
+        180,
+    )
+    customer_name = compact_text(
+        payload.get('customerName') or structured.get('nome_contato') or structured.get('nome') or structured.get('customer_name'),
+        120,
+    )
+    company_name = compact_text(
+        structured.get('nome_empresa') or structured.get('companyName'),
+        140,
+    )
+    cnpj = digits_only(structured.get('cnpj') or payload.get('cnpj') or '')
+    quantity_hint = infer_quantity_hint(inbound, structured)
+    city_hint = infer_city_hint(inbound, structured)
+    lead_stage = compact_text(payload.get('leadStage') or structured.get('etapa_sugerida'), 60)
+    next_step = compact_text(
+        memory_update.get('next_step') or structured.get('proximo_passo') or payload.get('followUpQuestion'),
+        220,
+    )
+    summary = compact_text(
+        memory_update.get('notes') or payload.get('conversationSummary'),
+        900,
+    )
+
+    answered_slots = {}
+    for key, value in {
+        'productFocus': product_focus,
+        'productCategory': product_category,
+        'quantityHint': quantity_hint,
+        'cityHint': city_hint,
+        'companyName': company_name,
+        'cnpj': cnpj,
+        'customerName': customer_name,
+        'objection': last_objection,
+    }.items():
+        clean = compact_text(value, 120)
+        if clean:
+            answered_slots[key] = clean
+
+    commercial_momentum = 'explorando'
+    stage_norm = normalize_ascii(lead_stage)
+    intent_norm = normalize_ascii(intent)
+    if stage_norm in {'fechamento', 'negociacao', 'negociacao avancada'}:
+        commercial_momentum = 'fechando'
+    elif stage_norm in {'proposta', 'qualificando'} or intent_norm in {'preco_orcamento', 'atacado_quantidade'}:
+        commercial_momentum = 'avancando'
+    elif product_focus or quantity_hint or city_hint:
+        commercial_momentum = 'qualificando'
+
+    return {
+        'customerName': customer_name,
+        'leadStage': lead_stage,
+        'lastIntent': intent,
+        'productFocus': product_focus,
+        'productCategory': product_category,
+        'quantityHint': quantity_hint,
+        'cityHint': city_hint,
+        'companyName': company_name,
+        'cnpj': cnpj,
+        'lastObjection': last_objection,
+        'nextStep': next_step,
+        'summary': summary,
+        'answeredSlots': answered_slots,
+        'openQuestion': extract_last_question(reply),
+        'commercialMomentum': commercial_momentum,
+        'lastInboundText': inbound,
+        'lastOutboundText': reply,
+        'lastRouteDecision': compact_text(payload.get('routeDecision'), 80),
+        'lastProvider': compact_text(payload.get('llmProvider') or payload.get('provider'), 80),
+        'source': 'learn_response',
+    }
+
+
 def learn_response(payload: Dict) -> Dict:
     inbound = str(payload.get('inboundTextOriginal') or payload.get('inboundText') or '').strip()
-    reply = str(payload.get('replyText') or '').strip()
+    reply = sanitize_outbound_text(payload.get('replyText') or '', MAX_CACHE_REPLY_CHARS)
     intent = str(payload.get('intent') or '').strip() or detect_intent(inbound)
     confidence = float(payload.get('confidence') or 0)
     normalized_message = normalize_ascii(inbound)
+    contact_key = str(payload.get('number') or payload.get('contactKey') or '').strip()
+    route_decision = compact_text(payload.get('routeDecision'), 80)
+    memory_patch = build_learning_memory_patch(payload, inbound, reply, intent)
+    memory_snapshot = upsert_lead_memory(contact_key, memory_patch) if contact_key and (inbound or reply) else {}
 
-    if len(normalized_message) < 8 or len(reply) < 16:
-        return {'stored': False, 'reason': 'too_short'}
-    if normalized_message in {'sim', 'nao', 'não', 'ok', 'obrigado', 'obrigada', 'oi', 'ola', 'olá'}:
-        return {'stored': False, 'reason': 'ambiguous_shortcut'}
-    if bool(payload.get('needsHuman')):
-        return {'stored': False, 'reason': 'needs_human'}
-    if confidence < CACHE_MIN_CONFIDENCE_LEARN:
-        return {'stored': False, 'reason': 'low_confidence'}
-    if intent not in SAFE_CACHE_INTENTS:
-        return {'stored': False, 'reason': 'unsafe_intent'}
+    now = utc_now()
+    if contact_key:
+        conn = db()
+        conn.execute(
+            '''
+            INSERT INTO learning_events (
+              contact_key, intent, lead_stage, route_decision, inbound_text, reply_text,
+              structured_data, memory_update, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''',
+            (
+                contact_key,
+                intent,
+                str(memory_snapshot.get('leadStage') or ''),
+                route_decision,
+                inbound[:1200],
+                reply,
+                json.dumps(payload.get('extractedEntities') or payload.get('llmStructuredData') or {}, ensure_ascii=False),
+                json.dumps(payload.get('customerMemoryUpdate') or {}, ensure_ascii=False),
+                now,
+            ),
+        )
+        conn.commit()
+        conn.close()
+
+    if contact_key and reply:
+        record_message(contact_key, 'outbound', reply, intent, route_decision=route_decision or 'reply_sent')
+
+    stored = False
+    reason = 'stored'
     reply_norm = normalize_ascii(reply)
-    if any(x in reply_norm for x in [
+    if len(normalized_message) < 8 or len(reply) < 16:
+        reason = 'too_short'
+    elif normalized_message in {'sim', 'nao', 'não', 'ok', 'obrigado', 'obrigada', 'oi', 'ola', 'olá'}:
+        reason = 'ambiguous_shortcut'
+    elif bool(payload.get('needsHuman')):
+        reason = 'needs_human'
+    elif confidence < CACHE_MIN_CONFIDENCE_LEARN:
+        reason = 'low_confidence'
+    elif intent not in SAFE_CACHE_INTENTS:
+        reason = 'unsafe_intent'
+    elif any(x in reply_norm for x in [
         'peco um instante',
         'assumo seu atendimento pessoalmente',
         'nao consegui responder agora',
         'atendimento automatico ativo',
         'alto volume no momento',
     ]):
-        return {'stored': False, 'reason': 'fallback_reply'}
+        reason = 'fallback_reply'
+    else:
+        cache_reply = sanitize_outbound_text(reply, MAX_CACHE_REPLY_CHARS)
+        if not cache_reply:
+            reason = 'sanitized_empty'
+            return {
+                'stored': False,
+                'reason': reason,
+                'normalizedMessage': normalized_message,
+                'leadMemoryUpdated': bool(memory_snapshot),
+                'memoryGuidance': build_memory_guidance(memory_snapshot),
+            }
+        conn = db()
+        conn.execute(
+            '''
+            INSERT INTO response_cache (normalized_message, reply_text, intent, confidence, source, active, hit_count, created_at, updated_at, last_hit_at)
+            VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, NULL)
+            ON CONFLICT(normalized_message) DO UPDATE SET
+              reply_text = excluded.reply_text,
+              intent = excluded.intent,
+              confidence = excluded.confidence,
+              source = excluded.source,
+              active = 1,
+              updated_at = excluded.updated_at
+            ''',
+            (normalized_message, cache_reply, intent, confidence, 'auto_learn', now, now),
+        )
+        conn.commit()
+        conn.close()
+        stored = True
 
-    reply = reply[:MAX_CACHE_REPLY_CHARS]
-    now = utc_now()
-    conn = db()
-    conn.execute(
-        '''
-        INSERT INTO response_cache (normalized_message, reply_text, intent, confidence, source, active, hit_count, created_at, updated_at, last_hit_at)
-        VALUES (?, ?, ?, ?, ?, 1, 0, ?, ?, NULL)
-        ON CONFLICT(normalized_message) DO UPDATE SET
-          reply_text = excluded.reply_text,
-          intent = excluded.intent,
-          confidence = excluded.confidence,
-          source = excluded.source,
-          active = 1,
-          updated_at = excluded.updated_at
-        ''',
-        (normalized_message, reply, intent, confidence, 'auto_learn', now, now),
-    )
-    conn.commit()
-    conn.close()
-    contact_key = str(payload.get('number') or payload.get('contactKey') or '').strip()
-    if contact_key and reply:
-        record_message(contact_key, 'outbound', reply, intent, route_decision='cache_learn')
-    return {'stored': True, 'normalizedMessage': normalized_message}
+    return {
+        'stored': stored,
+        'reason': reason,
+        'normalizedMessage': normalized_message,
+        'leadMemoryUpdated': bool(memory_snapshot),
+        'memoryGuidance': build_memory_guidance(memory_snapshot),
+    }
 
 
 def log_route(payload: Dict, route_decision: str, message_complexity: str, cache_hit: bool, lead_score: int, rag_hits: List[Dict]):
@@ -1212,6 +1763,7 @@ def lexical_search(query_text: str, limit: int = 5) -> List[Dict]:
     query_words = tokenize_words(query_text)
     if not query_words:
         return []
+    query_set = set(query_words)
     conn = db()
     rows = conn.execute(
         '''
@@ -1265,8 +1817,35 @@ def lexical_search(query_text: str, limit: int = 5) -> List[Dict]:
         })
 
     scored.sort(key=lambda item: item['score'], reverse=True)
+    if scored:
+        log.debug('lexical_bm25_search', query=query_text[:80], results=len(scored[:limit]))
+        return scored[:limit]
+
+    overlap_hits = []
+    for row in valid_rows:
+        normalized = str(row['normalized_text'] or '')
+        row_tokens = set(normalized.split())
+        if not row_tokens:
+            continue
+        overlap = query_set & row_tokens
+        if not overlap:
+            continue
+        score = round(len(overlap) / max(1, len(query_set)), 4)
+        overlap_hits.append({
+            'score': score,
+            'fileName': str(row['file_name'] or ''),
+            'filePath': str(row['file_path'] or ''),
+            'text': str(row['chunk_text'] or '').strip(),
+            'source': 'lexical_overlap',
+        })
+
+    overlap_hits.sort(key=lambda item: item['score'], reverse=True)
+    if overlap_hits:
+        log.debug('lexical_overlap_search', query=query_text[:80], results=len(overlap_hits[:limit]))
+        return overlap_hits[:limit]
+
     log.debug('lexical_bm25_search', query=query_text[:80], results=len(scored[:limit]))
-    return scored[:limit]
+    return []
 
 
 def route_message(payload: Dict) -> Dict:
@@ -1307,17 +1886,25 @@ def route_message(payload: Dict) -> Dict:
         }
         log_route(resolved_payload, 'audio_untranscribed', 'simple', False, 0, [])
         return result
+    maybe_refresh_knowledge()
     normalized_message = normalize_ascii(inbound_text)
     contact_key = str(resolved_payload.get('contactKey') or '').strip()
     intent = detect_intent(inbound_text)
     complexity = classify_complexity(inbound_text)
     lead_score = score_lead(inbound_text)
 
+    lead_memory = get_lead_memory(contact_key)
     conversation = get_conversation_history(contact_key)
-    context = build_context_carryover(conversation, intent, inbound_text)
+    context = build_context_carryover(conversation, intent, inbound_text, lead_memory)
     effective_intent = context['effectiveIntent']
 
     record_message(contact_key, 'inbound', inbound_text, effective_intent, complexity, lead_score)
+    lead_memory = upsert_lead_memory(contact_key, {
+        'lastIntent': effective_intent,
+        'lastInboundText': inbound_text,
+        'source': 'route',
+    }) if contact_key else {}
+    memory_guidance = build_memory_guidance(lead_memory)
 
     cached = cache_lookup(normalized_message, effective_intent)
     if cached:
@@ -1326,7 +1913,7 @@ def route_message(payload: Dict) -> Dict:
         result = {
             'routeDecision': route_decision,
             'cacheHit': True,
-            'cachedReplyText': str(cached.get('reply_text') or ''),
+            'cachedReplyText': sanitize_outbound_text(cached.get('reply_text') or '', MAX_CACHE_REPLY_CHARS),
             'routeIntent': str(cached.get('intent') or effective_intent),
             'cacheLookupType': lookup_type,
             'cacheSemanticScore': float(cached.get('semanticScore') or 0),
@@ -1337,6 +1924,8 @@ def route_message(payload: Dict) -> Dict:
             'ragTopScore': 0,
             'conversationHistory': conversation,
             'contextCarryover': context,
+            'leadMemory': lead_memory,
+            'memoryGuidance': memory_guidance,
             'audioTranscription': audio_transcription,
         }
         log_route(resolved_payload, route_decision, complexity, True, lead_score, [])
@@ -1381,8 +1970,9 @@ def route_message(payload: Dict) -> Dict:
                 conversation_history=conversation,
                 max_tokens=300,
                 rag_context=rag_summary,
+                memory_context='\n'.join(memory_guidance),
             )
-            llm_reply_text = llm_result.get('text', '')
+            llm_reply_text = sanitize_outbound_text(llm_result.get('text', ''), MAX_CACHE_REPLY_CHARS)
             llm_provider = llm_result.get('provider', 'none')
             llm_model = llm_result.get('model', 'none')
             llm_latency_ms = llm_result.get('latency_ms', 0)
@@ -1425,9 +2015,11 @@ def route_message(payload: Dict) -> Dict:
         'ragTopScore': float(strong_hits[0]['score']) if strong_hits else 0,
         'conversationHistory': conversation,
         'contextCarryover': context,
+        'leadMemory': lead_memory,
+        'memoryGuidance': memory_guidance,
         'audioTranscription': audio_transcription,
         # Dual-LLM fields
-        'llmReplyText': llm_reply_text,
+        'llmReplyText': sanitize_outbound_text(llm_reply_text, MAX_CACHE_REPLY_CHARS),
         'llmProvider': llm_provider,
         'llmModel': llm_model,
         'llmLatencyMs': llm_latency_ms,
@@ -1465,15 +2057,27 @@ def upsert_points(points: List[models.PointStruct]):
     client.upsert(collection_name=QDRANT_COLLECTION, points=points)
 
 
+def normalize_qdrant_point_id(value: str):
+    raw = str(value or '').strip().lower()
+    if not raw:
+        return ''
+    if re.fullmatch(r'[0-9a-f]{64}', raw):
+        return str(uuid.UUID(raw[:32]))
+    return raw
+
+
 def delete_points(point_ids: List[str]):
     client = get_qdrant()
     if client is None:
         return
     if not point_ids:
         return
+    normalized_ids = [normalize_qdrant_point_id(point_id) for point_id in point_ids if normalize_qdrant_point_id(point_id)]
+    if not normalized_ids:
+        return
     client.delete(
         collection_name=QDRANT_COLLECTION,
-        points_selector=models.PointIdsList(points=point_ids),
+        points_selector=models.PointIdsList(points=normalized_ids),
     )
 
 
@@ -1522,7 +2126,7 @@ def _ingest_document_inner(conn, path: Path, text: str, file_hash: str, modified
 
     for idx, chunk in enumerate(chunks, start=1):
         chunk_hash = sha_text(f'{file_hash}:{idx}:{chunk}')
-        chunk_id = chunk_hash
+        chunk_id = normalize_qdrant_point_id(chunk_hash)
         new_chunk_ids.append(chunk_id)
         token_count = len(tokenize_words(chunk))
         if vector_mode:
@@ -1600,6 +2204,7 @@ def purge_missing_docs(current_paths: List[Path]):
 
 
 def run_ingest_cycle():
+    global LAST_INGEST_AT, LAST_INGEST_EPOCH
     docs = iter_docs()
     purge_missing_docs(docs)
     for path in docs:
@@ -1608,6 +2213,26 @@ def run_ingest_cycle():
         except Exception as exc:
             log.error('ingest_document_failed', path=str(path), error=str(exc))
             continue
+    LAST_INGEST_EPOCH = now_epoch()
+    LAST_INGEST_AT = utc_now()
+
+
+def maybe_refresh_knowledge(force: bool = False):
+    should_run = force or (
+        INGEST_REFRESH_ON_ROUTE_SECONDS > 0 and
+        ((now_epoch() - int(LAST_INGEST_EPOCH or 0)) >= INGEST_REFRESH_ON_ROUTE_SECONDS)
+    )
+    if not should_run:
+        return
+    if not INGEST_LOCK.acquire(blocking=False):
+        return
+    try:
+        try:
+            run_ingest_cycle()
+        except Exception as exc:
+            log.error('refresh_knowledge_failed', error=str(exc))
+    finally:
+        INGEST_LOCK.release()
 
 
 def watch_loop():
@@ -1629,6 +2254,7 @@ def health():
     llm_info = multi_llm.llm_status()
     return jsonify({
         'ok': True,
+        'topology': topology_metadata(),
         'mlDir': str(ML_DIR),
         'dbPath': str(DB_PATH),
         'vectorPath': str(QDRANT_PATH),
@@ -1641,11 +2267,14 @@ def health():
         'lidCache': lid_cache.stats,
         'qdrantDisabled': QDRANT_DISABLED,
         'watchIntervalSeconds': WATCH_INTERVAL_SECONDS,
+        'ingestRefreshOnRouteSeconds': INGEST_REFRESH_ON_ROUTE_SECONDS,
+        'lastIngestAt': LAST_INGEST_AT,
         'audioTranscription': {
             'enabled': bool(openai_client),
             'model': OPENAI_TRANSCRIBE_MODEL,
             'maxAudioBytes': MAX_AUDIO_BYTES,
         },
+        'routerTestGateEnforced': ROUTER_ENFORCE_TEST_GATE,
         'dualLlm': llm_info,
     })
 
@@ -1655,19 +2284,66 @@ def route_endpoint():
     payload = request.get_json(force=True, silent=True) or {}
     try:
         resolved_payload = resolve_recipient_payload(payload)
-        decision = route_message(resolved_payload)
         blocked_set = get_all_blocked_numbers()
         allowed_set = get_all_always_allowed_numbers()
+        recipient_number = digits_only(resolved_payload.get('number') or resolved_payload.get('customerNumber'))
+        if ROUTER_ENFORCE_TEST_GATE and allowed_set and recipient_number not in allowed_set:
+            return jsonify({
+                **resolved_payload,
+                'topology': topology_metadata(),
+                'routeDecision': 'test_gate_blocked',
+                'cacheHit': False,
+                'cachedReplyText': '',
+                'routeIntent': '',
+                'messageComplexity': 'blocked',
+                'leadScore': 0,
+                'ragContextLines': [],
+                'ragContextSummary': '',
+                'ragTopScore': 0,
+                'conversationHistory': [],
+                'contextCarryover': {
+                    'answeringOpenQuestion': False,
+                    'carriedIntent': '',
+                    'conversationTurns': 0,
+                    'effectiveIntent': '',
+                    'isContextCarry': False,
+                    'maxLeadScore': 0,
+                    'memoryLeadStage': '',
+                    'pendingQuestion': '',
+                },
+                'leadMemory': {},
+                'memoryGuidance': [],
+                'audioTranscription': {
+                    'ok': False,
+                    'reason': 'test_gate_blocked',
+                    'text': '',
+                },
+                'llmReplyText': '',
+                'llmProvider': '',
+                'llmModel': '',
+                'llmLatencyMs': 0,
+                'llmStructuredData': {},
+                'llmLeadScore': {},
+                'blockedByTestGate': True,
+                'routerOk': True,
+                'routerTestGateEnforced': ROUTER_ENFORCE_TEST_GATE,
+                'dynamicBlockedNumbers': list(blocked_set),
+                'dynamicAlwaysAllowedNumbers': list(allowed_set),
+            })
+        decision = route_message(resolved_payload)
         return jsonify({
             **resolved_payload,
             **decision,
+            'topology': topology_metadata(),
             'routerOk': True,
+            'routerTestGateEnforced': ROUTER_ENFORCE_TEST_GATE,
             'dynamicBlockedNumbers': list(blocked_set),
             'dynamicAlwaysAllowedNumbers': list(allowed_set),
         })
     except Exception as exc:
         return jsonify({
             **dict(payload or {}),
+            'topology': topology_metadata(),
             'routerOk': False,
             'routerError': str(exc),
         })
@@ -1679,11 +2355,13 @@ def resolve_recipient_endpoint():
     try:
         return jsonify({
             **resolve_recipient_payload(payload),
+            'topology': topology_metadata(),
             'resolveOk': True,
         })
     except Exception as exc:
         return jsonify({
             **dict(payload or {}),
+            'topology': topology_metadata(),
             'resolveOk': False,
             'resolveError': str(exc),
         })
@@ -1692,7 +2370,7 @@ def resolve_recipient_endpoint():
 @app.get('/llm-status')
 def llm_status_endpoint():
     """Return status of dual-LLM providers (Claude + GPT)."""
-    return jsonify(multi_llm.llm_status())
+    return jsonify({**multi_llm.llm_status(), 'topology': topology_metadata()})
 
 
 @app.post('/generate-reply')
@@ -1748,12 +2426,14 @@ def learn_response_endpoint():
         result = learn_response(payload)
         return jsonify({
             **dict(payload or {}),
+            'topology': topology_metadata(),
             'routerLearnStored': bool(result.get('stored')),
             'routerLearnReason': str(result.get('reason') or ''),
         })
     except Exception as exc:
         return jsonify({
             **dict(payload or {}),
+            'topology': topology_metadata(),
             'routerLearnStored': False,
             'routerLearnReason': str(exc),
         })
@@ -1994,12 +2674,15 @@ def record_message(contact_key: str, direction: str, message_text: str,
                    route_decision: str = ''):
     if not contact_key or not message_text:
         return
+    safe_text = sanitize_outbound_text(message_text, 2000) if str(direction or '').strip().lower() == 'outbound' else str(message_text or '')[:2000]
+    if not safe_text:
+        return
     conn = db()
     conn.execute(
         '''INSERT INTO conversation_history
            (contact_key, direction, message_text, intent, complexity, lead_score, route_decision, created_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-        (contact_key, direction, message_text[:2000], intent, complexity, lead_score, route_decision, utc_now()),
+        (contact_key, direction, safe_text, intent, complexity, lead_score, route_decision, utc_now()),
     )
     conn.commit()
     conn.close()
@@ -2020,7 +2703,47 @@ def get_conversation_history(contact_key: str, limit: int = 0) -> List[Dict]:
         (contact_key, f'-{CONVERSATION_HISTORY_HOURS} hours', limit),
     ).fetchall()
     conn.close()
-    return [dict(r) for r in reversed(rows)]
+    out = []
+    for row in reversed(rows):
+        item = dict(row)
+        if str(item.get('direction') or '').strip().lower() == 'outbound':
+            item['message_text'] = sanitize_outbound_text(item.get('message_text') or '', 2000)
+        out.append(item)
+    return out
+
+
+def purge_disallowed_outbound_artifacts():
+    conn = db()
+
+    def _rewrite_table(table: str, key_col: str, text_cols: List[str], where: str = ''):
+        select_cols = [key_col] + [col for col in text_cols if col != key_col]
+        rows = conn.execute(
+            f"SELECT {', '.join(select_cols)} FROM {table} {where}"
+        ).fetchall()
+        changed = 0
+        for row in rows:
+            payload = {}
+            for col in text_cols:
+                raw = row[col]
+                safe = sanitize_outbound_text(raw or '', 0)
+                if safe != str(raw or ''):
+                    payload[col] = safe
+            if payload:
+                assignments = ', '.join([f'{col} = ?' for col in payload.keys()])
+                conn.execute(
+                    f'UPDATE {table} SET {assignments} WHERE {key_col} = ?',
+                    (*payload.values(), row[key_col]),
+                )
+                changed += 1
+        return changed
+
+    _rewrite_table('response_cache', 'normalized_message', ['reply_text'])
+    _rewrite_table('conversation_history', 'rowid', ['message_text'], "WHERE direction = 'outbound'")
+    _rewrite_table('lead_memory', 'contact_key', ['summary', 'open_question', 'last_outbound_text', 'next_step'])
+    _rewrite_table('learning_events', 'id', ['reply_text'])
+
+    conn.commit()
+    conn.close()
 
 
 CONTEXT_CARRY_TRIGGERS = {
@@ -2030,7 +2753,7 @@ CONTEXT_CARRY_TRIGGERS = {
 }
 
 
-def build_context_carryover(conversation: List[Dict], current_intent: str, current_text: str) -> Dict:
+def build_context_carryover(conversation: List[Dict], current_intent: str, current_text: str, lead_memory: Dict = None) -> Dict:
     """Derive context from conversation history when current message is too generic."""
     norm_text = normalize_ascii(current_text)
     tokens = tokenize_words(current_text)
@@ -2038,6 +2761,7 @@ def build_context_carryover(conversation: List[Dict], current_intent: str, curre
         len(tokens) <= 4
         and (norm_text in CONTEXT_CARRY_TRIGGERS or current_intent == 'geral')
     )
+    memory = lead_memory or {}
 
     prev_intents = [
         m['intent'] for m in conversation
@@ -2046,8 +2770,13 @@ def build_context_carryover(conversation: List[Dict], current_intent: str, curre
     prev_scores = [m.get('lead_score', 0) for m in conversation if m.get('direction') == 'inbound']
 
     carried_intent = prev_intents[-1] if (is_generic and prev_intents) else ''
+    if not carried_intent and is_generic:
+        memory_intent = str(memory.get('lastIntent') or '').strip()
+        if memory_intent and memory_intent != 'geral':
+            carried_intent = memory_intent
     max_lead_score = max(prev_scores) if prev_scores else 0
     conversation_turns = len([m for m in conversation if m.get('direction') == 'inbound'])
+    pending_question = compact_text(memory.get('openQuestion'), 220)
 
     return {
         'carriedIntent': carried_intent,
@@ -2055,6 +2784,9 @@ def build_context_carryover(conversation: List[Dict], current_intent: str, curre
         'isContextCarry': bool(carried_intent),
         'maxLeadScore': max_lead_score,
         'conversationTurns': conversation_turns,
+        'pendingQuestion': pending_question,
+        'answeringOpenQuestion': bool(pending_question and len(tokens) <= 12),
+        'memoryLeadStage': str(memory.get('leadStage') or '').strip(),
     }
 
 
@@ -2062,7 +2794,10 @@ def main():
     if not acquire_single_instance_lock():
         log.warning('single_instance_lock_active', action='skip_start')
         return
+    validate_topology()
+    log.info('attendant_topology_registered', **topology_metadata())
     ensure_db()
+    purge_disallowed_outbound_artifacts()
     watcher = threading.Thread(target=watch_loop, daemon=True)
     watcher.start()
     log.info('router_starting', host='0.0.0.0', port=8091)

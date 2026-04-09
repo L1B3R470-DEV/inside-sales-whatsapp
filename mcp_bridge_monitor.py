@@ -10,6 +10,13 @@ from mcp.server.fastmcp import FastMCP
 
 
 BRIDGE_ROOT = Path(os.getenv("CLAUDE_BRIDGE_ROOT", r"C:\AUTOMACAO\cowork\claude_bridge"))
+ATTENDANT_OPERATIONAL_HOST_ROLE = os.getenv("ATTENDANT_OPERATIONAL_HOST_ROLE", "PC_CLS").strip() or "PC_CLS"
+ATTENDANT_OPERATIONAL_HOST_IP = os.getenv("ATTENDANT_OPERATIONAL_HOST_IP", "100.113.13.27").strip() or "100.113.13.27"
+ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE = os.getenv("ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE", ATTENDANT_OPERATIONAL_HOST_ROLE).strip() or ATTENDANT_OPERATIONAL_HOST_ROLE
+ATTENDANT_OPERATIONAL_DOCKER_HOST_IP = os.getenv("ATTENDANT_OPERATIONAL_DOCKER_HOST_IP", ATTENDANT_OPERATIONAL_HOST_IP).strip() or ATTENDANT_OPERATIONAL_HOST_IP
+ATTENDANT_INTERACTIVE_HOST_ROLE = os.getenv("ATTENDANT_INTERACTIVE_HOST_ROLE", "PC_LBN").strip() or "PC_LBN"
+ATTENDANT_INTERACTIVE_HOST_IP = os.getenv("ATTENDANT_INTERACTIVE_HOST_IP", "100.101.106.95").strip() or "100.101.106.95"
+ATTENDANT_INTERACTIVE_MODE_ONLY = os.getenv("ATTENDANT_INTERACTIVE_MODE_ONLY", "true").strip().lower() in {"1", "true", "yes", "on"}
 INBOX_FOR_CLAUDE = BRIDGE_ROOT / "inbox_for_claude"
 OUTBOX_FROM_CLAUDE = BRIDGE_ROOT / "outbox_from_claude"
 ACK_FROM_CODEX = BRIDGE_ROOT / "ack_from_codex"
@@ -42,11 +49,24 @@ def _fmt_ts(path: Path) -> str:
         return ""
 
 
+def _topology_metadata() -> Dict[str, Any]:
+    return {
+        "operationalHostRole": ATTENDANT_OPERATIONAL_HOST_ROLE,
+        "operationalHostIp": ATTENDANT_OPERATIONAL_HOST_IP,
+        "operationalDockerHostRole": ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE,
+        "operationalDockerHostIp": ATTENDANT_OPERATIONAL_DOCKER_HOST_IP,
+        "interactiveHostRole": ATTENDANT_INTERACTIVE_HOST_ROLE,
+        "interactiveHostIp": ATTENDANT_INTERACTIVE_HOST_IP,
+        "interactiveModeOnly": ATTENDANT_INTERACTIVE_MODE_ONLY,
+    }
+
+
 @mcp.tool()
 def bridge_status() -> Dict[str, Any]:
     """Resumo do estado da ponte Codex<->Claude (contadores e caminhos)."""
     status = {
         "bridgeRoot": str(BRIDGE_ROOT),
+        "topology": _topology_metadata(),
         "paths": {
             "inboxForClaude": str(INBOX_FOR_CLAUDE),
             "outboxFromClaude": str(OUTBOX_FROM_CLAUDE),

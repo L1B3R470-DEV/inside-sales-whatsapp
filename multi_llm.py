@@ -41,6 +41,16 @@ OPENAI_API_KEY = _cfg('OPENAI_API_KEY')
 OPENAI_MODEL_MAIN = _cfg('OPENAI_MODEL', 'gpt-4o-mini')
 OPENAI_MODEL_STRUCTURED = _cfg('OPENAI_MODEL_STRUCTURED', 'gpt-4o-mini')
 
+ATTENDANT_OPERATIONAL_HOST_ROLE = _cfg('ATTENDANT_OPERATIONAL_HOST_ROLE', 'PC_CLS') or 'PC_CLS'
+ATTENDANT_OPERATIONAL_HOST_IP = _cfg('ATTENDANT_OPERATIONAL_HOST_IP', '100.113.13.27') or '100.113.13.27'
+ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE = _cfg('ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE', ATTENDANT_OPERATIONAL_HOST_ROLE) or ATTENDANT_OPERATIONAL_HOST_ROLE
+ATTENDANT_OPERATIONAL_DOCKER_HOST_IP = _cfg('ATTENDANT_OPERATIONAL_DOCKER_HOST_IP', ATTENDANT_OPERATIONAL_HOST_IP) or ATTENDANT_OPERATIONAL_HOST_IP
+ATTENDANT_INTERACTIVE_HOST_ROLE = _cfg('ATTENDANT_INTERACTIVE_HOST_ROLE', 'PC_LBN') or 'PC_LBN'
+ATTENDANT_INTERACTIVE_HOST_IP = _cfg('ATTENDANT_INTERACTIVE_HOST_IP', '100.101.106.95') or '100.101.106.95'
+ATTENDANT_INTERACTIVE_MODE_ONLY = _cfg('ATTENDANT_INTERACTIVE_MODE_ONLY', 'true').lower() in {'1', 'true', 'yes', 'on'}
+ATTENDANT_REJECT_LBN_AS_RUNTIME = _cfg('ATTENDANT_REJECT_LBN_AS_RUNTIME', 'true').lower() in {'1', 'true', 'yes', 'on'}
+ATTENDANT_REJECT_LBN_DOCKER = _cfg('ATTENDANT_REJECT_LBN_DOCKER', 'true').lower() in {'1', 'true', 'yes', 'on'}
+
 ANTHROPIC_RETRY_ATTEMPTS = int(_cfg('ANTHROPIC_RETRY_ATTEMPTS', '4') or '4')
 ANTHROPIC_RETRY_BASE_DELAY_SECONDS = float(_cfg('ANTHROPIC_RETRY_BASE_DELAY_SECONDS', '0.8') or '0.8')
 ANTHROPIC_RETRY_MAX_DELAY_SECONDS = float(_cfg('ANTHROPIC_RETRY_MAX_DELAY_SECONDS', '8') or '8')
@@ -50,10 +60,52 @@ ANTHROPIC_OVERLOADED_COOLDOWN_SECONDS = float(_cfg('ANTHROPIC_OVERLOADED_COOLDOW
 _anthropic_client = None
 _openai_client = None
 _anthropic_overloaded_until = 0.0
+_topology_logged = False
+
+
+def topology_metadata() -> Dict:
+    return {
+        'operationalHostRole': ATTENDANT_OPERATIONAL_HOST_ROLE,
+        'operationalHostIp': ATTENDANT_OPERATIONAL_HOST_IP,
+        'operationalDockerHostRole': ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE,
+        'operationalDockerHostIp': ATTENDANT_OPERATIONAL_DOCKER_HOST_IP,
+        'interactiveHostRole': ATTENDANT_INTERACTIVE_HOST_ROLE,
+        'interactiveHostIp': ATTENDANT_INTERACTIVE_HOST_IP,
+        'interactiveModeOnly': ATTENDANT_INTERACTIVE_MODE_ONLY,
+        'rejectLbnAsRuntime': ATTENDANT_REJECT_LBN_AS_RUNTIME,
+        'rejectLbnDocker': ATTENDANT_REJECT_LBN_DOCKER,
+    }
+
+
+def validate_topology() -> None:
+    if ATTENDANT_OPERATIONAL_HOST_ROLE != 'PC_CLS' or ATTENDANT_OPERATIONAL_HOST_IP != '100.113.13.27':
+        raise RuntimeError(
+            f"invalid_operational_ai_topology role={ATTENDANT_OPERATIONAL_HOST_ROLE} ip={ATTENDANT_OPERATIONAL_HOST_IP}"
+        )
+    if ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE != 'PC_CLS' or ATTENDANT_OPERATIONAL_DOCKER_HOST_IP != '100.113.13.27':
+        raise RuntimeError(
+            f"invalid_operational_docker_topology role={ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE} ip={ATTENDANT_OPERATIONAL_DOCKER_HOST_IP}"
+        )
+    if ATTENDANT_INTERACTIVE_HOST_ROLE != 'PC_LBN' or ATTENDANT_INTERACTIVE_HOST_IP != '100.101.106.95':
+        raise RuntimeError(
+            f"invalid_interactive_topology role={ATTENDANT_INTERACTIVE_HOST_ROLE} ip={ATTENDANT_INTERACTIVE_HOST_IP}"
+        )
+    if not ATTENDANT_REJECT_LBN_AS_RUNTIME or not ATTENDANT_REJECT_LBN_DOCKER:
+        raise RuntimeError('invalid_topology_guardrails reject_lbn_flags_disabled')
+
+
+def ensure_topology_logged() -> None:
+    global _topology_logged
+    if _topology_logged:
+        return
+    validate_topology()
+    log.info('attendant_llm_topology_registered', **topology_metadata())
+    _topology_logged = True
 
 
 def _get_anthropic():
     global _anthropic_client
+    ensure_topology_logged()
     if _anthropic_client is not None:
         return _anthropic_client
     if not ANTHROPIC_API_KEY:
@@ -61,7 +113,7 @@ def _get_anthropic():
     try:
         from anthropic import Anthropic
         _anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY, timeout=10.0)
-        log.info('anthropic_client_init', model_sales=ANTHROPIC_MODEL_SALES, model_fast=ANTHROPIC_MODEL_FAST)
+        log.info('anthropic_client_init', model_sales=ANTHROPIC_MODEL_SALES, model_fast=ANTHROPIC_MODEL_FAST, **topology_metadata())
         return _anthropic_client
     except Exception as exc:
         log.warning('anthropic_client_failed', error=str(exc))
@@ -70,6 +122,7 @@ def _get_anthropic():
 
 def _get_openai():
     global _openai_client
+    ensure_topology_logged()
     if _openai_client is not None:
         return _openai_client
     if not OPENAI_API_KEY:
@@ -77,6 +130,7 @@ def _get_openai():
     try:
         from openai import OpenAI
         _openai_client = OpenAI(api_key=OPENAI_API_KEY, timeout=10.0)
+        log.info('openai_client_init', model_main=OPENAI_MODEL_MAIN, model_structured=OPENAI_MODEL_STRUCTURED, **topology_metadata())
         return _openai_client
     except Exception as exc:
         log.warning('openai_client_failed', error=str(exc))
@@ -158,6 +212,7 @@ def generate_sales_reply(
     conversation_history: Optional[List[Dict]] = None,
     max_tokens: int = 300,
     rag_context: str = '',
+    memory_context: str = '',
 ) -> Dict:
     messages = []
     if conversation_history:
@@ -167,10 +222,13 @@ def generate_sales_reply(
             if text:
                 messages.append({'role': role, 'content': text})
 
-    user_content = (
-        f"Contexto de produtos/servicos:\n{rag_context}\n\nMensagem do cliente:\n{user_message}"
-        if rag_context else user_message
-    )
+    sections = []
+    if memory_context:
+        sections.append(f"Contexto comercial ja confirmado:\n{memory_context}")
+    if rag_context:
+        sections.append(f"Contexto de produtos/servicos:\n{rag_context}")
+    sections.append(f"Mensagem do cliente:\n{user_message}")
+    user_content = '\n\n'.join(sections)
     messages.append({'role': 'user', 'content': user_content})
 
     client = _get_anthropic()
@@ -239,11 +297,17 @@ def extract_structured(
     max_tokens: int = 200,
 ) -> Dict:
     default_schema = (
+        "- nome_contato: string (nome do lead, se mencionado)\n"
         "- nome_empresa: string (nome da empresa, se mencionado)\n"
         "- cnpj: string (CNPJ se mencionado, apenas digitos)\n"
         "- cidade: string (cidade/estado se mencionado)\n"
         "- produtos_interesse: array de strings (produtos mencionados)\n"
+        "- product_focus: string (categoria principal do interesse, ex: bolsas, carteiras, cintos)\n"
+        "- categoria_produto: string (categoria mais especifica, se houver)\n"
         "- quantidade: string (quantidade/volume mencionado)\n"
+        "- objecao_principal: string (objeção comercial, se houver)\n"
+        "- proximo_passo: string (melhor proximo passo comercial sugerido)\n"
+        "- etapa_sugerida: string (novo|qualificando|proposta|negociacao|fechamento|pos_venda)\n"
         "- intent: string (saudacao|orcamento|catalogo|prazo|pagamento|reclamacao|geral)\n"
         "- urgencia: string (baixa|media|alta)"
     )

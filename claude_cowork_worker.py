@@ -12,6 +12,14 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
+ATTENDANT_OPERATIONAL_HOST_ROLE = os.getenv("ATTENDANT_OPERATIONAL_HOST_ROLE", "PC_CLS").strip() or "PC_CLS"
+ATTENDANT_OPERATIONAL_HOST_IP = os.getenv("ATTENDANT_OPERATIONAL_HOST_IP", "100.113.13.27").strip() or "100.113.13.27"
+ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE = os.getenv("ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE", ATTENDANT_OPERATIONAL_HOST_ROLE).strip() or ATTENDANT_OPERATIONAL_HOST_ROLE
+ATTENDANT_OPERATIONAL_DOCKER_HOST_IP = os.getenv("ATTENDANT_OPERATIONAL_DOCKER_HOST_IP", ATTENDANT_OPERATIONAL_HOST_IP).strip() or ATTENDANT_OPERATIONAL_HOST_IP
+ATTENDANT_INTERACTIVE_HOST_ROLE = os.getenv("ATTENDANT_INTERACTIVE_HOST_ROLE", "PC_LBN").strip() or "PC_LBN"
+ATTENDANT_INTERACTIVE_HOST_IP = os.getenv("ATTENDANT_INTERACTIVE_HOST_IP", "100.101.106.95").strip() or "100.101.106.95"
+ATTENDANT_INTERACTIVE_MODE_ONLY = os.getenv("ATTENDANT_INTERACTIVE_MODE_ONLY", "true").strip().lower() in {"1", "true", "yes", "on"}
+
 try:
     from anthropic import Anthropic
 except Exception as exc:
@@ -40,6 +48,18 @@ SYSTEM = (
     "Saida obrigatoria: JSON valido sem markdown."
 )
 MUTEX_HANDLE = None
+
+
+def topology_metadata() -> Dict:
+    return {
+        "operationalHostRole": ATTENDANT_OPERATIONAL_HOST_ROLE,
+        "operationalHostIp": ATTENDANT_OPERATIONAL_HOST_IP,
+        "operationalDockerHostRole": ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE,
+        "operationalDockerHostIp": ATTENDANT_OPERATIONAL_DOCKER_HOST_IP,
+        "interactiveHostRole": ATTENDANT_INTERACTIVE_HOST_ROLE,
+        "interactiveHostIp": ATTENDANT_INTERACTIVE_HOST_IP,
+        "interactiveModeOnly": ATTENDANT_INTERACTIVE_MODE_ONLY,
+    }
 
 
 def now_iso() -> str:
@@ -292,6 +312,7 @@ def main() -> None:
         return
     client = Anthropic(api_key=ANTHROPIC_API_KEY, timeout=30.0)
     print(f"[claude-cowork-worker] online | inbox={INBOX_DIR} | outbox={OUTBOX_DIR}")
+    print(f"[claude-cowork-worker] topologia={json.dumps(topology_metadata(), ensure_ascii=False)}", flush=True)
 
     while True:
         state = read_state()

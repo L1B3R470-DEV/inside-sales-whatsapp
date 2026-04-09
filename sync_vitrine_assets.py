@@ -5,13 +5,19 @@ import sqlite3
 from io import BytesIO
 from pathlib import Path
 
-from PIL import Image
+try:
+    from PIL import Image
+    HAS_PIL = True
+except ImportError:
+    Image = None
+    HAS_PIL = False
 
 WORKFLOW_ID = 'zN3heKJVLO8w4dG6'
 N8N_DB = '/data/database.sqlite'
 PROJECT_DIR = Path('/work')
 ML_DIR = PROJECT_DIR / 'CHATGPT_MACHINE_LEARNING'
 OUTPUT_JSON = PROJECT_DIR / 'vitrine_assets_snapshot.json'
+MANIFEST_JSON = PROJECT_DIR / 'asset_manifest.json'
 SUPPORTED_EXTS = {'.jpg', '.jpeg', '.png', '.webp', '.bmp', '.pdf'}
 SEARCH_DIRS = [
     ML_DIR / 'VITRINE_PEDIDO_INICIAL',
@@ -24,11 +30,26 @@ PATTERNS = [
     (re.compile(r'(?i)vitrine.*6000|6000.*vitrine|pedido.*6000|6000.*pedido'), 'VITRINE R$ 6.000'),
     (re.compile(r'(?i)vitrine|pedido inicial|pedido_minimo|pedido minimo'), 'VITRINE DE REFERENCIA'),
 ]
+DEFAULT_PREFERRED_ORDER = [
+    'VITRINE_CLASSE.png',
+    'SUGESTAO_PEDIDO_2000_FEMININO.pdf',
+    'SUGESTAO_PEDIDO_4000_FEMININO.pdf',
+    'SUGESTAO_PEDIDO_6000_FEMININO.pdf',
+]
 
 
 def now_iso():
     from datetime import datetime, timezone
     return datetime.now(timezone.utc).isoformat()
+
+
+def load_manifest():
+    if not MANIFEST_JSON.exists():
+        return {'sourceOfTruth': 'workflow_static_data', 'vitrineAssets': []}
+    data = json.loads(MANIFEST_JSON.read_text(encoding='utf-8'))
+    if not isinstance(data, dict):
+        return {'sourceOfTruth': 'workflow_static_data', 'vitrineAssets': []}
+    return data
 
 
 def is_excluded_path(path):
@@ -37,6 +58,8 @@ def is_excluded_path(path):
 
 
 def compress_image(raw_bytes):
+    if not HAS_PIL:
+        return raw_bytes, 'image/png'
     img = Image.open(BytesIO(raw_bytes))
     if img.mode not in ('RGB', 'L'):
         img = img.convert('RGB')
@@ -56,8 +79,21 @@ def classify_label(path):
     return ''
 
 
-def build_asset(path):
-    label = classify_label(path) or path.stem
+def guess_image_mime(path):
+    suffix = path.suffix.lower()
+    if suffix in {'.jpg', '.jpeg'}:
+        return 'image/jpeg'
+    if suffix == '.webp':
+        return 'image/webp'
+    if suffix == '.bmp':
+        return 'image/bmp'
+    return 'image/png'
+
+
+def build_asset(path, manifest_entry=None):
+    manifest_entry = manifest_entry or {}
+    label = str(manifest_entry.get('label') or classify_label(path) or path.stem).strip()
+    version = str(manifest_entry.get('version') or '').strip()
     if path.suffix.lower() == '.pdf':
         return {
             'mediaType': 'document',
@@ -67,10 +103,13 @@ def build_asset(path):
             'label': label,
             'caption': label,
             'sourcePath': str(path),
+            'assetVersion': version,
         }
 
     raw = path.read_bytes()
     compressed, mime = compress_image(raw)
+    if not HAS_PIL:
+        mime = guess_image_mime(path)
     return {
         'mediaType': 'image',
         'mimeType': mime,
@@ -79,12 +118,45 @@ def build_asset(path):
         'label': label,
         'caption': label,
         'sourcePath': str(path),
+        'assetVersion': version,
     }
 
 
 def find_assets():
     found = []
     seen = set()
+    preferred_paths = []
+    manifest = load_manifest()
+    manifest_entries = manifest.get('vitrineAssets') if isinstance(manifest.get('vitrineAssets'), list) else []
+    preferred_order = [str(item.get('fileName') or '').strip() for item in manifest_entries if str(item.get('fileName') or '').strip()]
+    if not preferred_order:
+        preferred_order = DEFAULT_PREFERRED_ORDER
+    manifest_by_file = {
+        str(item.get('fileName') or '').strip(): item
+        for item in manifest_entries
+        if isinstance(item, dict) and str(item.get('fileName') or '').strip()
+    }
+
+    for file_name in preferred_order:
+        for root in SEARCH_DIRS:
+            candidate = root / file_name
+            if candidate.exists() and candidate.is_file() and not is_excluded_path(candidate):
+                preferred_paths.append(candidate)
+                break
+
+    for file_path in preferred_paths:
+        key = str(file_path).lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        try:
+            found.append(build_asset(file_path, manifest_by_file.get(file_path.name)))
+        except Exception:
+            continue
+
+    if found:
+        return found
+
     for root in SEARCH_DIRS:
         if not root.exists():
             continue
@@ -103,17 +175,19 @@ def find_assets():
                 continue
             seen.add(key)
             try:
-                found.append(build_asset(file_path))
+                found.append(build_asset(file_path, manifest_by_file.get(file_path.name)))
             except Exception:
                 continue
-    return found
+    return found[:5]
 
 
 def update_workflow_static_data(items):
+    manifest = load_manifest()
     payload = {
         'generatedAt': now_iso(),
         'items': items,
         'count': len(items),
+        'sourceOfTruth': str(manifest.get('sourceOfTruth') or 'workflow_static_data'),
     }
 
     conn = sqlite3.connect(N8N_DB)

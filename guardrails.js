@@ -2,14 +2,14 @@
 
 const cfg = {
   maxInputChars: 600,
-  maxOutputChars: 520,
-  maxOutputTokens: 260,
+  maxOutputChars: 1800,
+  maxOutputTokens: 600,
   maxMsgsPerMinute: 8,
   maxMsgsPerHour: 25,
   maxMsgsPerDay: 200,
   maxAiCallsPerMinute: 8,
   minGlobalAiIntervalSeconds: 4,
-  minConfidenceForAutoSend: 0.4,
+  minConfidenceForAutoSend: 0.65,
   openAiModel: 'gpt-5.4',
   openAiReasoningEffort: 'low',
   openAiReasoningEffortComplex: 'medium',
@@ -22,6 +22,8 @@ const cfg = {
   unresolvedRecipientMessage: 'Aqui é o Eduardo, Consultor de Vendas Internas da Classe Couro. Tive uma instabilidade para identificar seu contato neste momento, mas já estou cuidando disso. Pode repetir sua mensagem, por favor?',
   missingKeyMessage: 'Aqui é o Eduardo, Consultor de Vendas Internas da Classe Couro. Nosso atendimento automático está em ajuste neste momento, mas seu contato já foi registrado e vou seguir com você por aqui.',
   blockedNumberMessage: '',
+  testModeOnlyAllowedNumbers: false,
+  testModeSilentDrop: false,
   // Safety denylist for accidental recipients. Extend/adjust as needed.
   blockedNumbers: [
     '557599991111',
@@ -41,8 +43,9 @@ const cfg = {
     documentCaption: 'BOOK DE VENDAS | Colecao Classe Couro'
   },
   b2b: {
-    url: 'https://mstabletssl.ddns.net/wsB2BProspClasseCouro1ssl/acessocliente.aspx',
-    displayLabel: 'Portal B2B Classe Couro'
+    url: '',
+    displayLabel: 'Portal B2B Classe Couro',
+    operatorApprovalRequired: true
   },
   knowledge: {
     companyName: 'Classe Couro',
@@ -115,7 +118,7 @@ function getGreetingLabel(hour) {
 function resolveReasoningEffort(intent, inboundText, humanPriority) {
   const len = String(inboundText || '').trim().length;
   if (humanPriority) return cfg.openAiReasoningEffortComplex;
-  if (['institucional_empresa', 'preco_orcamento', 'atacado_quantidade', 'produto_catalogo'].includes(String(intent || '')) && len >= 80) {
+  if (['institucional_empresa', 'preco_orcamento', 'atacado_quantidade', 'produto_catalogo', 'pos_venda_reclamacao', 'troca_devolucao'].includes(String(intent || '')) && len >= 80) {
     return cfg.openAiReasoningEffortComplex;
   }
   return cfg.openAiReasoningEffort;
@@ -299,10 +302,14 @@ function detectIntent(text) {
     'btn_orcamento': { intent: 'preco_orcamento', score: 0.95, matches: ['btn_orcamento'] },
     'btn_catalogo': { intent: 'produto_catalogo', score: 0.95, matches: ['btn_catalogo'] },
     'btn_humano': { intent: 'human_escalation', score: 0.99, matches: ['btn_humano'] },
+    'btn_pedido_b2b': { intent: 'pedido_b2b', score: 0.99, matches: ['btn_pedido_b2b'] },
+    'btn_pedido_eduardo': { intent: 'pedido_assistido_eduardo', score: 0.99, matches: ['btn_pedido_eduardo'] },
     'solicitar orcamento': { intent: 'preco_orcamento', score: 0.92, matches: ['solicitar orcamento'] },
     'ver catalogo / produtos': { intent: 'produto_catalogo', score: 0.92, matches: ['ver catalogo'] },
     'ver catalogo': { intent: 'produto_catalogo', score: 0.92, matches: ['ver catalogo'] },
     'falar com vendedor': { intent: 'human_escalation', score: 0.99, matches: ['falar com vendedor'] },
+    'pedir pelo site b2b': { intent: 'pedido_b2b', score: 0.96, matches: ['pedir pelo site b2b'] },
+    'montar com eduardo': { intent: 'pedido_assistido_eduardo', score: 0.96, matches: ['montar com eduardo'] },
   };
   var btnMatch = buttonMap[norm] || buttonMap[String(text || '').trim().toLowerCase()];
   if (btnMatch) return btnMatch;
@@ -425,7 +432,8 @@ function detectProductFocusSignals(text, entities, profile) {
     if (audienceHint.includes('feminin')) productCategory = 'CINTOS FEMININOS';
   } else if (productHint.includes('bolsa')) {
     productFocus = 'BOLSAS';
-    productCategory = 'BOLSAS FEMININAS';
+    if (audienceHint.includes('mascul')) productCategory = 'BOLSAS MASCULINAS';
+    else productCategory = 'BOLSAS FEMININAS';
   } else if (productHint.includes('mochila')) {
     productFocus = 'MOCHILAS';
     if (audienceHint.includes('mascul')) productCategory = 'MOCHILAS MASCULINAS';
@@ -469,6 +477,24 @@ function yesNoIntent(text) {
   if (hasYes && !hasNo) return 'yes';
   if (hasNo && !hasYes) return 'no';
   return 'unknown';
+}
+
+function isShortAcknowledgement(text) {
+  const norm = normalizeText(text).replace(/\s+/g, ' ').trim();
+  if (!norm) return false;
+  if (yesNoIntent(text) !== 'unknown') return true;
+
+  const tokens = norm.split(' ').filter(Boolean);
+  if (tokens.length > 6) return false;
+
+  return [
+    'ok', 'okay', 'certo', 'beleza', 'blz', 'entendi', 'obrigado', 'obrigada',
+    'valeu', 'show', 'perfeito', 'recebi', 'combinado', 'fechado', 'joia',
+    'maravilha', 'tudo certo', 'de acordo'
+  ].some((label) => {
+    const probe = normalizeText(label);
+    return norm === probe || norm.startsWith(`${probe} `) || norm.endsWith(` ${probe}`) || norm.includes(` ${probe} `);
+  });
 }
 
 function extractPhone(text) {
@@ -624,7 +650,7 @@ function shouldRoutePessoaFisicaEcommerce(text, activeScript) {
 function buildPessoaFisicaEcommerceReply(profile) {
   const firstName = sanitizeCustomerName(profile?.customerName || '');
   const prefix = firstName ? `Que bom falar com voce, ${firstName}!` : 'Que bom ter voce por aqui!';
-  return `${prefix} Como o seu interesse e comprar como pessoa fisica, o melhor caminho e pelo nosso site oficial: www.classecouro.com.br. La voce pode conhecer as linhas com calma, navegar pelo e-commerce e ficar a vontade para escolher seus produtos da Classe Couro.`;
+  return `${prefix} Como o seu interesse e comprar como pessoa fisica, eu vou te orientar pelo canal correto sem enviar link automatico. Se quiser, me diga o que voce procura que eu sigo com a orientacao por aqui.`;
 }
 
 function buildSemCnpjSiteReply(profile) {
@@ -790,19 +816,13 @@ function buildSalesBookPresentation(profile, script, options = {}) {
     profile?.pushName ||
     ''
   );
-  const razaoSocial = String(script?.data?.razaoSocial || profile?.companyLegalName || '').trim();
-  const prefix = firstName ? `Perfeito, ${firstName}!` : 'Perfeito!';
   const mode = String(options.mode || 'release');
 
   if (mode === 'resend') {
-    return `${prefix} Estou te reenviando o nosso Book de Vendas para facilitar sua analise. Nele voce identifica o posicionamento das linhas e as categorias com melhor potencial para o perfil da sua loja. Assim que olhar, me diga o que chamou mais sua atencao e eu sigo com voce de forma consultiva.`;
+    return 'Estou te reenviando agora o nosso Book de Vendas para voce retomar a analise das linhas, do posicionamento comercial da Classe Couro e do potencial de revenda dos produtos. Vale revisar com calma porque isso vai te dar uma visao muito clara do perfil da marca e das oportunidades para a sua loja. Inclusive, trabalhamos com sugestoes de pedido inicial com mix bem assertivo a partir de R$ 2.000, alem de opcoes de R$ 4.000 e R$ 6.000, todas pensadas para bom giro, boa exposicao e excelente aceitacao entre os nossos clientes.';
   }
 
-  if (razaoSocial) {
-    return `${prefix} CNPJ validado e ativo. Razao social localizada: ${razaoSocial}. Sera um prazer ter a ${razaoSocial} no time da Classe Couro. Estou te enviando agora o nosso Book de Vendas para voce conhecer as linhas, o posicionamento comercial e o potencial de revenda. Analise com calma. Depois posso tambem te mostrar uma vitrine de referencia com sugestoes de pedido inicial.`;
-  }
-
-  return `${prefix} Pre-cadastro recebido e validado. Estou te enviando agora o nosso Book de Vendas para voce conhecer as linhas, o posicionamento comercial e o potencial de revenda da Classe Couro. Analise com calma. Depois posso tambem te mostrar uma vitrine de referencia com sugestoes de pedido inicial.`;
+  return 'Seu pre-cadastro foi recebido e validado. Estou te enviando agora o nosso Book de Vendas para voce conhecer melhor as linhas, o posicionamento comercial da Classe Couro e o potencial de revenda dos produtos. Vale analisar com calma porque isso ja vai te dar uma visao muito clara do perfil da marca e das oportunidades para a sua loja. Inclusive, trabalhamos com sugestoes de pedido inicial com mix bem assertivo a partir de R$ 2.000, alem de opcoes de R$ 4.000 e R$ 6.000, todas pensadas para bom giro, boa exposicao e excelente aceitacao entre os nossos clientes.';
 }
 
 function buildSalesBookCaption(profile, script) {
@@ -860,26 +880,25 @@ function buildVitrineConsentReply(profile) {
 }
 
 function buildVitrinePresentationReply(profile) {
-  const firstName = sanitizeCustomerName(profile?.customerName || profile?.pushName || '');
-  const prefix = firstName ? `${firstName},` : 'Perfeito,';
-  return `${prefix} segue a vitrine de referencia. Ela mostra combinacoes com boa leitura comercial e facilita a visualizacao de um pedido inicial em faixas de R$ 2.000, R$ 4.000 e R$ 6.000. Depois que voce olhar, me diz qual faixa faz mais sentido pro seu momento e eu te ajudo a montar.`;
+  return 'Para te ajudar a visualizar melhor o potencial da marca no ponto de venda, eu tambem posso te mostrar uma vitrine de referencia. Isso costuma facilitar bastante, porque voce consegue imaginar com mais clareza como os produtos da Classe Couro podem valorizar a apresentacao da sua loja, chamar mais atencao do cliente final e construir uma percepcao mais forte de desejo e qualidade. Quando o mix esta bem montado, a vitrine praticamente comeca a vender antes mesmo da abordagem.';
 }
 
 function buildB2BConsentReply(profile) {
   const firstName = sanitizeCustomerName(profile?.customerName || profile?.pushName || '');
   const prefix = firstName ? `${firstName},` : 'Para o proximo passo,';
-  return `${prefix} posso te liberar o acesso ao nosso portal exclusivo de pedidos. Por la voce navega pelo catalogo completo, visualiza disponibilidade e ja monta seu pedido com autonomia. Quer que eu te envie o link e as credenciais agora?`;
+  return `${prefix} posso encaminhar a liberacao do seu acesso ao nosso portal exclusivo de pedidos. Se fizer sentido para voce, eu sigo com a orientacao correta por aqui e alinhamos o proximo passo com seguranca.`;
 }
 
 function buildB2BAccessReply(profile, script) {
-  const cnpj = String(script?.data?.cnpj || profile?.companyCnpj || '').replace(/\D/g, '');
   const firstName = sanitizeCustomerName(script?.data?.nome || profile?.customerName || profile?.pushName || '');
   const prefix = firstName ? `${firstName},` : 'Perfeito,';
-  const password = cnpj.slice(0, 8);
-  const cnpjFormatted = cnpj.length === 14
-    ? `${cnpj.slice(0,2)}.${cnpj.slice(2,5)}.${cnpj.slice(5,8)}/${cnpj.slice(8,12)}-${cnpj.slice(12)}`
-    : cnpj;
-  return `${prefix} segue o acesso ao ${cfg.b2b.displayLabel}.\n\nPortal: ${cfg.b2b.url}\nLogin: ${cnpjFormatted}\nSenha: ${password}\n\nEntre com o CNPJ no login e use os 8 primeiros digitos como senha. Dentro do portal voce visualiza o catalogo completo e ja consegue montar seu pedido. Qualquer duvida na navegacao e so me chamar.`;
+  return `${prefix} vou seguir com a liberacao assistida do seu acesso ao ${cfg.b2b.displayLabel}, sem enviar link automatico por aqui. Assim que a confirmacao estiver pronta, eu continuo com voce pelo canal seguro e oriento o proximo passo.`;
+}
+
+function buildEduardoAssistedOrderReply(profile, script) {
+  const firstName = sanitizeCustomerName(script?.data?.nome || profile?.customerName || profile?.pushName || '');
+  const prefix = firstName ? `${firstName},` : 'Perfeito,';
+  return `${prefix} eu sigo com voce aqui no pedido assistido com o Eduardo. Me diga qual faixa faz mais sentido para comecarmos entre R$ 2.000, R$ 4.000 e R$ 6.000, ou se prefere que eu monte uma combinacao personalizada para o seu perfil de loja.`;
 }
 
 function normalizeCnpjSituation(value) {
@@ -1092,6 +1111,8 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
   const recentSignals = getRecentRevendaSignals(staticData, profile, activeScript, nowIso);
   const profileKnownName = sanitizeCustomerName(profile?.customerName || profile?.pushName || '');
   const vitrineAssetsAvailable = Array.isArray(staticData?.vitrineAssets?.items) && staticData.vitrineAssets.items.length > 0;
+  const shortAcknowledgement = isShortAcknowledgement(inboundText);
+  const currentIntent = String(detectIntent(inboundText)?.intent || 'geral');
 
   if (!activeScript.active && !activeScript.completed) {
     activeScript.active = true;
@@ -1175,10 +1196,17 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
   }
 
   if (wantsSalesBook(inboundText) && activeScript.completed && profile.bookSalesAccess === 'eligible') {
+    const shouldSendVitrineBundle = Boolean(vitrineAssetsAvailable && wantsVitrine(inboundText));
+    if (shouldSendVitrineBundle) {
+      profile.vitrineShownAt = nowIso;
+      profile.orderChoiceAskedAt = nowIso;
+    }
     return {
       forced: true,
       reply: buildSalesBookPresentation(profile, activeScript, { mode: 'resend' }),
       sendSalesBookPdf: true,
+      sendVitrineAssets: shouldSendVitrineBundle,
+      sendOrderChoiceButtons: shouldSendVitrineBundle,
       salesBookCaption: buildSalesBookCaption(profile, activeScript)
     };
   }
@@ -1202,10 +1230,12 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
     profile.awaitingVitrineConsent = false;
     profile.vitrineConsentAskedAt = profile.vitrineConsentAskedAt || nowIso;
     profile.vitrineShownAt = nowIso;
+    profile.orderChoiceAskedAt = nowIso;
     return {
       forced: true,
       reply: buildVitrinePresentationReply(profile),
-      sendVitrineAssets: true
+      sendVitrineAssets: true,
+      sendOrderChoiceButtons: true
     };
   }
 
@@ -1214,15 +1244,21 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
       profile.awaitingVitrineConsent = false;
       profile.vitrineConsentGrantedAt = nowIso;
       profile.vitrineShownAt = nowIso;
+      profile.orderChoiceAskedAt = nowIso;
       return {
         forced: true,
         reply: buildVitrinePresentationReply(profile),
-        sendVitrineAssets: true
+        sendVitrineAssets: true,
+        sendOrderChoiceButtons: true
       };
     }
     if (yn === 'no') {
       profile.awaitingVitrineConsent = false;
       profile.vitrineConsentDeclinedAt = nowIso;
+    }
+    if (yn === 'unknown' && !shortAcknowledgement) {
+      profile.awaitingVitrineConsent = false;
+      profile.vitrineConsentDismissedAt = nowIso;
     }
   }
 
@@ -1233,6 +1269,7 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
     !profile.awaitingVitrineConsent &&
     !profile.vitrineShownAt &&
     vitrineAssetsAvailable &&
+    shortAcknowledgement &&
     !wantsSalesBook(inboundText) &&
     !wantsB2BAccess(inboundText)
   ) {
@@ -1247,9 +1284,32 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
   if (activeScript.completed && profile.bookSalesAccess === 'eligible' && wantsB2BAccess(inboundText)) {
     profile.awaitingB2BConsent = false;
     profile.b2bLinkSentAt = nowIso;
+    profile.orderChoiceSelectedAt = nowIso;
+    profile.orderChoiceSelection = 'b2b';
     return {
       forced: true,
       reply: buildB2BAccessReply(profile, activeScript)
+    };
+  }
+
+  if (activeScript.completed && profile.bookSalesAccess === 'eligible' && currentIntent === 'pedido_b2b') {
+    profile.awaitingB2BConsent = false;
+    profile.b2bConsentGrantedAt = nowIso;
+    profile.b2bLinkSentAt = nowIso;
+    profile.orderChoiceSelectedAt = nowIso;
+    profile.orderChoiceSelection = 'b2b';
+    return {
+      forced: true,
+      reply: buildB2BAccessReply(profile, activeScript)
+    };
+  }
+
+  if (activeScript.completed && profile.bookSalesAccess === 'eligible' && currentIntent === 'pedido_assistido_eduardo') {
+    profile.orderChoiceSelectedAt = nowIso;
+    profile.orderChoiceSelection = 'eduardo';
+    return {
+      forced: true,
+      reply: buildEduardoAssistedOrderReply(profile, activeScript)
     };
   }
 
@@ -1258,7 +1318,8 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
     profile.bookSalesAccess === 'eligible' &&
     !profile.b2bLinkSentAt &&
     !profile.awaitingB2BConsent &&
-    (profile.vitrineShownAt || (profile.salesBookLastSentAt && showsCommercialEngagement(inboundText)))
+    shortAcknowledgement &&
+    (profile.vitrineShownAt || (!vitrineAssetsAvailable && profile.salesBookLastSentAt))
   ) {
     profile.awaitingB2BConsent = true;
     profile.b2bConsentAskedAt = nowIso;
@@ -1281,6 +1342,10 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
     if (yn === 'no') {
       profile.awaitingB2BConsent = false;
       profile.b2bConsentDeclinedAt = nowIso;
+    }
+    if (yn === 'unknown' && !shortAcknowledgement) {
+      profile.awaitingB2BConsent = false;
+      profile.b2bConsentDismissedAt = nowIso;
     }
   }
 
@@ -1394,10 +1459,16 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
           activeScript.cnpjLookupStatus = 'lookup_unavailable';
           profile.leadStage = 'qualificando';
           profile.bookSalesAccess = 'eligible';
+          profile.awaitingVitrineConsent = false;
+          profile.vitrineConsentAskedAt = nowIso;
+          profile.vitrineShownAt = nowIso;
+          profile.orderChoiceAskedAt = nowIso;
           return {
             forced: true,
             reply: buildSalesBookPresentation(profile, activeScript, { mode: 'release' }),
             sendSalesBookPdf: true,
+            sendVitrineAssets: true,
+            sendOrderChoiceButtons: true,
             salesBookCaption: buildSalesBookCaption(profile, activeScript)
           };
         }
@@ -1424,10 +1495,16 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
         activeScript.completed = true;
         profile.leadStage = 'qualificando';
         profile.bookSalesAccess = 'eligible';
+        profile.awaitingVitrineConsent = false;
+        profile.vitrineConsentAskedAt = nowIso;
+        profile.vitrineShownAt = nowIso;
+        profile.orderChoiceAskedAt = nowIso;
         return {
           forced: true,
           reply: buildSalesBookPresentation(profile, activeScript, { mode: 'release' }),
           sendSalesBookPdf: true,
+          sendVitrineAssets: true,
+          sendOrderChoiceButtons: true,
           salesBookCaption: buildSalesBookCaption(profile, activeScript)
         };
       }
@@ -1843,7 +1920,12 @@ for (const key of Object.keys(staticData.aiMinuteCounts)) {
 }
 
 const inboundText = String(input.inboundText || '').slice(0, cfg.maxInputChars).trim();
-const recipientNumber = String(input.number || '').replace(/\D/g, '');
+const lidManualMap = {
+  '114062134407423@lid': '557588340000'
+};
+const remoteJid = String(input.remoteJid || '').toLowerCase();
+const recipientFromLid = String(lidManualMap[remoteJid] || '').replace(/\D/g, '');
+const recipientNumber = String(input.number || recipientFromLid || '').replace(/\D/g, '');
 let outboundNumber = recipientNumber;
 const intentDetection = detectIntent(inboundText);
 const routeDecision = String(input.routeDecision || '').trim();
@@ -1863,6 +1945,18 @@ const llmModel = String(input.llmModel || '').trim();
 const llmLatencyMs = Number(input.llmLatencyMs || 0);
 const llmStructuredData = input.llmStructuredData || {};
 const llmLeadScore = input.llmLeadScore || {};
+const leadMemory = input.leadMemory && typeof input.leadMemory === 'object' ? input.leadMemory : {};
+const memoryGuidance = Array.isArray(input.memoryGuidance)
+  ? input.memoryGuidance.map((line) => String(line || '').trim()).filter(Boolean)
+  : [];
+const answeredSlots = leadMemory.answeredSlots && typeof leadMemory.answeredSlots === 'object'
+  ? leadMemory.answeredSlots
+  : {};
+const answeredSlotsSummary = Object.entries(answeredSlots)
+  .map(([key, value]) => `${key}=${String(value || '').trim()}`)
+  .filter((line) => !/=$/i.test(line))
+  .slice(0, 6)
+  .join(' | ');
 const detectedIntent = routeIntent || intentDetection.intent;
 const detectedIntentScore = intentDetection.score;
 const extractedEntities = extractEntities(inboundText);
@@ -1870,6 +1964,8 @@ const humanPriority = ['pos_venda_reclamacao', 'troca_devolucao', 'cancelamento'
 
 let allowAi = true;
 let blockReason = '';
+let sendEligible = true;
+let sendEligibilityReason = 'eligible';
 const ignoredNumbers = getIgnoredNumbersSet(staticData, input.dynamicBlockedNumbers);
 const alwaysAllowedNumbers = getAlwaysAllowedNumbersSet(staticData, input.dynamicAlwaysAllowedNumbers);
 const alwaysAllowedNumber = Boolean(recipientNumber && alwaysAllowedNumbers.has(recipientNumber));
@@ -1877,11 +1973,22 @@ const alwaysAllowedNumber = Boolean(recipientNumber && alwaysAllowedNumbers.has(
 if (!recipientNumber) {
   allowAi = false;
   blockReason = 'no_recipient';
+  outboundNumber = '';
+  sendEligible = false;
+  sendEligibilityReason = 'no_recipient';
+} else if (cfg.testModeOnlyAllowedNumbers && !alwaysAllowedNumber) {
+  allowAi = false;
+  blockReason = 'test_gate_not_allowed';
+  outboundNumber = '';
+  sendEligible = false;
+  sendEligibilityReason = 'test_gate_not_allowed';
 } else if (ignoredNumbers.has(recipientNumber)) {
   allowAi = false;
   blockReason = 'blocked_number';
   outboundNumber = '';
-} else if (!inBusinessHours) {
+  sendEligible = false;
+  sendEligibilityReason = 'blocked_number';
+} else if (!inBusinessHours && !alwaysAllowedNumber) {
   allowAi = false;
   blockReason = 'out_of_hours';
 } else {
@@ -1944,6 +2051,15 @@ let profile = staticData.customerProfiles[recipientNumber] || {
 if (profile.customerName) {
   profile.customerName = sanitizeCustomerName(profile.customerName);
 }
+if (leadMemory.customerName) {
+  profile.customerName = sanitizeCustomerName(leadMemory.customerName);
+  profile.customerNameSource = profile.customerNameSource || 'router_memory';
+}
+if (leadMemory.summary) profile.notes = String(leadMemory.summary).trim();
+if (leadMemory.nextStep) profile.nextStep = String(leadMemory.nextStep).trim();
+if (leadMemory.leadStage) profile.leadStage = String(leadMemory.leadStage).trim();
+if (leadMemory.productFocus) profile.lastProductFocus = String(leadMemory.productFocus).trim();
+if (leadMemory.productCategory) profile.lastProductCategory = String(leadMemory.productCategory).trim();
 
 const previousMessageCount = Number(profile.messageCount || 0);
 const identifiedName = extractSelfIdentifiedName(inboundText);
@@ -1964,6 +2080,8 @@ const semanticInboundText = quotedInboundText
   ? `${inboundText}\n${quotedInboundText}`
   : inboundText;
 const productSignals = detectProductFocusSignals(semanticInboundText, extractedEntities, profile);
+if (!productSignals.productFocus && leadMemory.productFocus) productSignals.productFocus = String(leadMemory.productFocus).trim();
+if (!productSignals.productCategory && leadMemory.productCategory) productSignals.productCategory = String(leadMemory.productCategory).trim();
 if (productSignals.productFocus) profile.lastProductFocus = productSignals.productFocus;
 if (productSignals.productCategory) profile.lastProductCategory = productSignals.productCategory;
 if (productSignals.linePreference) profile.lastProductLinePreference = productSignals.linePreference;
@@ -2008,6 +2126,7 @@ while (history.length > 32) history.shift();
 let mandatoryScriptReply = '';
 let sendSalesBookPdf = false;
 let sendVitrineAssets = false;
+let sendOrderChoiceButtons = false;
 let salesBookCaption = '';
 const normInbound = normalizeText(inboundText);
 const shouldHandleRevendaScript = (
@@ -2025,6 +2144,7 @@ if (recipientNumber && shouldHandleRevendaScript && scriptCanOverrideNow) {
     blockReason = 'mandatory_script';
     sendSalesBookPdf = Boolean(scriptResult.sendSalesBookPdf);
     sendVitrineAssets = Boolean(scriptResult.sendVitrineAssets);
+    sendOrderChoiceButtons = Boolean(scriptResult.sendOrderChoiceButtons);
     salesBookCaption = String(scriptResult.salesBookCaption || '').trim();
   }
   staticData.customerProfiles[recipientNumber] = profile;
@@ -2064,7 +2184,11 @@ const customerSnapshot = [
   `Lead score: ${leadScore}`,
   `Estagio atual do lead: ${profile.leadStage || 'novo'}`,
   `Resumo operacional salvo: ${String(profile.notes || '').slice(0, 220) || 'nenhum'}`,
-  `Proximo passo salvo: ${String(profile.nextStep || '').slice(0, 180) || 'nenhum'}`
+  `Proximo passo salvo: ${String(profile.nextStep || '').slice(0, 180) || 'nenhum'}`,
+  `Memoria persistente do router: ${String(leadMemory.summary || '').slice(0, 220) || 'nenhuma'}`,
+  `Campos ja respondidos: ${answeredSlotsSummary || 'nenhum'}`,
+  `Pergunta comercial em aberto: ${String(leadMemory.openQuestion || input.contextCarryover?.pendingQuestion || '').slice(0, 180) || 'nenhuma'}`,
+  `Momento comercial persistido: ${String(leadMemory.commercialMomentum || '').trim() || 'indefinido'}`
 ].join('\n');
 
 const aiSystemPrompt = [
@@ -2074,6 +2198,7 @@ const aiSystemPrompt = [
   '',
   'REGRAS ABSOLUTAS:',
   '- NUNCA use emojis ou simbolos especiais nas respostas.',
+  '- NUNCA inclua links, URLs, www, wa.me, w.app ou qualquer endereco externo sem autorizacao expressa, textual e especifica do operador.',
   '- NUNCA responda algo incoerente com a pergunta do cliente. Leia a pergunta com atencao antes de responder.',
   '- NUNCA invente preco, prazo, disponibilidade ou dado especifico sem ter essa informacao na base.',
   '- NUNCA repita estrutura fixa em mensagens consecutivas.',
@@ -2084,6 +2209,8 @@ const aiSystemPrompt = [
   '- Antes de redigir a resposta, releia internamente a pergunta do cliente e confirme que sua resposta responde diretamente aquilo.',
   '- Se o cliente marcou (Respondeu a) uma mensagem anterior, interprete a mensagem marcada como contexto de escolha ou selecao de produto e responda de acordo.',
   '- Revise o historico recente para garantir coerencia: nao repita informacoes ja dadas, nao pergunte o que ja foi respondido.',
+  '- Se a memoria persistente listar campos ja respondidos, trate esses dados como confirmados e nao pergunte novamente.',
+  '- Se houver pergunta comercial em aberto na memoria, interprete a mensagem atual como resposta a essa pergunta antes de abrir nova qualificacao.',
   '- Se o cliente ja informou produto, quantidade ou preferencia no historico, use esse contexto na resposta atual.',
   '- Em perguntas de produto, seja direto, consultivo e contextual. Nao faca perguntas genericas se o produto ja foi indicado.',
   '- Se o cliente pergunta como fazer o pedido ou demonstra que ja fez escolhas, conduza diretamente ao proximo passo (B2B ou contato humano).',
@@ -2145,6 +2272,9 @@ const aiUserPrompt = [
   `Categoria de produto detectada agora: ${productCatalogBlock.categoryDetected || 'nenhuma'}`,
   `Resumo RAG do roteador: ${ragContextSummary || 'nenhum'}`,
   `Top score RAG: ${ragTopScore ? ragTopScore.toFixed(3) : '0.000'}`,
+  `Memoria do router disponivel: ${Object.keys(leadMemory).length > 0 ? 'sim' : 'nao'}`,
+  `Pergunta pendente no router: ${String(input.contextCarryover?.pendingQuestion || leadMemory.openQuestion || '').slice(0, 180) || 'nenhuma'}`,
+  `Campos respondidos no router: ${answeredSlotsSummary || 'nenhum'}`,
   `Scripts mandatorios aplicaveis agora: ${dynamicBlock.mandatoryMatchedCount || 0}`,
   mandatoryDirectiveMatched
     ? `Objetivo mandatorio: ${String(primaryMandatoryDirective.objective || '').slice(0, 220)}`
@@ -2153,22 +2283,11 @@ const aiUserPrompt = [
     ? `Pergunta-chave inicial: ${String(primaryMandatoryDirective.questions[0]).slice(0, 220)}`
     : 'Pergunta-chave inicial: n/a',
   '',
+  'Memoria operacional adicional do router:',
+  memoryGuidance.length > 0 ? `- ${memoryGuidance.join('\n- ')}` : '- nenhuma',
+  '',
   'Responda no formato JSON solicitado no system prompt.'
 ].join('\n');
-
-const fallbackText = blockReason === 'blocked_number'
-  ? cfg.blockedNumberMessage
-  : blockReason === 'mandatory_script'
-    ? mandatoryScriptReply
-  : blockReason === 'cache_hit'
-    ? cachedReplyText
-  : (blockReason === 'volume' || blockReason === 'ai_minute_limit' || blockReason === 'ai_cooldown')
-  ? cfg.highVolumeMessage
-  : blockReason === 'no_recipient'
-    ? cfg.unresolvedRecipientMessage
-    : blockReason === 'missing_key'
-      ? cfg.missingKeyMessage
-      : cfg.outOfHoursMessage;
 
 const salesBookAsset = staticData.salesBookAsset && typeof staticData.salesBookAsset === 'object'
   ? staticData.salesBookAsset
@@ -2178,6 +2297,34 @@ const vitrineAssets = staticData.vitrineAssets && typeof staticData.vitrineAsset
   ? staticData.vitrineAssets
   : null;
 const vitrineAssetsAvailable = Array.isArray(vitrineAssets?.items) && vitrineAssets.items.length > 0;
+const effectiveSendSalesBookPdf = Boolean(sendSalesBookPdf && salesBookAssetAvailable);
+const effectiveSendVitrineAssets = Boolean(sendVitrineAssets && vitrineAssetsAvailable);
+const effectiveSendOrderChoiceButtons = Boolean(sendOrderChoiceButtons && effectiveSendVitrineAssets);
+const effectiveMandatoryScriptReply = blockReason === 'mandatory_script'
+  ? (
+      sendSalesBookPdf && !salesBookAssetAvailable
+        ? 'Seu pre-cadastro foi recebido e validado. Estou ajustando o envio do material comercial para te atender corretamente, sem te prometer arquivo fora do ar. Sigo com voce por aqui e normalizo o disparo completo na sequencia.'
+        : sendVitrineAssets && !vitrineAssetsAvailable
+          ? 'Seu atendimento comercial avancou para a etapa visual. Estou finalizando a disponibilizacao da vitrine de referencia para te mostrar tudo na ordem certa e sigo com voce sem perder o contexto.'
+          : mandatoryScriptReply
+    )
+  : mandatoryScriptReply;
+
+const fallbackText = (!sendEligible && cfg.testModeSilentDrop)
+  ? ''
+  : blockReason === 'blocked_number'
+    ? cfg.blockedNumberMessage
+    : blockReason === 'mandatory_script'
+      ? effectiveMandatoryScriptReply
+    : blockReason === 'cache_hit'
+      ? cachedReplyText
+    : (blockReason === 'volume' || blockReason === 'ai_minute_limit' || blockReason === 'ai_cooldown')
+      ? cfg.highVolumeMessage
+      : blockReason === 'no_recipient'
+        ? cfg.unresolvedRecipientMessage
+        : blockReason === 'missing_key'
+          ? cfg.missingKeyMessage
+          : cfg.outOfHoursMessage;
 
 const humanEscalationCall = blockReason === 'missing_key';
 
@@ -2198,8 +2345,11 @@ return [{
     quotedMessageId: input.quotedMessageId || '',
     promptInput: inboundText,
     allowAi,
+    sendEligible,
+    sendEligibilityReason,
     alwaysAllowedNumber,
     blockReason,
+    testModeOnlyAllowedNumbers: Boolean(cfg.testModeOnlyAllowedNumbers),
     maxOutputChars: cfg.maxOutputChars,
     maxOutputTokens: cfg.maxOutputTokens,
     maxAiCallsPerMinute: cfg.maxAiCallsPerMinute,
@@ -2219,8 +2369,14 @@ return [{
     mandatoryScriptStage: Number(profile.revendaScript?.stage || 0),
     mandatoryScriptForced: blockReason === 'mandatory_script',
     bookSalesAccess: String(profile.bookSalesAccess || 'locked_pending_triage'),
-    sendSalesBookPdf: Boolean(sendSalesBookPdf && salesBookAssetAvailable),
-    sendVitrineAssets: Boolean(sendVitrineAssets && vitrineAssetsAvailable),
+    sendSalesBookPdf: effectiveSendSalesBookPdf,
+    sendVitrineAssets: effectiveSendVitrineAssets,
+    sendOrderChoiceButtons: effectiveSendOrderChoiceButtons,
+    skipAutomaticSalutation: Boolean(
+      effectiveSendSalesBookPdf ||
+      effectiveSendVitrineAssets ||
+      /book de vendas|vitrine de referencia/i.test(String(fallbackText || ''))
+    ),
     salesBookCaption: salesBookCaption || cfg.salesBook.documentCaption,
     salesBookFileName: String(salesBookAsset?.fileName || cfg.salesBook.fileName),
     salesBookMimeType: String(salesBookAsset?.mimeType || cfg.salesBook.mimeType),
@@ -2247,6 +2403,9 @@ return [{
     ragContextLines,
     ragContextSummary,
     ragTopScore,
+    contextCarryover: input.contextCarryover || {},
+    leadMemory,
+    memoryGuidance,
     routerOk,
     aiSystemPrompt,
     aiUserPrompt,

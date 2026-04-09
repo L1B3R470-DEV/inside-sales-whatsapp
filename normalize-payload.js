@@ -215,6 +215,13 @@ if (previousFingerprint) {
   if (messageId && sameMessageTimestamp && withinShortWindow) {
     return [];
   }
+
+  const substantiveRepeatWindow = (nowMs - previousSeenAt) < (1000 * 120);
+  const looksSubstantive = normalizedText.length >= 24;
+  const looksCommercialRequest = /book|vitrine|pedido|catalogo|cat[aá]logo|orcamento|or[cç]amento|site b2b|portal b2b|pedido inicial/.test(normalizedText);
+  if (substantiveRepeatWindow && (looksSubstantive || looksCommercialRequest)) {
+    return [];
+  }
 }
 staticData.recentMessageFingerprints[fingerprint] = { seenAt: nowMs, msgTs: messageTimestamp || 0 };
 

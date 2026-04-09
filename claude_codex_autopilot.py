@@ -12,6 +12,14 @@ from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
+ATTENDANT_OPERATIONAL_HOST_ROLE = os.getenv("ATTENDANT_OPERATIONAL_HOST_ROLE", "PC_CLS").strip() or "PC_CLS"
+ATTENDANT_OPERATIONAL_HOST_IP = os.getenv("ATTENDANT_OPERATIONAL_HOST_IP", "100.113.13.27").strip() or "100.113.13.27"
+ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE = os.getenv("ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE", ATTENDANT_OPERATIONAL_HOST_ROLE).strip() or ATTENDANT_OPERATIONAL_HOST_ROLE
+ATTENDANT_OPERATIONAL_DOCKER_HOST_IP = os.getenv("ATTENDANT_OPERATIONAL_DOCKER_HOST_IP", ATTENDANT_OPERATIONAL_HOST_IP).strip() or ATTENDANT_OPERATIONAL_HOST_IP
+ATTENDANT_INTERACTIVE_HOST_ROLE = os.getenv("ATTENDANT_INTERACTIVE_HOST_ROLE", "PC_LBN").strip() or "PC_LBN"
+ATTENDANT_INTERACTIVE_HOST_IP = os.getenv("ATTENDANT_INTERACTIVE_HOST_IP", "100.101.106.95").strip() or "100.101.106.95"
+ATTENDANT_INTERACTIVE_MODE_ONLY = os.getenv("ATTENDANT_INTERACTIVE_MODE_ONLY", "true").strip().lower() in {"1", "true", "yes", "on"}
+
 
 BRIDGE_ROOT = Path(os.getenv("CLAUDE_BRIDGE_ROOT", r"C:\AUTOMACAO\cowork\claude_bridge"))
 INBOX_FOR_CLAUDE = BRIDGE_ROOT / "inbox_for_claude"
@@ -61,6 +69,18 @@ def write_log(msg: str) -> None:
     with LOG_FILE.open("a", encoding="utf-8") as f:
         f.write(line + "\n")
     print(line, flush=True)
+
+
+def topology_metadata() -> Dict:
+    return {
+        "operationalHostRole": ATTENDANT_OPERATIONAL_HOST_ROLE,
+        "operationalHostIp": ATTENDANT_OPERATIONAL_HOST_IP,
+        "operationalDockerHostRole": ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE,
+        "operationalDockerHostIp": ATTENDANT_OPERATIONAL_DOCKER_HOST_IP,
+        "interactiveHostRole": ATTENDANT_INTERACTIVE_HOST_ROLE,
+        "interactiveHostIp": ATTENDANT_INTERACTIVE_HOST_IP,
+        "interactiveModeOnly": ATTENDANT_INTERACTIVE_MODE_ONLY,
+    }
 
 
 def ensure_dirs() -> None:
@@ -403,6 +423,7 @@ def main() -> None:
         return
     atexit.register(release_lock)
     write_log("Autopilot iniciado.")
+    write_log(f"Topologia registrada: {json.dumps(topology_metadata(), ensure_ascii=False)}")
     while True:
         state = load_state()
         a = ack_outbox_replies(state)

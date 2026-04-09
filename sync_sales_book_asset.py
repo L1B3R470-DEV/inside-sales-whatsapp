@@ -9,24 +9,42 @@ N8N_DB = '/data/database.sqlite'
 PROJECT_DIR = Path('/work')
 BOOK_FILE = PROJECT_DIR / 'CHATGPT_MACHINE_LEARNING' / 'BOOK_PROSPECCAO_VENDAS_INTERNAS.pdf'
 OUTPUT_JSON = PROJECT_DIR / 'sales_book_asset_snapshot.json'
+MANIFEST_JSON = PROJECT_DIR / 'asset_manifest.json'
 
 
 def now_iso():
     return datetime.now(timezone.utc).isoformat()
 
 
-def build_asset():
-    if not BOOK_FILE.exists():
-        raise FileNotFoundError(f'Sales book not found: {BOOK_FILE}')
+def load_manifest():
+    if not MANIFEST_JSON.exists():
+        return {'sourceOfTruth': 'workflow_static_data', 'salesBook': {}}
+    data = json.loads(MANIFEST_JSON.read_text(encoding='utf-8'))
+    if not isinstance(data, dict):
+        return {'sourceOfTruth': 'workflow_static_data', 'salesBook': {}}
+    return data
 
-    raw = BOOK_FILE.read_bytes()
+
+def build_asset():
+    manifest = load_manifest()
+    sales_book = manifest.get('salesBook') if isinstance(manifest.get('salesBook'), dict) else {}
+    book_file_name = str(sales_book.get('fileName') or BOOK_FILE.name).strip() or BOOK_FILE.name
+    book_file = BOOK_FILE.parent / book_file_name
+    caption = str(sales_book.get('caption') or 'BOOK DE VENDAS | Colecao Classe Couro').strip()
+    version = str(sales_book.get('version') or '').strip()
+    if not book_file.exists():
+        raise FileNotFoundError(f'Sales book not found: {book_file}')
+
+    raw = book_file.read_bytes()
     return {
-        'fileName': BOOK_FILE.name,
+        'fileName': book_file.name,
         'mimeType': 'application/pdf',
         'mediaBase64': base64.b64encode(raw).decode('ascii'),
         'sizeBytes': len(raw),
         'updatedAt': now_iso(),
-        'caption': 'BOOK DE VENDAS | Colecao Classe Couro'
+        'caption': caption,
+        'assetVersion': version,
+        'sourceOfTruth': str(manifest.get('sourceOfTruth') or 'workflow_static_data'),
     }
 
 
