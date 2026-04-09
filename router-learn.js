@@ -1,16 +1,4 @@
 const payload = { ...$json };
-const ROUTER_BASE_URL = String($env.ROUTER_BASE_URL || 'http://router:8091').replace(/\/$/, '');
-const topology = {
-  operationalHostRole: 'PC_CLS',
-  operationalHostIp: '100.113.13.27',
-  operationalDockerHostRole: 'PC_CLS',
-  operationalDockerHostIp: '100.113.13.27',
-  interactiveHostRole: 'PC_LBN',
-  interactiveHostIp: '100.101.106.95',
-  interactiveModeOnly: true,
-  rejectLbnAsRuntime: true,
-  rejectLbnDocker: true
-};
 
 function stripEmojiCharacters(value) {
   return String(value || '')
@@ -46,7 +34,7 @@ if (!text || !inbound) {
 }
 
 try {
-  await fetch(`${ROUTER_BASE_URL}/learn-response`, {
+  await fetch('http://host.docker.internal:8091/learn-response', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -72,12 +60,11 @@ try {
         : (payload.llmStructuredData && typeof payload.llmStructuredData === 'object' ? payload.llmStructuredData : {}),
       llmProvider: String(payload.llmProvider || '').trim(),
       llmModel: String(payload.llmModel || '').trim(),
-      needsHuman: Boolean(payload.needsHuman),
-      topology
+      needsHuman: Boolean(payload.needsHuman)
     })
   });
 } catch (error) {
   payload.routerLearnError = String(error?.message || error || 'learn_unavailable');
 }
 
-return [{ json: { ...payload, topology } }];
+return [{ json: payload }];

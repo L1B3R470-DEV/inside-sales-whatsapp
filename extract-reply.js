@@ -105,14 +105,7 @@ function composeSalutation(number, customerName, workTimezone, isFirstInbound, c
 }
 
 function applySalutation(replyText, ctx) {
-  if (Boolean(ctx?.skipAutomaticSalutation)) {
-    return String(replyText || '').replace(/\s+/g, ' ').trim();
-  }
   const body = stripLeadingSalutation(replyText);
-  const firstName = toFirstName(String(ctx?.customerName || ''));
-  const earlyBody = normalizeForDedupe(String(body || '').slice(0, 120));
-  const hasEarlyNameMention = Boolean(firstName) && earlyBody.includes(normalizeForDedupe(firstName));
-  const startsWithCommercialLead = /^(perfeito|certo|entendi|otimo|ótimo|seu pre-cadastro|estou te enviando|para te ajudar)/i.test(String(body || ''));
   const number = String(ctx?.number || '').replace(/\D/g, '');
   if (!number) return body;
 
@@ -137,10 +130,10 @@ function applySalutation(replyText, ctx) {
   let finalText = body;
   cadence.count = Number(cadence.count || 0) + 1;
 
-  if (shouldSalute && !(hasEarlyNameMention && startsWithCommercialLead)) {
+  if (shouldSalute) {
     const prefix = composeSalutation(
       number,
-      hasEarlyNameMention ? '' : String(ctx?.customerName || ''),
+      String(ctx?.customerName || ''),
       String(ctx?.workTimezone || 'America/Bahia'),
       Boolean(ctx?.isFirstInbound),
       cadence
@@ -238,17 +231,13 @@ function suppressDuplicateOutbound(instance, number, replyText, messageId) {
     if (Number(ts || 0) < (nowMs - ttlMs)) delete staticData.outboundRecent[k];
   }
 
-  const normalizedReply = normalizeForDedupe(replyText);
-  const exactKey = `${String(instance || '')}:${String(number || '')}:${normalizedReply}:${String(messageId || '')}`;
-  const semanticKey = `${String(instance || '')}:${String(number || '')}:${normalizedReply}`;
-  const lastExactTs = Number(staticData.outboundRecent[exactKey] || 0);
-  const lastSemanticTs = Number(staticData.outboundRecent[semanticKey] || 0);
-  if ((lastExactTs && (nowMs - lastExactTs) < (1000 * 45)) || (lastSemanticTs && (nowMs - lastSemanticTs) < (1000 * 120))) {
+  const key = `${String(instance || '')}:${String(number || '')}:${normalizeForDedupe(replyText)}:${String(messageId || '')}`;
+  const lastTs = Number(staticData.outboundRecent[key] || 0);
+  if (lastTs && (nowMs - lastTs) < (1000 * 45)) {
     return true;
   }
 
-  staticData.outboundRecent[exactKey] = nowMs;
-  staticData.outboundRecent[semanticKey] = nowMs;
+  staticData.outboundRecent[key] = nowMs;
   return false;
 }
 
@@ -356,7 +345,6 @@ function buildProductMediaItems(instance, number, ctx, maxItems) {
         sendEligible: !duplicate,
         sendEligibilityReason: duplicate ? 'duplicate_suppressed' : 'eligible',
         sendMode: 'media',
-        delayMs: Number(entry.delayMs || ctx?.productMediaDelayMs || 1800),
         mediaType: 'image',
         media: String(entry.mediaBase64 || ''),
         mimeType: String(entry.mimeType || 'image/jpeg'),
@@ -375,7 +363,7 @@ function buildVitrineMediaItems(instance, number, ctx) {
   const items = Array.isArray(vitrineAssets.items) ? vitrineAssets.items : [];
   if (items.length === 0) return [];
 
-  return items.slice(0, 5).map((asset) => {
+  return items.slice(0, 3).map((asset) => {
     const label = `[vitrine] ${String(asset.fileName || asset.label || '')}`;
     const duplicate = suppressDuplicateOutbound(instance, number, label, `${ctx?.messageId || ''}:${asset.label || ''}`);
     return {
@@ -385,7 +373,6 @@ function buildVitrineMediaItems(instance, number, ctx) {
         sendEligible: !duplicate,
         sendEligibilityReason: duplicate ? 'duplicate_suppressed' : 'eligible',
         sendMode: 'media',
-        delayMs: Number(asset.delayMs || ctx?.vitrineDelayMs || 7200),
         mediaType: String(asset.mediaType || 'image'),
         media: String(asset.mediaBase64 || ''),
         mimeType: String(asset.mimeType || 'image/jpeg'),
@@ -395,31 +382,6 @@ function buildVitrineMediaItems(instance, number, ctx) {
       }
     };
   }).filter((item) => String(item.json.media || '').trim());
-}
-
-function buildOrderChoiceButtonsItem(instance, number, ctx, delayMs) {
-  if (!number || !ctx || !ctx.sendOrderChoiceButtons) return null;
-  const duplicate = suppressDuplicateOutbound(instance, number, '[order-choice-buttons]', `${ctx?.messageId || ''}:order-choice-buttons`);
-  if (duplicate) return null;
-
-  return {
-    json: {
-      instance,
-      number,
-      sendEligible: true,
-      sendEligibilityReason: 'eligible',
-      sendMode: 'buttons',
-      delayMs: Number(delayMs || ctx?.orderChoiceButtonsDelayMs || 12200),
-      title: 'Como voce prefere seguir com o pedido?',
-      description: 'Escolha se quer montar seu pedido direto no portal B2B ou seguir com o apoio do Eduardo neste canal.',
-      footer: 'Classe Couro - Pedido inicial',
-      buttons: [
-        { type: 'reply', displayText: 'Pedir pelo site B2B', id: 'btn_pedido_b2b' },
-        { type: 'reply', displayText: 'Montar com Eduardo', id: 'btn_pedido_eduardo' }
-      ],
-      duplicateOutboundSuppressed: false
-    }
-  };
 }
 
 function buildRuleBasedReply(ctx) {
@@ -793,18 +755,17 @@ reply = applySalutation(reply, {
   customerName,
   workTimezone: guardrails.workTimezone,
   isFirstInbound: guardrails.isFirstInbound,
-  inboundText: guardrails.inboundTextOriginal,
-  skipAutomaticSalutation: Boolean(guardrails.skipAutomaticSalutation)
+  inboundText: guardrails.inboundTextOriginal
 });
 const authorizedOutboundLinks = getAuthorizedOutboundLinks(guardrails);
 reply = sanitizeOutboundText(reply, {
   authorizedLinks: authorizedOutboundLinks,
-      maxChars: Number(guardrails.maxOutputChars || 1800)
+  maxChars: Number(guardrails.maxOutputChars || 420)
 });
 if (!reply) {
   reply = sanitizeOutboundText(fallbackWaiting, {
     authorizedLinks: authorizedOutboundLinks,
-      maxChars: Number(guardrails.maxOutputChars || 1800)
+    maxChars: Number(guardrails.maxOutputChars || 420)
   });
 }
 
@@ -952,7 +913,6 @@ const outboundItems = [{
     instance,
     number: sendNumber,
     sendMode: 'text',
-    delayMs: Number(guardrails.replyDelayMs || 1200),
     replyText: reply,
     inboundTextOriginal: String(guardrails.inboundTextOriginal || ''),
     intent,
@@ -975,8 +935,7 @@ const outboundItems = [{
     llmProvider: llmProvider || 'openai',
     llmModel: String(guardrails.llmModel || ''),
     llmStructuredData: extractedEntities,
-    duplicateOutboundSuppressed: duplicateOutbound,
-    skipAutomaticSalutation: Boolean(guardrails.skipAutomaticSalutation)
+    duplicateOutboundSuppressed: duplicateOutbound
   }
 }];
 
@@ -990,27 +949,6 @@ for (const mediaItem of productMediaItems) {
   outboundItems.push(mediaItem);
 }
 
-if (Boolean(guardrails.sendVitrineAssets) && sendNumber) {
-  const vitrinePrelude = 'Para te ajudar a visualizar melhor o potencial da marca no ponto de venda, eu tambem posso te mostrar uma vitrine de referencia. Isso costuma facilitar bastante, porque voce consegue imaginar com mais clareza como os produtos da Classe Couro podem valorizar a apresentacao da sua loja, chamar mais atencao do cliente final e construir uma percepcao mais forte de desejo e qualidade. Quando o mix esta bem montado, a vitrine praticamente comeca a vender antes mesmo da abordagem.';
-  const duplicatePrelude = suppressDuplicateOutbound(instance, sendNumber, vitrinePrelude, `${guardrails.messageId || ''}:vitrine-prelude`);
-  if (!duplicatePrelude) {
-    outboundItems.push({
-      json: {
-        instance,
-        number: sendNumber,
-        sendMode: 'text',
-        delayMs: Number(guardrails.vitrinePreludeDelayMs || 5200),
-        replyText: vitrinePrelude,
-        sendEligible: true,
-        sendEligibilityReason: 'eligible',
-        duplicateOutboundSuppressed: false,
-        skipAutomaticSalutation: true
-      }
-    });
-  }
-}
-
-let vitrineDelayCursor = Number(guardrails.vitrineFirstAssetDelayMs || 7200);
 for (const mediaItem of vitrineMediaItems) {
   if (mediaItem?.json?.caption) {
     mediaItem.json.caption = sanitizeOutboundText(mediaItem.json.caption, {
@@ -1018,16 +956,7 @@ for (const mediaItem of vitrineMediaItems) {
       maxChars: 240
     });
   }
-  mediaItem.json.delayMs = Number(mediaItem?.json?.delayMs || vitrineDelayCursor);
-  vitrineDelayCursor += Number(guardrails.vitrineDelayStepMs || 1800);
   outboundItems.push(mediaItem);
-}
-
-const orderChoiceButtonsItem = (!needsHuman && sendNumber)
-  ? buildOrderChoiceButtonsItem(instance, sendNumber, guardrails, vitrineDelayCursor + 800)
-  : null;
-if (orderChoiceButtonsItem) {
-  outboundItems.push(orderChoiceButtonsItem);
 }
 
 return outboundItems;

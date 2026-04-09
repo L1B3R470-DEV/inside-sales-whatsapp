@@ -2287,10 +2287,9 @@ def route_endpoint():
         blocked_set = get_all_blocked_numbers()
         allowed_set = get_all_always_allowed_numbers()
         recipient_number = digits_only(resolved_payload.get('number') or resolved_payload.get('customerNumber'))
-        if ROUTER_ENFORCE_TEST_GATE and allowed_set and recipient_number not in allowed_set:
+        if allowed_set and recipient_number not in allowed_set:
             return jsonify({
                 **resolved_payload,
-                'topology': topology_metadata(),
                 'routeDecision': 'test_gate_blocked',
                 'cacheHit': False,
                 'cachedReplyText': '',
@@ -2326,7 +2325,6 @@ def route_endpoint():
                 'llmLeadScore': {},
                 'blockedByTestGate': True,
                 'routerOk': True,
-                'routerTestGateEnforced': ROUTER_ENFORCE_TEST_GATE,
                 'dynamicBlockedNumbers': list(blocked_set),
                 'dynamicAlwaysAllowedNumbers': list(allowed_set),
             })

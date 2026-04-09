@@ -9,16 +9,16 @@ from pathlib import Path
 from typing import Dict, List
 
 from dotenv import load_dotenv
+from ai_capacity_registry import (
+    STATUS_AVAILABLE,
+    STATUS_DEGRADED,
+    STATUS_RECOVERED,
+    STATUS_USAGE_EXHAUSTED,
+    mark_agent_heartbeat,
+    update_agent_status,
+)
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
-
-ATTENDANT_OPERATIONAL_HOST_ROLE = os.getenv("ATTENDANT_OPERATIONAL_HOST_ROLE", "PC_CLS").strip() or "PC_CLS"
-ATTENDANT_OPERATIONAL_HOST_IP = os.getenv("ATTENDANT_OPERATIONAL_HOST_IP", "100.113.13.27").strip() or "100.113.13.27"
-ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE = os.getenv("ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE", ATTENDANT_OPERATIONAL_HOST_ROLE).strip() or ATTENDANT_OPERATIONAL_HOST_ROLE
-ATTENDANT_OPERATIONAL_DOCKER_HOST_IP = os.getenv("ATTENDANT_OPERATIONAL_DOCKER_HOST_IP", ATTENDANT_OPERATIONAL_HOST_IP).strip() or ATTENDANT_OPERATIONAL_HOST_IP
-ATTENDANT_INTERACTIVE_HOST_ROLE = os.getenv("ATTENDANT_INTERACTIVE_HOST_ROLE", "PC_LBN").strip() or "PC_LBN"
-ATTENDANT_INTERACTIVE_HOST_IP = os.getenv("ATTENDANT_INTERACTIVE_HOST_IP", "100.101.106.95").strip() or "100.101.106.95"
-ATTENDANT_INTERACTIVE_MODE_ONLY = os.getenv("ATTENDANT_INTERACTIVE_MODE_ONLY", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 try:
     from anthropic import Anthropic
@@ -50,18 +50,6 @@ SYSTEM = (
 MUTEX_HANDLE = None
 
 
-def topology_metadata() -> Dict:
-    return {
-        "operationalHostRole": ATTENDANT_OPERATIONAL_HOST_ROLE,
-        "operationalHostIp": ATTENDANT_OPERATIONAL_HOST_IP,
-        "operationalDockerHostRole": ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE,
-        "operationalDockerHostIp": ATTENDANT_OPERATIONAL_DOCKER_HOST_IP,
-        "interactiveHostRole": ATTENDANT_INTERACTIVE_HOST_ROLE,
-        "interactiveHostIp": ATTENDANT_INTERACTIVE_HOST_IP,
-        "interactiveModeOnly": ATTENDANT_INTERACTIVE_MODE_ONLY,
-    }
-
-
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -70,7 +58,24 @@ def ensure_dirs() -> None:
     for p in (BRIDGE_ROOT, INBOX_DIR, OUTBOX_DIR):
         p.mkdir(parents=True, exist_ok=True)
     if not STATE_FILE.exists():
-        STATE_FILE.write_text(json.dumps({"processed_tasks": []}, ensure_ascii=False, indent=2), encoding="utf-8")
+        STATE_FILE.write_text(
+            json.dumps(
+                {
+                    "processed_tasks": [],
+                    "status": STATUS_AVAILABLE,
+                    "reason": "bootstrap",
+                    "last_heartbeat_at": "",
+                    "last_success_at": "",
+                    "last_error_at": "",
+                    "last_error": "",
+                    "last_task_id": "",
+                    "current_model": MODEL_PRIMARY,
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
 
 
 def _pid_alive(pid: int) -> bool:
@@ -191,9 +196,10 @@ def _is_retryable(exc: Exception) -> bool:
     )
 
 
-def call_claude(client: Anthropic, prompt: str) -> Dict:
+def call_claude(client: Anthropic, prompt: str):
     last_exc = None
     model = MODEL_PRIMARY
+    overloaded_seen = False
     for attempt in range(RETRY_ATTEMPTS):
         try:
             resp = client.messages.create(
@@ -204,16 +210,36 @@ def call_claude(client: Anthropic, prompt: str) -> Dict:
             )
             text = resp.content[0].text if resp.content else "{}"
             data = extract_json(text)
-            return data or {}
+            return data or {}, model, overloaded_seen
         except Exception as exc:
             last_exc = exc
-            if _is_overloaded(exc) and model != MODEL_FALLBACK:
+            if _is_overloaded(exc):
+                overloaded_seen = True
+            if overloaded_seen and model != MODEL_FALLBACK:
                 model = MODEL_FALLBACK
             if (not _is_retryable(exc)) or attempt >= RETRY_ATTEMPTS - 1:
                 break
             delay = min(RETRY_MAX, RETRY_BASE * (2 ** attempt))
             time.sleep(delay)
     raise RuntimeError(str(last_exc) if last_exc else "claude_call_failed")
+
+
+def heartbeat_worker(state: Dict, *, status: str = STATUS_AVAILABLE, reason: str = "poll_loop") -> None:
+    stamp = now_iso()
+    state["status"] = status
+    state["reason"] = reason
+    state["last_heartbeat_at"] = stamp
+    write_state(state)
+    mark_agent_heartbeat(
+        "claude_bridge_worker_pc_lbn",
+        status=status,
+        reason=reason,
+        metadata={
+            "last_task_id": state.get("last_task_id", ""),
+            "current_model": state.get("current_model", MODEL_PRIMARY),
+            "processed_count": len(state.get("processed_tasks") or []),
+        },
+    )
 
 
 def build_prompt(task: Dict) -> str:
@@ -266,7 +292,7 @@ def process_task(client: Anthropic, task_file: Path, state: Dict) -> bool:
 
     prompt = build_prompt(task)
     try:
-        data = call_claude(client, prompt)
+        data, model_used, overloaded_seen = call_claude(client, prompt)
         if not data:
             data = {}
         data.setdefault("reply_id", "REPLY-" + datetime.now().strftime("%Y%m%d-%H%M%S"))
@@ -279,7 +305,29 @@ def process_task(client: Anthropic, task_file: Path, state: Dict) -> bool:
         data.setdefault("changes", [])
         data.setdefault("risks", [])
         data.setdefault("next_steps", [])
+        state["status"] = STATUS_RECOVERED if overloaded_seen else STATUS_AVAILABLE
+        state["reason"] = "task_processed"
+        state["last_success_at"] = now_iso()
+        state["last_error"] = ""
+        state["last_task_id"] = task_id
+        state["current_model"] = model_used
+        write_state(state)
+        update_agent_status(
+            "anthropic_api_pc_lbn",
+            status=STATUS_RECOVERED if overloaded_seen else STATUS_AVAILABLE,
+            availability=True,
+            reason="worker_request_succeeded",
+            metadata={"model": model_used, "task_id": task_id},
+        )
+        mark_agent_heartbeat(
+            "claude_bridge_worker_pc_lbn",
+            status=STATUS_RECOVERED if overloaded_seen else STATUS_AVAILABLE,
+            reason="task_processed",
+            metadata={"task_id": task_id, "model": model_used},
+        )
     except Exception as exc:
+        overloaded = _is_overloaded(exc)
+        worker_status = STATUS_USAGE_EXHAUSTED if overloaded else STATUS_DEGRADED
         data = {
             "reply_id": "REPLY-" + datetime.now().strftime("%Y%m%d-%H%M%S"),
             "task_id": task_id,
@@ -292,6 +340,25 @@ def process_task(client: Anthropic, task_file: Path, state: Dict) -> bool:
             "risks": ["Instabilidade de provedor ou credencial"],
             "next_steps": ["Repetir em alguns minutos", "Validar saldo e limites da conta Anthropic"],
         }
+        state["status"] = worker_status
+        state["reason"] = "task_failed"
+        state["last_error_at"] = now_iso()
+        state["last_error"] = str(exc)
+        state["last_task_id"] = task_id
+        write_state(state)
+        update_agent_status(
+            "anthropic_api_pc_lbn",
+            status=STATUS_USAGE_EXHAUSTED if overloaded else STATUS_DEGRADED,
+            availability=not overloaded,
+            reason="worker_request_failed",
+            metadata={"error": str(exc), "task_id": task_id},
+        )
+        mark_agent_heartbeat(
+            "claude_bridge_worker_pc_lbn",
+            status=worker_status,
+            reason="task_failed",
+            metadata={"task_id": task_id, "error": str(exc)},
+        )
 
     out = reply_path(str(data["reply_id"]))
     out.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -312,10 +379,17 @@ def main() -> None:
         return
     client = Anthropic(api_key=ANTHROPIC_API_KEY, timeout=30.0)
     print(f"[claude-cowork-worker] online | inbox={INBOX_DIR} | outbox={OUTBOX_DIR}")
-    print(f"[claude-cowork-worker] topologia={json.dumps(topology_metadata(), ensure_ascii=False)}", flush=True)
+    update_agent_status(
+        "anthropic_api_pc_lbn",
+        status=STATUS_AVAILABLE,
+        availability=True,
+        reason="worker_started",
+        metadata={"primary_model": MODEL_PRIMARY, "fallback_model": MODEL_FALLBACK},
+    )
 
     while True:
         state = read_state()
+        heartbeat_worker(state)
         did_any = False
         for f in task_files():
             did_any = process_task(client, f, state) or did_any

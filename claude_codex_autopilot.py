@@ -9,16 +9,14 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 from dotenv import load_dotenv
+from ai_capacity_registry import (
+    STATUS_AVAILABLE,
+    STATUS_DEGRADED,
+    mark_agent_heartbeat,
+    update_agent_status,
+)
 
 load_dotenv(Path(__file__).resolve().parent / ".env")
-
-ATTENDANT_OPERATIONAL_HOST_ROLE = os.getenv("ATTENDANT_OPERATIONAL_HOST_ROLE", "PC_CLS").strip() or "PC_CLS"
-ATTENDANT_OPERATIONAL_HOST_IP = os.getenv("ATTENDANT_OPERATIONAL_HOST_IP", "100.113.13.27").strip() or "100.113.13.27"
-ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE = os.getenv("ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE", ATTENDANT_OPERATIONAL_HOST_ROLE).strip() or ATTENDANT_OPERATIONAL_HOST_ROLE
-ATTENDANT_OPERATIONAL_DOCKER_HOST_IP = os.getenv("ATTENDANT_OPERATIONAL_DOCKER_HOST_IP", ATTENDANT_OPERATIONAL_HOST_IP).strip() or ATTENDANT_OPERATIONAL_HOST_IP
-ATTENDANT_INTERACTIVE_HOST_ROLE = os.getenv("ATTENDANT_INTERACTIVE_HOST_ROLE", "PC_LBN").strip() or "PC_LBN"
-ATTENDANT_INTERACTIVE_HOST_IP = os.getenv("ATTENDANT_INTERACTIVE_HOST_IP", "100.101.106.95").strip() or "100.101.106.95"
-ATTENDANT_INTERACTIVE_MODE_ONLY = os.getenv("ATTENDANT_INTERACTIVE_MODE_ONLY", "true").strip().lower() in {"1", "true", "yes", "on"}
 
 
 BRIDGE_ROOT = Path(os.getenv("CLAUDE_BRIDGE_ROOT", r"C:\AUTOMACAO\cowork\claude_bridge"))
@@ -71,18 +69,6 @@ def write_log(msg: str) -> None:
     print(line, flush=True)
 
 
-def topology_metadata() -> Dict:
-    return {
-        "operationalHostRole": ATTENDANT_OPERATIONAL_HOST_ROLE,
-        "operationalHostIp": ATTENDANT_OPERATIONAL_HOST_IP,
-        "operationalDockerHostRole": ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE,
-        "operationalDockerHostIp": ATTENDANT_OPERATIONAL_DOCKER_HOST_IP,
-        "interactiveHostRole": ATTENDANT_INTERACTIVE_HOST_ROLE,
-        "interactiveHostIp": ATTENDANT_INTERACTIVE_HOST_IP,
-        "interactiveModeOnly": ATTENDANT_INTERACTIVE_MODE_ONLY,
-    }
-
-
 def ensure_dirs() -> None:
     for p in [
         BRIDGE_ROOT,
@@ -100,6 +86,13 @@ def ensure_dirs() -> None:
             "seen_master_tasks": [],
             "created_subtasks": [],
             "created_at": now_iso(),
+            "status": STATUS_AVAILABLE,
+            "reason": "bootstrap",
+            "last_heartbeat_at": "",
+            "last_success_at": "",
+            "last_error_at": "",
+            "last_error": "",
+            "last_task_id": "",
         }
         STATE_FILE.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -193,6 +186,24 @@ def save_state(state: Dict) -> None:
     write_json(STATE_FILE, state)
 
 
+def heartbeat_autopilot(state: Dict, *, status: str = STATUS_AVAILABLE, reason: str = "poll_loop") -> None:
+    stamp = now_iso()
+    state["status"] = status
+    state["reason"] = reason
+    state["last_heartbeat_at"] = stamp
+    save_state(state)
+    mark_agent_heartbeat(
+        "claude_autopilot_pc_lbn",
+        status=status,
+        reason=reason,
+        metadata={
+            "seen_replies": len(state.get("seen_replies", []) or []),
+            "created_subtasks": len(state.get("created_subtasks", []) or []),
+            "last_task_id": state.get("last_task_id", ""),
+        },
+    )
+
+
 def normalize_text(value: str) -> str:
     text = str(value or "").lower()
     text = text.encode("ascii", "ignore").decode("ascii")
@@ -222,6 +233,7 @@ def ack_outbox_replies(state: Dict) -> int:
 
         seen.add(reply_id)
         changed += 1
+        state["last_task_id"] = str(reply.get("task_id") or reply_id)
         write_log(f"ACK criado para {reply_id}")
 
     if changed:
@@ -398,6 +410,7 @@ def process_master_tasks(state: Dict) -> int:
             for idx, st in enumerate(subtasks, start=1):
                 created_file = create_subtask_file(master, st, idx, total)
                 created.add(created_file.name)
+                state["last_task_id"] = created_file.stem
                 write_log(f"Subtarefa criada: {created_file.name}")
 
             seen.add(master_id)
@@ -423,14 +436,47 @@ def main() -> None:
         return
     atexit.register(release_lock)
     write_log("Autopilot iniciado.")
-    write_log(f"Topologia registrada: {json.dumps(topology_metadata(), ensure_ascii=False)}")
+    update_agent_status(
+        "claude_autopilot_pc_lbn",
+        status=STATUS_AVAILABLE,
+        availability=True,
+        reason="autopilot_started",
+    )
     while True:
         state = load_state()
-        a = ack_outbox_replies(state)
-        b = process_master_tasks(state)
-        if a or b:
+        try:
+            heartbeat_autopilot(state)
+            a = ack_outbox_replies(state)
+            b = process_master_tasks(state)
+            if a or b:
+                state["last_success_at"] = now_iso()
+                state["last_error"] = ""
+                save_state(state)
+                mark_agent_heartbeat(
+                    "claude_autopilot_pc_lbn",
+                    status=STATUS_AVAILABLE,
+                    reason="work_processed",
+                    metadata={
+                        "acked_count": a,
+                        "created_subtasks_count": b,
+                    },
+                )
+            time.sleep(POLL_SECONDS)
+        except Exception as exc:
+            state["status"] = STATUS_DEGRADED
+            state["reason"] = "loop_failed"
+            state["last_error_at"] = now_iso()
+            state["last_error"] = str(exc)
             save_state(state)
-        time.sleep(POLL_SECONDS)
+            update_agent_status(
+                "claude_autopilot_pc_lbn",
+                status=STATUS_DEGRADED,
+                availability=True,
+                reason="loop_failed",
+                metadata={"error": str(exc)},
+            )
+            write_log(f"Falha no loop do autopilot: {exc}")
+            time.sleep(POLL_SECONDS)
 
 
 if __name__ == "__main__":

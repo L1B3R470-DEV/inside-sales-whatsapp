@@ -21,6 +21,16 @@ from typing import Dict, List, Optional
 
 from dotenv import load_dotenv
 import structlog
+from ai_capacity_registry import (
+    STATUS_AVAILABLE,
+    STATUS_DEGRADED,
+    STATUS_RECOVERED,
+    STATUS_SESSION_UNAVAILABLE,
+    STATUS_USAGE_EXHAUSTED,
+    get_role_assignment,
+    summarize_registry,
+    update_agent_status,
+)
 
 _env_path_mlm = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
 load_dotenv(_env_path_mlm)
@@ -41,16 +51,6 @@ OPENAI_API_KEY = _cfg('OPENAI_API_KEY')
 OPENAI_MODEL_MAIN = _cfg('OPENAI_MODEL', 'gpt-4o-mini')
 OPENAI_MODEL_STRUCTURED = _cfg('OPENAI_MODEL_STRUCTURED', 'gpt-4o-mini')
 
-ATTENDANT_OPERATIONAL_HOST_ROLE = _cfg('ATTENDANT_OPERATIONAL_HOST_ROLE', 'PC_CLS') or 'PC_CLS'
-ATTENDANT_OPERATIONAL_HOST_IP = _cfg('ATTENDANT_OPERATIONAL_HOST_IP', '100.113.13.27') or '100.113.13.27'
-ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE = _cfg('ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE', ATTENDANT_OPERATIONAL_HOST_ROLE) or ATTENDANT_OPERATIONAL_HOST_ROLE
-ATTENDANT_OPERATIONAL_DOCKER_HOST_IP = _cfg('ATTENDANT_OPERATIONAL_DOCKER_HOST_IP', ATTENDANT_OPERATIONAL_HOST_IP) or ATTENDANT_OPERATIONAL_HOST_IP
-ATTENDANT_INTERACTIVE_HOST_ROLE = _cfg('ATTENDANT_INTERACTIVE_HOST_ROLE', 'PC_LBN') or 'PC_LBN'
-ATTENDANT_INTERACTIVE_HOST_IP = _cfg('ATTENDANT_INTERACTIVE_HOST_IP', '100.101.106.95') or '100.101.106.95'
-ATTENDANT_INTERACTIVE_MODE_ONLY = _cfg('ATTENDANT_INTERACTIVE_MODE_ONLY', 'true').lower() in {'1', 'true', 'yes', 'on'}
-ATTENDANT_REJECT_LBN_AS_RUNTIME = _cfg('ATTENDANT_REJECT_LBN_AS_RUNTIME', 'true').lower() in {'1', 'true', 'yes', 'on'}
-ATTENDANT_REJECT_LBN_DOCKER = _cfg('ATTENDANT_REJECT_LBN_DOCKER', 'true').lower() in {'1', 'true', 'yes', 'on'}
-
 ANTHROPIC_RETRY_ATTEMPTS = int(_cfg('ANTHROPIC_RETRY_ATTEMPTS', '4') or '4')
 ANTHROPIC_RETRY_BASE_DELAY_SECONDS = float(_cfg('ANTHROPIC_RETRY_BASE_DELAY_SECONDS', '0.8') or '0.8')
 ANTHROPIC_RETRY_MAX_DELAY_SECONDS = float(_cfg('ANTHROPIC_RETRY_MAX_DELAY_SECONDS', '8') or '8')
@@ -60,80 +60,76 @@ ANTHROPIC_OVERLOADED_COOLDOWN_SECONDS = float(_cfg('ANTHROPIC_OVERLOADED_COOLDOW
 _anthropic_client = None
 _openai_client = None
 _anthropic_overloaded_until = 0.0
-_topology_logged = False
-
-
-def topology_metadata() -> Dict:
-    return {
-        'operationalHostRole': ATTENDANT_OPERATIONAL_HOST_ROLE,
-        'operationalHostIp': ATTENDANT_OPERATIONAL_HOST_IP,
-        'operationalDockerHostRole': ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE,
-        'operationalDockerHostIp': ATTENDANT_OPERATIONAL_DOCKER_HOST_IP,
-        'interactiveHostRole': ATTENDANT_INTERACTIVE_HOST_ROLE,
-        'interactiveHostIp': ATTENDANT_INTERACTIVE_HOST_IP,
-        'interactiveModeOnly': ATTENDANT_INTERACTIVE_MODE_ONLY,
-        'rejectLbnAsRuntime': ATTENDANT_REJECT_LBN_AS_RUNTIME,
-        'rejectLbnDocker': ATTENDANT_REJECT_LBN_DOCKER,
-    }
-
-
-def validate_topology() -> None:
-    if ATTENDANT_OPERATIONAL_HOST_ROLE != 'PC_CLS' or ATTENDANT_OPERATIONAL_HOST_IP != '100.113.13.27':
-        raise RuntimeError(
-            f"invalid_operational_ai_topology role={ATTENDANT_OPERATIONAL_HOST_ROLE} ip={ATTENDANT_OPERATIONAL_HOST_IP}"
-        )
-    if ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE != 'PC_CLS' or ATTENDANT_OPERATIONAL_DOCKER_HOST_IP != '100.113.13.27':
-        raise RuntimeError(
-            f"invalid_operational_docker_topology role={ATTENDANT_OPERATIONAL_DOCKER_HOST_ROLE} ip={ATTENDANT_OPERATIONAL_DOCKER_HOST_IP}"
-        )
-    if ATTENDANT_INTERACTIVE_HOST_ROLE != 'PC_LBN' or ATTENDANT_INTERACTIVE_HOST_IP != '100.101.106.95':
-        raise RuntimeError(
-            f"invalid_interactive_topology role={ATTENDANT_INTERACTIVE_HOST_ROLE} ip={ATTENDANT_INTERACTIVE_HOST_IP}"
-        )
-    if not ATTENDANT_REJECT_LBN_AS_RUNTIME or not ATTENDANT_REJECT_LBN_DOCKER:
-        raise RuntimeError('invalid_topology_guardrails reject_lbn_flags_disabled')
-
-
-def ensure_topology_logged() -> None:
-    global _topology_logged
-    if _topology_logged:
-        return
-    validate_topology()
-    log.info('attendant_llm_topology_registered', **topology_metadata())
-    _topology_logged = True
 
 
 def _get_anthropic():
     global _anthropic_client
-    ensure_topology_logged()
     if _anthropic_client is not None:
         return _anthropic_client
     if not ANTHROPIC_API_KEY:
+        update_agent_status(
+            'anthropic_api_pc_lbn',
+            status=STATUS_SESSION_UNAVAILABLE,
+            availability=False,
+            reason='missing_anthropic_api_key',
+        )
         return None
     try:
         from anthropic import Anthropic
         _anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY, timeout=10.0)
-        log.info('anthropic_client_init', model_sales=ANTHROPIC_MODEL_SALES, model_fast=ANTHROPIC_MODEL_FAST, **topology_metadata())
+        log.info('anthropic_client_init', model_sales=ANTHROPIC_MODEL_SALES, model_fast=ANTHROPIC_MODEL_FAST)
+        update_agent_status(
+            'anthropic_api_pc_lbn',
+            status=STATUS_AVAILABLE,
+            availability=True,
+            reason='client_initialized',
+            metadata={'model_sales': ANTHROPIC_MODEL_SALES, 'model_fast': ANTHROPIC_MODEL_FAST},
+        )
         return _anthropic_client
     except Exception as exc:
         log.warning('anthropic_client_failed', error=str(exc))
+        update_agent_status(
+            'anthropic_api_pc_lbn',
+            status=STATUS_DEGRADED,
+            availability=False,
+            reason='client_init_failed',
+            metadata={'error': str(exc)},
+        )
         return None
 
 
 def _get_openai():
     global _openai_client
-    ensure_topology_logged()
     if _openai_client is not None:
         return _openai_client
     if not OPENAI_API_KEY:
+        update_agent_status(
+            'openai_primary_pc_lbn',
+            status=STATUS_SESSION_UNAVAILABLE,
+            availability=False,
+            reason='missing_openai_api_key',
+        )
         return None
     try:
         from openai import OpenAI
         _openai_client = OpenAI(api_key=OPENAI_API_KEY, timeout=10.0)
-        log.info('openai_client_init', model_main=OPENAI_MODEL_MAIN, model_structured=OPENAI_MODEL_STRUCTURED, **topology_metadata())
+        update_agent_status(
+            'openai_primary_pc_lbn',
+            status=STATUS_AVAILABLE,
+            availability=True,
+            reason='client_initialized',
+            metadata={'model_main': OPENAI_MODEL_MAIN, 'model_structured': OPENAI_MODEL_STRUCTURED},
+        )
         return _openai_client
     except Exception as exc:
         log.warning('openai_client_failed', error=str(exc))
+        update_agent_status(
+            'openai_primary_pc_lbn',
+            status=STATUS_DEGRADED,
+            availability=False,
+            reason='client_init_failed',
+            metadata={'error': str(exc)},
+        )
         return None
 
 
@@ -166,6 +162,30 @@ def _set_anthropic_cooldown(seconds: float) -> None:
     candidate = time.monotonic() + max(0.0, float(seconds))
     if candidate > _anthropic_overloaded_until:
         _anthropic_overloaded_until = candidate
+    update_agent_status(
+        'anthropic_api_pc_lbn',
+        status=STATUS_USAGE_EXHAUSTED,
+        availability=False,
+        reason='anthropic_cooldown_active',
+        metadata={'cooldown_seconds': round(float(seconds), 3)},
+    )
+
+
+def _preferred_provider_for_role(role: str, allowed: List[str]) -> str:
+    assignment = get_role_assignment(role)
+    primary_agent = str(assignment.get('primary') or '').strip()
+    mapping = {
+        'anthropic_api_pc_lbn': 'anthropic',
+        'openai_primary_pc_lbn': 'openai',
+    }
+    preferred = mapping.get(primary_agent, '')
+    if preferred in allowed:
+        return preferred
+    for agent_id in assignment.get('backups', []):
+        preferred = mapping.get(str(agent_id), '')
+        if preferred in allowed:
+            return preferred
+    return allowed[0] if allowed else ''
 
 
 def _anthropic_messages_create_with_retry(client, **kwargs):
@@ -231,7 +251,9 @@ def generate_sales_reply(
     user_content = '\n\n'.join(sections)
     messages.append({'role': 'user', 'content': user_content})
 
-    client = _get_anthropic()
+    preferred_provider = _preferred_provider_for_role('commercial_reasoning', ['anthropic', 'openai'])
+
+    client = _get_anthropic() if preferred_provider == 'anthropic' else None
     if client and not _anthropic_cooldown_active():
         try:
             t0 = time.monotonic()
@@ -252,11 +274,25 @@ def generate_sales_reply(
                 'tokens_in': getattr(resp.usage, 'input_tokens', 0),
                 'tokens_out': getattr(resp.usage, 'output_tokens', 0),
             }
+            update_agent_status(
+                'anthropic_api_pc_lbn',
+                status=STATUS_AVAILABLE,
+                availability=True,
+                reason='sales_reply_succeeded',
+                metadata={'model': result['model']},
+            )
             log.info('llm_sales_reply', provider='anthropic', model=result['model'], latency_ms=latency,
                      tokens_in=result['tokens_in'], tokens_out=result['tokens_out'])
             return result
         except Exception as exc:
             log.warning('anthropic_sales_failed', error=str(exc))
+            update_agent_status(
+                'anthropic_api_pc_lbn',
+                status=STATUS_DEGRADED if not _is_anthropic_overloaded_error(exc) else STATUS_USAGE_EXHAUSTED,
+                availability=not _is_anthropic_overloaded_error(exc),
+                reason='sales_reply_failed',
+                metadata={'error': str(exc)},
+            )
     elif client and _anthropic_cooldown_active():
         log.warning('anthropic_sales_skipped_cooldown')
 
@@ -280,10 +316,24 @@ def generate_sales_reply(
                 'tokens_in': getattr(resp.usage, 'prompt_tokens', 0),
                 'tokens_out': getattr(resp.usage, 'completion_tokens', 0),
             }
+            update_agent_status(
+                'openai_primary_pc_lbn',
+                status=STATUS_RECOVERED if preferred_provider != 'openai' else STATUS_AVAILABLE,
+                availability=True,
+                reason='sales_reply_succeeded',
+                metadata={'model': resp.model},
+            )
             log.info('llm_sales_reply', provider='openai', model=resp.model, latency_ms=latency)
             return result
         except Exception as exc:
             log.error('openai_sales_failed', error=str(exc))
+            update_agent_status(
+                'openai_primary_pc_lbn',
+                status=STATUS_DEGRADED,
+                availability=False,
+                reason='sales_reply_failed',
+                metadata={'error': str(exc)},
+            )
 
     return {'text': '', 'model': 'none', 'provider': 'none', 'latency_ms': 0, 'tokens_in': 0, 'tokens_out': 0}
 
@@ -319,7 +369,9 @@ def extract_structured(
         f"Mensagem: \"{user_message}\""
     )
 
-    oai = _get_openai()
+    preferred_provider = _preferred_provider_for_role('structured_extraction', ['openai', 'anthropic'])
+
+    oai = _get_openai() if preferred_provider == 'openai' else None
     if oai:
         try:
             t0 = time.monotonic()
@@ -332,10 +384,24 @@ def extract_structured(
             latency = int((time.monotonic() - t0) * 1000)
             raw = resp.choices[0].message.content or '{}'
             data = json.loads(raw)
+            update_agent_status(
+                'openai_primary_pc_lbn',
+                status=STATUS_AVAILABLE,
+                availability=True,
+                reason='structured_extract_succeeded',
+                metadata={'model': OPENAI_MODEL_STRUCTURED},
+            )
             log.info('llm_extract', provider='openai', latency_ms=latency, fields=len(data))
             return data
         except Exception as exc:
             log.warning('openai_extract_failed', error=str(exc))
+            update_agent_status(
+                'openai_primary_pc_lbn',
+                status=STATUS_DEGRADED,
+                availability=False,
+                reason='structured_extract_failed',
+                metadata={'error': str(exc)},
+            )
 
     client = _get_anthropic()
     if client and not _anthropic_cooldown_active():
@@ -353,10 +419,24 @@ def extract_structured(
             if raw.startswith('```'):
                 raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0]
             data = json.loads(raw)
+            update_agent_status(
+                'anthropic_api_pc_lbn',
+                status=STATUS_RECOVERED if preferred_provider != 'anthropic' else STATUS_AVAILABLE,
+                availability=True,
+                reason='structured_extract_succeeded',
+                metadata={'model': ANTHROPIC_MODEL_FAST},
+            )
             log.info('llm_extract', provider='anthropic', latency_ms=latency, fields=len(data))
             return data
         except Exception as exc:
             log.warning('anthropic_extract_failed', error=str(exc))
+            update_agent_status(
+                'anthropic_api_pc_lbn',
+                status=STATUS_DEGRADED if not _is_anthropic_overloaded_error(exc) else STATUS_USAGE_EXHAUSTED,
+                availability=not _is_anthropic_overloaded_error(exc),
+                reason='structured_extract_failed',
+                metadata={'error': str(exc)},
+            )
     elif client and _anthropic_cooldown_active():
         log.warning('anthropic_extract_skipped_cooldown')
 
@@ -384,7 +464,9 @@ def summarize_conversation(
         f"Conversa:\n{conversation_text}\n\nResumo:"
     )
 
-    client = _get_anthropic()
+    preferred_provider = _preferred_provider_for_role('post_conversation_learning', ['anthropic', 'openai'])
+
+    client = _get_anthropic() if preferred_provider == 'anthropic' else None
     if client and not _anthropic_cooldown_active():
         try:
             resp = _anthropic_messages_create_with_retry(
@@ -393,9 +475,23 @@ def summarize_conversation(
                 max_tokens=max_tokens,
                 messages=[{'role': 'user', 'content': prompt}],
             )
+            update_agent_status(
+                'anthropic_api_pc_lbn',
+                status=STATUS_AVAILABLE,
+                availability=True,
+                reason='summary_succeeded',
+                metadata={'model': ANTHROPIC_MODEL_FAST},
+            )
             return (resp.content[0].text if resp.content else '').strip()
         except Exception as exc:
             log.warning('anthropic_summary_failed', error=str(exc))
+            update_agent_status(
+                'anthropic_api_pc_lbn',
+                status=STATUS_DEGRADED if not _is_anthropic_overloaded_error(exc) else STATUS_USAGE_EXHAUSTED,
+                availability=not _is_anthropic_overloaded_error(exc),
+                reason='summary_failed',
+                metadata={'error': str(exc)},
+            )
     elif client and _anthropic_cooldown_active():
         log.warning('anthropic_summary_skipped_cooldown')
 
@@ -407,9 +503,23 @@ def summarize_conversation(
                 messages=[{'role': 'user', 'content': prompt}],
                 max_tokens=max_tokens,
             )
+            update_agent_status(
+                'openai_primary_pc_lbn',
+                status=STATUS_RECOVERED if preferred_provider != 'openai' else STATUS_AVAILABLE,
+                availability=True,
+                reason='summary_succeeded',
+                metadata={'model': OPENAI_MODEL_STRUCTURED},
+            )
             return (resp.choices[0].message.content or '').strip()
         except Exception as exc:
             log.warning('openai_summary_failed', error=str(exc))
+            update_agent_status(
+                'openai_primary_pc_lbn',
+                status=STATUS_DEGRADED,
+                availability=False,
+                reason='summary_failed',
+                metadata={'error': str(exc)},
+            )
 
     return ''
 
@@ -436,7 +546,9 @@ def analyze_lead_score(
         "{\"score\": <0-100>, \"reasoning\": \"<1 frase>\", \"next_action\": \"<sugestao de proximo passo para o vendedor>\"}"
     )
 
-    client = _get_anthropic()
+    preferred_provider = _preferred_provider_for_role('post_conversation_learning', ['anthropic', 'openai'])
+
+    client = _get_anthropic() if preferred_provider == 'anthropic' else None
     if client and not _anthropic_cooldown_active():
         try:
             resp = _anthropic_messages_create_with_retry(
@@ -448,9 +560,23 @@ def analyze_lead_score(
             raw = (resp.content[0].text if resp.content else '{}').strip()
             if raw.startswith('```'):
                 raw = raw.split('\n', 1)[-1].rsplit('```', 1)[0]
+            update_agent_status(
+                'anthropic_api_pc_lbn',
+                status=STATUS_AVAILABLE,
+                availability=True,
+                reason='lead_score_succeeded',
+                metadata={'model': ANTHROPIC_MODEL_FAST},
+            )
             return json.loads(raw)
         except Exception as exc:
             log.warning('anthropic_lead_score_failed', error=str(exc))
+            update_agent_status(
+                'anthropic_api_pc_lbn',
+                status=STATUS_DEGRADED if not _is_anthropic_overloaded_error(exc) else STATUS_USAGE_EXHAUSTED,
+                availability=not _is_anthropic_overloaded_error(exc),
+                reason='lead_score_failed',
+                metadata={'error': str(exc)},
+            )
     elif client and _anthropic_cooldown_active():
         log.warning('anthropic_lead_score_skipped_cooldown')
 
@@ -463,9 +589,23 @@ def analyze_lead_score(
                 max_tokens=150,
                 response_format={'type': 'json_object'},
             )
+            update_agent_status(
+                'openai_primary_pc_lbn',
+                status=STATUS_RECOVERED if preferred_provider != 'openai' else STATUS_AVAILABLE,
+                availability=True,
+                reason='lead_score_succeeded',
+                metadata={'model': OPENAI_MODEL_STRUCTURED},
+            )
             return json.loads(resp.choices[0].message.content or '{}')
         except Exception as exc:
             log.warning('openai_lead_score_failed', error=str(exc))
+            update_agent_status(
+                'openai_primary_pc_lbn',
+                status=STATUS_DEGRADED,
+                availability=False,
+                reason='lead_score_failed',
+                metadata={'error': str(exc)},
+            )
 
     return {'score': keyword_score, 'reasoning': 'fallback', 'next_action': ''}
 
@@ -474,6 +614,7 @@ def analyze_lead_score(
 # Status / Health
 # ============================================================
 def llm_status() -> Dict:
+    capacity = summarize_registry()
     return {
         'anthropic': {
             'available': bool(ANTHROPIC_API_KEY and _get_anthropic()),
@@ -493,11 +634,13 @@ def llm_status() -> Dict:
             'anthropic_overloaded_cooldown_seconds': ANTHROPIC_OVERLOADED_COOLDOWN_SECONDS,
         },
         'delegation': {
-            'sales_reply': 'anthropic' if ANTHROPIC_API_KEY else 'openai',
-            'structured_extract': 'openai',
-            'conversation_summary': 'anthropic' if ANTHROPIC_API_KEY else 'openai',
-            'lead_score_analysis': 'anthropic' if ANTHROPIC_API_KEY else 'openai',
+            'sales_reply': _preferred_provider_for_role('commercial_reasoning', ['anthropic', 'openai']),
+            'structured_extract': _preferred_provider_for_role('structured_extraction', ['openai', 'anthropic']),
+            'conversation_summary': _preferred_provider_for_role('post_conversation_learning', ['anthropic', 'openai']),
+            'lead_score_analysis': _preferred_provider_for_role('post_conversation_learning', ['anthropic', 'openai']),
             'embeddings': 'openai',
             'speech_to_text': 'openai',
         },
+        'recruitment': capacity.get('roles', {}),
+        'ai_capacity': capacity,
     }

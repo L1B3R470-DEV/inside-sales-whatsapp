@@ -22,8 +22,8 @@ const cfg = {
   unresolvedRecipientMessage: 'Aqui é o Eduardo, Consultor de Vendas Internas da Classe Couro. Tive uma instabilidade para identificar seu contato neste momento, mas já estou cuidando disso. Pode repetir sua mensagem, por favor?',
   missingKeyMessage: 'Aqui é o Eduardo, Consultor de Vendas Internas da Classe Couro. Nosso atendimento automático está em ajuste neste momento, mas seu contato já foi registrado e vou seguir com você por aqui.',
   blockedNumberMessage: '',
-  testModeOnlyAllowedNumbers: false,
-  testModeSilentDrop: false,
+  testModeOnlyAllowedNumbers: true,
+  testModeSilentDrop: true,
   // Safety denylist for accidental recipients. Extend/adjust as needed.
   blockedNumbers: [
     '557599991111',
@@ -1988,7 +1988,7 @@ if (!recipientNumber) {
   outboundNumber = '';
   sendEligible = false;
   sendEligibilityReason = 'blocked_number';
-} else if (!inBusinessHours && !alwaysAllowedNumber) {
+} else if (!inBusinessHours) {
   allowAi = false;
   blockReason = 'out_of_hours';
 } else {
