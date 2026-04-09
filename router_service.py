@@ -114,7 +114,7 @@ SAFE_CACHE_INTENTS = {
     'preco_orcamento',
 }
 
-CACHE_MIN_CONFIDENCE_LEARN = float(os.getenv('ROUTER_CACHE_MIN_CONFIDENCE_LEARN', '0.62'))
+CACHE_MIN_CONFIDENCE_LEARN = float(os.getenv('ROUTER_CACHE_MIN_CONFIDENCE_LEARN', '0.45'))
 CACHE_SEMANTIC_ENABLED = str(os.getenv('ROUTER_CACHE_SEMANTIC_ENABLED', 'true')).strip().lower() in {'1', 'true', 'yes', 'on'}
 CACHE_SEMANTIC_THRESHOLD = float(os.getenv('ROUTER_CACHE_SEMANTIC_THRESHOLD', '0.78'))
 CACHE_SEMANTIC_CANDIDATE_LIMIT = int(os.getenv('ROUTER_CACHE_SEMANTIC_CANDIDATE_LIMIT', '120'))
@@ -1388,11 +1388,11 @@ def classify_complexity(text: str) -> str:
     token_count = len(tokenize_words(text))
     if token_count <= 6 and re.fullmatch(r'(oi|ola|bom dia|boa tarde|boa noite|obrigado|obrigada|valeu)', norm):
         return 'simple'
-    if any(k in norm for k in ['cnpj', 'revenda', 'revender', 'representante', 'condicao comercial', 'orcamento']) and token_count >= 10:
+    if any(k in norm for k in ['cnpj', 'revenda', 'revender', 'representante', 'condicao comercial', 'orcamento']) and token_count >= 8:
         return 'complex'
-    if token_count >= 28:
+    if token_count >= 22:
         return 'complex'
-    if token_count <= 12:
+    if token_count <= 8:
         return 'simple'
     return 'medium'
 
