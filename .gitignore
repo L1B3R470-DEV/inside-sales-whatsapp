@@ -32,6 +32,9 @@ vivaldi_temp_profile/
 # Exports CRM
 crm_exports/
 
+# Exports n8n (podem conter credenciais embutidas)
+n8n_rebuild_export/
+
 # Referência/cache gerado
 reference_patterns_cache/
 rag_vector_store/
