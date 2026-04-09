@@ -1457,6 +1457,7 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
         if (!cnpjLookup.ok) {
           activeScript.completed = true;
           activeScript.cnpjLookupStatus = 'lookup_unavailable';
+          profile.companyCnpj = activeScript.data.cnpj;
           profile.leadStage = 'qualificando';
           profile.bookSalesAccess = 'eligible';
           profile.awaitingVitrineConsent = false;

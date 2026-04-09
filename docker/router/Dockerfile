@@ -10,6 +10,7 @@ RUN pip install -r /app/requirements-router.txt
 
 COPY router_service.py /app/router_service.py
 COPY multi_llm.py /app/multi_llm.py
+COPY ai_capacity_registry.py /app/ai_capacity_registry.py
 
 HEALTHCHECK CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8091/health', timeout=5)"
 

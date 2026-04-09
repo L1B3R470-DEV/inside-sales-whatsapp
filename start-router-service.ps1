@@ -85,6 +85,8 @@ $env:ROUTER_DB_PATH = $dbPath
 $env:ROUTER_QDRANT_PATH = $vectorDir
 $env:ROUTER_QDRANT_COLLECTION = "knowledge_chunks"
 $env:ROUTER_OPENAI_EMBED_MODEL = "text-embedding-3-small"
-$env:ROUTER_WATCH_INTERVAL_SECONDS = "900"
+$env:ROUTER_WATCH_INTERVAL_SECONDS = "300"
+$env:ROUTER_CACHE_SEMANTIC_THRESHOLD = "0.78"
+$env:ROUTER_CACHE_MIN_CONFIDENCE_LEARN = "0.45"
 
 & $pythonExe $serviceScript
