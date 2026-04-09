@@ -2036,12 +2036,17 @@ def file_is_indexable(path: Path) -> bool:
     return not any(part in SKIP_DIR_NAMES for part in path.parts)
 
 
+SKIP_DIRS = {'_noise_archive', '_archive', '_disabled', '.git'}
+
+
 def iter_docs() -> List[Path]:
     if not ML_DIR.exists():
         return []
     docs = []
     for path in ML_DIR.rglob('*'):
         if path.is_dir():
+            continue
+        if any(part in SKIP_DIRS for part in path.parts):
             continue
         if file_is_indexable(path):
             docs.append(path)
