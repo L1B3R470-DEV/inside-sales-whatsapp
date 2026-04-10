@@ -2080,10 +2080,13 @@ def delete_points(point_ids: List[str]):
     normalized_ids = [normalize_qdrant_point_id(point_id) for point_id in point_ids if normalize_qdrant_point_id(point_id)]
     if not normalized_ids:
         return
-    client.delete(
-        collection_name=QDRANT_COLLECTION,
-        points_selector=models.PointIdsList(points=normalized_ids),
-    )
+    try:
+        client.delete(
+            collection_name=QDRANT_COLLECTION,
+            points_selector=models.PointIdsList(points=normalized_ids),
+        )
+    except Exception as exc:
+        log.warning('qdrant_delete_failed', ids=normalized_ids[:5], error=str(exc))
 
 
 def ingest_document(path: Path):
@@ -2211,7 +2214,10 @@ def purge_missing_docs(current_paths: List[Path]):
 def run_ingest_cycle():
     global LAST_INGEST_AT, LAST_INGEST_EPOCH
     docs = iter_docs()
-    purge_missing_docs(docs)
+    try:
+        purge_missing_docs(docs)
+    except Exception as exc:
+        log.warning('purge_missing_docs_failed', error=str(exc))
     for path in docs:
         try:
             ingest_document(path)

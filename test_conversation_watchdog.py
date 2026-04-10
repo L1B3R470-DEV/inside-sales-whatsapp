@@ -389,12 +389,26 @@ def check_router_health(cfg: WatchdogConfig) -> bool:
 
 
 def get_container_state(name: str) -> Dict[str, str]:
-    cp = run_command(["docker", "inspect", "--format", "{{.State.Status}}|{{if .State.Health}}{{.State.Health.Status}}{{end}}", name], timeout=20)
+    # docker ps is much faster than docker inspect (avoids timeout on busy daemon)
+    cp = run_command(
+        ["docker", "ps", "--filter", f"name=^/{name}$", "--format", "{{.Status}}"],
+        timeout=5,
+    )
     text = (cp.stdout or "").strip()
     if cp.returncode != 0 or not text:
         return {"status": "missing", "health": ""}
-    status, _, health = text.partition("|")
-    return {"status": status.strip(), "health": health.strip()}
+    # Status looks like "Up 2 hours (healthy)" or "Up 3 minutes"
+    lower = text.lower()
+    if not lower.startswith("up"):
+        return {"status": "exited", "health": ""}
+    health = ""
+    if "(healthy)" in lower:
+        health = "healthy"
+    elif "(unhealthy)" in lower:
+        health = "unhealthy"
+    elif "(starting)" in lower:
+        health = "starting"
+    return {"status": "running", "health": health}
 
 
 def sql_escape(value: str) -> str:
