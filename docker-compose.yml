@@ -151,6 +151,7 @@
       - ATTENDANT_REJECT_LBN_AS_RUNTIME=${ATTENDANT_REJECT_LBN_AS_RUNTIME}
       - ATTENDANT_REJECT_LBN_DOCKER=${ATTENDANT_REJECT_LBN_DOCKER}
       - ROUTER_BASE_URL=http://router:8091
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
     volumes:
       - n8n_data:/home/node/.n8n
     depends_on:
