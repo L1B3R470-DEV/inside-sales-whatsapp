@@ -37,6 +37,13 @@ from rank_bm25 import BM25Okapi
 import multi_llm
 
 try:
+    import psycopg
+    HAS_PSYCO_PG = True
+except ImportError:
+    psycopg = None
+    HAS_PSYCO_PG = False
+
+try:
     import pymupdf  # PyMuPDF
     HAS_PYMUPDF = True
 except ImportError:
@@ -58,6 +65,7 @@ structlog.configure(
 ROOT_DIR = Path(__file__).resolve().parent
 ML_DIR = Path(os.getenv('ROUTER_ML_DIR', ROOT_DIR / 'CHATGPT_MACHINE_LEARNING'))
 DB_PATH = Path(os.getenv('ROUTER_DB_PATH', ROOT_DIR / 'router_runtime.sqlite'))
+CRM_PATH = Path(os.getenv('ROUTER_CRM_PATH', ROOT_DIR / 'crm_operacional.sqlite'))
 QDRANT_PATH = Path(os.getenv('ROUTER_QDRANT_PATH', ROOT_DIR / 'rag_vector_store'))
 QDRANT_COLLECTION = os.getenv('ROUTER_QDRANT_COLLECTION', 'knowledge_chunks')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '').strip()
@@ -75,6 +83,12 @@ MAX_CACHE_REPLY_CHARS = int(os.getenv('ROUTER_MAX_CACHE_REPLY_CHARS', '1800'))
 LID_LOG_SCAN_SECONDS = int(os.getenv('ROUTER_LID_LOG_SCAN_SECONDS', '1800'))
 LID_LOG_SCAN_LINES = int(os.getenv('ROUTER_LID_LOG_SCAN_LINES', '2500'))
 ROUTER_ENFORCE_TEST_GATE = str(os.getenv('ROUTER_ENFORCE_TEST_GATE', 'false')).strip().lower() in {'1', 'true', 'yes', 'on'}
+EVOLUTION_PG_HOST = os.getenv('ROUTER_EVOLUTION_PG_HOST', 'postgres').strip() or 'postgres'
+EVOLUTION_PG_PORT = int(os.getenv('ROUTER_EVOLUTION_PG_PORT', '5432'))
+EVOLUTION_PG_DB = os.getenv('ROUTER_EVOLUTION_PG_DB', os.getenv('POSTGRES_DB', 'evolution')).strip() or 'evolution'
+EVOLUTION_PG_USER = os.getenv('ROUTER_EVOLUTION_PG_USER', os.getenv('POSTGRES_USER', 'evolution')).strip() or 'evolution'
+EVOLUTION_PG_PASSWORD = os.getenv('ROUTER_EVOLUTION_PG_PASSWORD', os.getenv('POSTGRES_PASSWORD', 'evolution')).strip()
+EVOLUTION_CONTACT_LOOKUP_ENABLED = str(os.getenv('ROUTER_EVOLUTION_CONTACT_LOOKUP_ENABLED', 'true')).strip().lower() in {'1', 'true', 'yes', 'on'}
 
 TEXT_EXTENSIONS = {'.txt', '.md', '.csv', '.json', '.log', '.xml', '.html', '.htm'}
 OFFICE_XML_EXTENSIONS = {'.docx', '.xlsx'}
@@ -100,7 +114,14 @@ def _load_sdr_prompt() -> str:
     prompt_file = ROOT_DIR / 'sdr_prompt.txt'
     if prompt_file.exists():
         return prompt_file.read_text(encoding='utf-8').strip()
-    return 'Voce e Eduardo, Consultor de Vendas Internas da Classe Couro.'
+    return (
+        'Voce e Eduardo Vinhas, Consultor de Vendas Internas da Classe. '
+        'Responda de forma curta, objetiva e comercial. '
+        'Nunca escreva Classe Couro. Nunca use premium. '
+        'Nunca defina produtos por genero. '
+        'Nunca mencione a cidade informada pelo lead. '
+        'Se precisar pedir CNPJ, faca isso uma unica vez e sem assinatura.'
+    )
 
 SDR_SYSTEM_PROMPT = _load_sdr_prompt()
 
@@ -135,6 +156,7 @@ URL_PATTERN = re.compile(r'(?i)\bhttps?://[^\s<>()]+')
 WWW_PATTERN = re.compile(r'(?i)\bwww\.[^\s<>()]+')
 DOMAIN_PATTERN = re.compile(r'(?i)\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}(?:/[^\s<>()]*)?')
 EMOJI_PATTERN = re.compile(r'[\U0001F300-\U0001FAFF\u2600-\u27BF\uFE0F\u200D]', re.UNICODE)
+WHITESPACE_PATTERN = re.compile(r'\s+')
 
 
 class EmbeddingRateLimiter:
@@ -218,6 +240,7 @@ class LidCache:
             }
 
 lid_cache = LidCache(LID_CACHE_TTL_SECONDS)
+evolution_contact_cache = TTLCache(maxsize=2048, ttl=900)
 
 ATTENDANT_OPERATIONAL_HOST_ROLE = os.getenv('ATTENDANT_OPERATIONAL_HOST_ROLE', 'PC_CLS').strip() or 'PC_CLS'
 ATTENDANT_OPERATIONAL_HOST_IP = os.getenv('ATTENDANT_OPERATIONAL_HOST_IP', '100.113.13.27').strip() or '100.113.13.27'
@@ -382,11 +405,13 @@ def transcribe_inbound_audio(payload: Dict) -> Dict:
     if not isinstance(inbound_audio, dict) or not inbound_audio:
         return {'ok': False, 'reason': 'no_audio_payload', 'text': ''}
     if not openai_client:
+        log.error('transcribe_inbound_audio', reason='openai_client_missing')
         return {'ok': False, 'reason': 'openai_client_missing', 'text': ''}
 
     try:
         audio_bytes, mime_type, file_name = _read_audio_bytes_from_payload(inbound_audio)
         if len(audio_bytes) > MAX_AUDIO_BYTES:
+            log.warning('transcribe_inbound_audio', reason='audio_too_large', size_bytes=len(audio_bytes), max_bytes=MAX_AUDIO_BYTES)
             return {'ok': False, 'reason': 'audio_too_large', 'text': ''}
 
         suffix = _safe_audio_suffix(file_name, mime_type)
@@ -401,6 +426,10 @@ def transcribe_inbound_audio(payload: Dict) -> Dict:
                     prompt=OPENAI_TRANSCRIBE_PROMPT if OPENAI_TRANSCRIBE_PROMPT else None,
                 )
         text = str(getattr(resp, 'text', '') or '').strip()
+        if text:
+            log.info('transcribe_inbound_audio', reason='ok', text_length=len(text))
+        else:
+            log.warning('transcribe_inbound_audio', reason='empty_transcript')
         return {
             'ok': bool(text),
             'reason': 'ok' if text else 'empty_transcript',
@@ -409,6 +438,7 @@ def transcribe_inbound_audio(payload: Dict) -> Dict:
         }
     except (urllib.error.URLError, urllib.error.HTTPError) as exc:
         # retry once after short delay for transient network failures
+        log.warning('transcribe_inbound_audio', reason='network_error_retry', error_type=type(exc).__name__, error_msg=str(exc)[:200])
         try:
             time.sleep(2)
             audio_bytes, mime_type, file_name = _read_audio_bytes_from_payload(inbound_audio)
@@ -424,11 +454,17 @@ def transcribe_inbound_audio(payload: Dict) -> Dict:
                         prompt=OPENAI_TRANSCRIBE_PROMPT if OPENAI_TRANSCRIBE_PROMPT else None,
                     )
             text = str(getattr(resp, 'text', '') or '').strip()
+            if text:
+                log.info('transcribe_inbound_audio', reason='ok_retry', text_length=len(text))
+            else:
+                log.warning('transcribe_inbound_audio', reason='empty_transcript_retry')
             return {'ok': bool(text), 'reason': 'ok_retry' if text else 'empty_transcript_retry', 'text': text, 'model': OPENAI_TRANSCRIBE_MODEL}
-        except Exception:
-            return {'ok': False, 'reason': f'audio_download_failed:{exc}', 'text': ''}
+        except Exception as retry_exc:
+            log.error('transcribe_inbound_audio', reason='audio_download_failed_after_retry', error_type=type(retry_exc).__name__, error_msg=str(retry_exc)[:200])
+            return {'ok': False, 'reason': f'audio_download_failed:{type(retry_exc).__name__}', 'text': ''}
     except Exception as exc:
-        return {'ok': False, 'reason': f'transcription_failed:{exc}', 'text': ''}
+        log.error('transcribe_inbound_audio', reason='transcription_failed', error_type=type(exc).__name__, error_msg=str(exc)[:200])
+        return {'ok': False, 'reason': f'transcription_failed:{type(exc).__name__}', 'text': ''}
 
 
 def validate_br_phone(value: str) -> str:
@@ -451,6 +487,49 @@ def normalize_lid_jid(value: str) -> str:
     if not jid.endswith('@lid'):
         return jid
     return re.sub(r':\d+(?=@lid$)', '', jid)
+
+
+def normalize_push_name(value: str) -> str:
+    text = str(value or '').strip()
+    if not text:
+        return ''
+    text = WHITESPACE_PATTERN.sub(' ', text)
+    return normalize_ascii(text)
+
+
+def evolution_pg_dsn() -> str:
+    return (
+        f'host={EVOLUTION_PG_HOST} '
+        f'port={EVOLUTION_PG_PORT} '
+        f'dbname={EVOLUTION_PG_DB} '
+        f'user={EVOLUTION_PG_USER} '
+        f'password={EVOLUTION_PG_PASSWORD}'
+    )
+
+
+def jid_to_number(value: str) -> str:
+    raw = str(value or '').strip().lower()
+    if raw.endswith('@s.whatsapp.net'):
+        return digits_only(raw.replace('@s.whatsapp.net', ''))
+    return ''
+
+
+def payload_number_candidate(payload: Dict) -> str:
+    merged = dict(payload or {})
+    candidates = [
+        merged.get('number'),
+        merged.get('customerNumber'),
+        merged.get('sendTarget'),
+        jid_to_number(merged.get('resolvedJid')),
+        jid_to_number(merged.get('participantJidCandidate')),
+        jid_to_number(merged.get('senderJidCandidate')),
+        merged.get('senderPhoneCandidate'),
+    ]
+    for candidate in candidates:
+        number = digits_only(candidate)
+        if 10 <= len(number) <= 15:
+            return number
+    return ''
 
 
 def sha_text(value: str) -> str:
@@ -498,6 +577,12 @@ def sanitize_outbound_text(value: str, limit: int = 0, authorized_links=None) ->
     text = str(value or '').replace('\r\n', '\n').replace('\r', '\n')
     text = strip_unauthorized_links(text, authorized_links=authorized_links)
     text = strip_emoji_characters(text)
+    text = re.sub(r'\bClasse\s+Couro\b', 'Classe', text, flags=re.IGNORECASE)
+    text = re.sub(r'\bEduardo\s+Silva\b', 'Eduardo Vinhas', text, flags=re.IGNORECASE)
+    text = re.sub(r'\b(bolsas?|carteiras?|cintos?|mochilas?|kits?|acessorios?|produtos?|modelos?)\s+(femininas?|masculinas?|feminino|masculino)\b', r'\1', text, flags=re.IGNORECASE)
+    text = re.sub(r'\b(femininas?|masculinas?|feminino|masculino|premium)\b', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'^aqui e o eduardo(?:\s+vinhas|\s+silva)?(?:,?\s*consultor de vendas internas(?: da classe(?: couro)?)?)?[.!:\-\s]*', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'---[\s\S]*$', ' ', text)
     text = re.sub(r'[ \t]+\n', '\n', text)
     text = re.sub(r'\n{3,}', '\n\n', text)
     text = re.sub(r'[ \t]{2,}', ' ', text)
@@ -997,6 +1082,81 @@ def upsert_lid_mapping(remote_jid: str, phone_number: str, push_name: str = '', 
     return mapping
 
 
+def lookup_evolution_contact_mapping(remote_jid: str, push_name: str = '') -> Dict:
+    jid = normalize_lid_jid(remote_jid)
+    norm_push = normalize_push_name(push_name)
+    if not EVOLUTION_CONTACT_LOOKUP_ENABLED or not HAS_PSYCO_PG or not jid.endswith('@lid') or not norm_push:
+        return {}
+    cache_key = f'{jid}|{norm_push}'
+    if cache_key in evolution_contact_cache:
+        return evolution_contact_cache.get(cache_key) or {}
+    if not EVOLUTION_PG_PASSWORD:
+        evolution_contact_cache[cache_key] = {}
+        return {}
+
+    query = '''
+    WITH candidates AS (
+      SELECT DISTINCT
+        regexp_replace(split_part("remoteJid", '@', 1), '\D', '', 'g') AS phone_number,
+        "remoteJid" AS resolved_jid
+      FROM "Contact"
+      WHERE lower(regexp_replace(btrim(coalesce("pushName", '')), '\s+', ' ', 'g')) = %s
+        AND "remoteJid" LIKE '%%@s.whatsapp.net'
+    )
+    SELECT phone_number, resolved_jid
+    FROM candidates
+    WHERE phone_number <> ''
+    ORDER BY resolved_jid
+    '''
+    try:
+        with psycopg.connect(evolution_pg_dsn(), connect_timeout=4) as conn:
+            with conn.cursor() as cur:
+                cur.execute(query, (norm_push,))
+                rows = cur.fetchall()
+    except Exception as exc:
+        log.warning('evolution_contact_lookup_failed', remote_jid=jid, push_name=push_name, error=str(exc))
+        evolution_contact_cache[cache_key] = {}
+        return {}
+
+    unique_rows = []
+    seen = set()
+    for phone_number, resolved_jid in rows:
+        number = digits_only(phone_number)
+        resolved = str(resolved_jid or '').strip().lower()
+        if not number or not resolved:
+            continue
+        dedupe_key = (number, resolved)
+        if dedupe_key in seen:
+            continue
+        seen.add(dedupe_key)
+        unique_rows.append((number, resolved))
+
+    if len(unique_rows) != 1:
+        if unique_rows:
+            log.warning(
+                'evolution_contact_lookup_ambiguous',
+                remote_jid=jid,
+                push_name=push_name,
+                candidates=len(unique_rows),
+            )
+        evolution_contact_cache[cache_key] = {}
+        return {}
+
+    number, resolved_jid = unique_rows[0]
+    mapping = upsert_lid_mapping(
+        jid,
+        number,
+        push_name=push_name,
+        source='evolution_contact_exact_push_name',
+    )
+    if mapping:
+        mapping['resolved_jid'] = resolved_jid
+        evolution_contact_cache[cache_key] = mapping
+        return mapping
+    evolution_contact_cache[cache_key] = {}
+    return {}
+
+
 def scan_evolution_logs_for_lid(remote_jid: str, message_id: str = '') -> Dict:
     jid = normalize_lid_jid(remote_jid)
     if not jid.endswith('@lid'):
@@ -1061,7 +1221,7 @@ def resolve_recipient_payload(payload: Dict) -> Dict:
     remote_jid = normalize_lid_jid(merged.get('remoteJid'))
     message_id = str(merged.get('messageId') or '').strip()
     push_name = str(merged.get('pushName') or '').strip()
-    number = digits_only(merged.get('number'))
+    number = payload_number_candidate(merged)
     resolved_jid = str(merged.get('resolvedJid') or '').strip().lower()
     resolution_status = str(merged.get('resolutionStatus') or '').strip() or 'passthrough'
 
@@ -1070,15 +1230,25 @@ def resolve_recipient_payload(payload: Dict) -> Dict:
         resolved_jid = remote_jid
         resolution_status = 'resolved_direct'
     elif remote_jid.endswith('@lid'):
-        mapping = get_lid_mapping(remote_jid)
-        if not mapping:
-            mapping = scan_evolution_logs_for_lid(remote_jid, message_id=message_id)
-        if mapping:
-            number = digits_only(mapping.get('phone_number'))
-            resolved_jid = str(mapping.get('resolved_jid') or '').strip().lower() or f'{number}@s.whatsapp.net'
-            resolution_status = 'resolved_from_lid_log'
+        if number:
+            resolved_jid = resolved_jid or f'{number}@s.whatsapp.net'
+            resolution_status = 'resolved_from_payload_candidate'
         else:
-            resolution_status = resolution_status or 'unresolved_lid'
+            mapping = get_lid_mapping(remote_jid)
+            if not mapping:
+                mapping = scan_evolution_logs_for_lid(remote_jid, message_id=message_id)
+            if not mapping:
+                mapping = lookup_evolution_contact_mapping(remote_jid, push_name=push_name)
+            if mapping:
+                number = digits_only(mapping.get('phone_number'))
+                resolved_jid = str(mapping.get('resolved_jid') or '').strip().lower() or f'{number}@s.whatsapp.net'
+                mapping_source = str(mapping.get('source') or '').strip().lower()
+                if 'contact' in mapping_source:
+                    resolution_status = 'resolved_from_contact'
+                else:
+                    resolution_status = 'resolved_from_lid_log'
+            else:
+                resolution_status = resolution_status or 'unresolved_lid'
 
     send_target = number
     contact_key = number or remote_jid or digits_only(push_name)
@@ -1704,13 +1874,14 @@ def learn_response(payload: Dict) -> Dict:
 def log_route(payload: Dict, route_decision: str, message_complexity: str, cache_hit: bool, lead_score: int, rag_hits: List[Dict]):
     conn = db()
     top_score = float(rag_hits[0]['score']) if rag_hits else 0.0
+    route_number = payload_number_candidate(payload)
     conn.execute(
         '''
         INSERT INTO route_logs (number, push_name, inbound_text, normalized_message, route_decision, message_complexity, cache_hit, lead_score, rag_hit_count, rag_top_score, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''',
         (
-            str(payload.get('number') or ''),
+            route_number,
             str(payload.get('pushName') or ''),
             str(payload.get('inboundText') or ''),
             normalize_ascii(str(payload.get('inboundText') or '')),
@@ -2298,7 +2469,7 @@ def route_endpoint():
         blocked_set = get_all_blocked_numbers()
         allowed_set = get_all_always_allowed_numbers()
         recipient_number = digits_only(resolved_payload.get('number') or resolved_payload.get('customerNumber'))
-        if allowed_set and recipient_number not in allowed_set:
+        if ROUTER_ENFORCE_TEST_GATE and allowed_set and recipient_number not in allowed_set:
             return jsonify({
                 **resolved_payload,
                 'routeDecision': 'test_gate_blocked',
@@ -2584,6 +2755,175 @@ load();
     return resp
 
 
+@app.get('/sdr-dashboard-data')
+def sdr_dashboard_data():
+    from flask import make_response as _mc
+    rconn = db()
+    today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
+
+    stats_router = {
+        'routesTotal': rconn.execute('SELECT COUNT(*) AS c FROM route_logs').fetchone()['c'],
+        'routesToday': rconn.execute("SELECT COUNT(*) AS c FROM route_logs WHERE created_at >= ?", (today,)).fetchone()['c'],
+        'cacheHitsToday': rconn.execute("SELECT COUNT(*) AS c FROM route_logs WHERE cache_hit=1 AND created_at >= ?", (today,)).fetchone()['c'],
+        'cacheItems': rconn.execute("SELECT COUNT(*) AS c FROM response_cache WHERE active=1").fetchone()['c'],
+    }
+    stats_router['cacheHitRateToday'] = round(stats_router['cacheHitsToday'] / max(1, stats_router['routesToday']) * 100, 1)
+
+    route_decisions_today = [dict(r) for r in rconn.execute(
+        "SELECT route_decision, COUNT(*) AS c FROM route_logs WHERE created_at >= ? GROUP BY route_decision ORDER BY c DESC",
+        (today,),
+    ).fetchall()]
+
+    recent_routes = [dict(r) for r in rconn.execute(
+        '''SELECT id, number, push_name, inbound_text, normalized_message, route_decision,
+           message_complexity, cache_hit, lead_score, rag_hit_count, rag_top_score, created_at
+           FROM route_logs
+           WHERE created_at >= ?
+           ORDER BY created_at DESC
+           LIMIT 40''',
+        (today,),
+    ).fetchall()]
+    rconn.close()
+
+    crm_path = CRM_PATH
+    activity = []
+    leads_data = []
+    stats_crm: Dict = {'totalLeads': 0, 'awaitingHuman': 0, 'interactionsToday': 0}
+
+    _crm_error_msg: str = ''
+    try:
+        crm = sqlite3.connect(str(crm_path), check_same_thread=False)
+        crm.row_factory = sqlite3.Row
+        crm.execute('PRAGMA journal_mode=WAL')
+        crm.execute('PRAGMA busy_timeout=5000')
+
+        outbound_by_number: Dict = {}
+        for row in crm.execute(
+            "SELECT number, text, intent, confidence, needs_human, event_ts FROM interactions "
+            "WHERE direction='outbound' ORDER BY event_ts DESC LIMIT 300",
+        ).fetchall():
+            outbound_by_number.setdefault(str(row['number'] or ''), []).append(dict(row))
+
+        leads_raw = [dict(r) for r in crm.execute(
+            '''SELECT number, push_name, lead_stage, last_intent, last_confidence,
+               awaiting_human, city, last_seen_at, revenda_script_stage, cnpj_ativo_answer
+               FROM leads ORDER BY last_seen_at DESC''',
+        ).fetchall()]
+        lead_stage_map = {r['number']: r.get('lead_stage') for r in leads_raw if r.get('number')}
+        awaiting_human_map = {r['number']: bool(r.get('awaiting_human')) for r in leads_raw if r.get('number')}
+        push_name_candidates: Dict = {}
+        for lead in leads_raw:
+            key = normalize_push_name(lead.get('push_name') or '')
+            number = str(lead.get('number') or '').strip()
+            if not key or not number:
+                continue
+            push_name_candidates.setdefault(key, set()).add(number)
+        leads_data = leads_raw
+
+        stats_crm = {
+            'totalLeads': len(leads_raw),
+            'awaitingHuman': crm.execute("SELECT COUNT(*) AS c FROM leads WHERE awaiting_human=1").fetchone()['c'],
+            'interactionsToday': crm.execute(
+                "SELECT COUNT(*) AS c FROM interactions WHERE created_at >= ?", (today,)
+            ).fetchone()['c'],
+        }
+        crm.close()
+
+        for r in recent_routes:
+            n = str(r.get('number') or '').strip()
+            if not n:
+                key = normalize_push_name(r.get('push_name') or '')
+                candidates = sorted(push_name_candidates.get(key, set()))
+                if len(candidates) == 1:
+                    n = candidates[0]
+            r_ts = (r.get('created_at') or '')[:19]
+            if not r_ts:
+                continue
+            best_out = None
+            best_delta = None
+            for o in outbound_by_number.get(n, []):
+                o_ts = (o.get('event_ts') or '')[:19]
+                if not o_ts:
+                    continue
+                if o_ts < r_ts:
+                    break  # sorted DESC; no more candidates
+                try:
+                    from datetime import timedelta
+                    r_dt = datetime.fromisoformat(r_ts)
+                    o_dt = datetime.fromisoformat(o_ts)
+                    delta = abs((o_dt - r_dt).total_seconds())
+                    if delta <= 600 and (best_delta is None or delta < best_delta):
+                        best_out = o
+                        best_delta = delta
+                except Exception:
+                    pass
+            needs_human = bool(best_out['needs_human']) if best_out else False
+            if not needs_human:
+                needs_human = bool(awaiting_human_map.get(n))
+            if best_out:
+                display_status = 'response_sent'
+                display_label = 'Resposta enviada'
+            elif needs_human:
+                display_status = 'human_pending'
+                display_label = 'Atendimento humano pendente'
+            elif not n:
+                display_status = 'number_unresolved'
+                display_label = 'JID nao resolvido'
+            elif r.get('route_decision'):
+                display_status = 'no_outbound_associated'
+                display_label = 'Sem resposta associada'
+            else:
+                display_status = 'processing'
+                display_label = 'Processando'
+            activity.append({
+                **r,
+                'number': n,
+                'cache_hit': bool(r['cache_hit']),
+                'lead_stage': lead_stage_map.get(n),
+                'outbound_text': best_out['text'] if best_out else None,
+                'intent': best_out['intent'] if best_out else None,
+                'confidence': float(best_out['confidence']) if best_out and best_out['confidence'] else None,
+                'needs_human': needs_human,
+                'display_status': display_status,
+                'display_label': display_label,
+            })
+
+    except Exception as exc:
+        import traceback as _tb
+        _crm_error_msg = f'{type(exc).__name__}: {exc}'
+        log.warning('sdr_dashboard_data_crm_error', error=_crm_error_msg, traceback=_tb.format_exc())
+        activity = [
+            {**r, 'cache_hit': bool(r['cache_hit']), 'lead_stage': None,
+             'outbound_text': None, 'intent': None, 'confidence': None, 'needs_human': False,
+             'display_status': ('number_unresolved' if not str(r.get('number') or '').strip() else 'no_outbound_associated'),
+             'display_label': ('JID nao resolvido' if not str(r.get('number') or '').strip() else 'Sem resposta associada')}
+            for r in recent_routes
+        ]
+
+    llm_info = multi_llm.llm_status()
+    resp = _mc(jsonify({
+        'ok': True,
+        'generatedAt': utc_now(),
+        'health': {'ok': True, 'cacheItems': stats_router['cacheItems'], 'llm': llm_info},
+        'stats': {**stats_router, **stats_crm},
+        'routeDecisionsToday': route_decisions_today,
+        'recentActivity': activity,
+        'leads': leads_data,
+        '_debug': {'crmError': _crm_error_msg} if _crm_error_msg else {},
+    }))
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
+
+
+@app.get('/sdr-dashboard')
+def sdr_dashboard_html():
+    from flask import make_response as _mc, send_from_directory
+    try:
+        return send_from_directory(str(ROOT_DIR), 'dashboard_sdr.html')
+    except Exception:
+        return _mc('<h1>dashboard_sdr.html not found</h1>', 404)
+
+
 @app.get('/blocked-numbers')
 def blocked_numbers_list():
     conn = db()
@@ -2725,7 +3065,8 @@ def purge_disallowed_outbound_artifacts():
     conn = db()
 
     def _rewrite_table(table: str, key_col: str, text_cols: List[str], where: str = ''):
-        select_cols = [key_col] + [col for col in text_cols if col != key_col]
+        key_select = f'{key_col} AS __row_key' if key_col.lower() == 'rowid' else key_col
+        select_cols = [key_select] + [col for col in text_cols if col != key_col]
         rows = conn.execute(
             f"SELECT {', '.join(select_cols)} FROM {table} {where}"
         ).fetchall()
@@ -2739,9 +3080,10 @@ def purge_disallowed_outbound_artifacts():
                     payload[col] = safe
             if payload:
                 assignments = ', '.join([f'{col} = ?' for col in payload.keys()])
+                row_key = row['__row_key'] if '__row_key' in row.keys() else row[key_col]
                 conn.execute(
                     f'UPDATE {table} SET {assignments} WHERE {key_col} = ?',
-                    (*payload.values(), row[key_col]),
+                    (*payload.values(), row_key),
                 )
                 changed += 1
         return changed
