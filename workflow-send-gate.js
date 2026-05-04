@@ -44,6 +44,13 @@ function normalizeNumber(value) {
   return String(value || '').replace(/\D/g, '');
 }
 
+function isClosedLabelBlocked(data) {
+  return data.closedWhatsappLabelActive === true ||
+    data.closedLabelActive === true ||
+    String(data.blockReason || '') === 'closed_label_encerrado' ||
+    String(data.sendEligibilityReason || '') === 'closed_label_encerrado';
+}
+
 function resolveSemanticPayload(data) {
   const mode = String(data.sendMode || 'text').toLowerCase();
   if (mode === 'media') {
@@ -97,6 +104,11 @@ function buildWeakKey(data) {
   return `${number}|${resolveSemanticPayload(data)}`;
 }
 
+function shouldBypassWeakDuplicate(data) {
+  const inbound = normalizeText(data.inboundTextOriginal || data.inboundText || '');
+  return /\b(reenvie|reenviar|envie novamente|manda novamente|mandar novamente|preciso novamente)\b/.test(inbound);
+}
+
 function buildStructuredLog(data, extra) {
   return {
     event: 'workflow_send_gate',
@@ -138,6 +150,22 @@ for (const item of items) {
   const data = { ...item.json };
   const logBase = buildStructuredLog(data, {});
 
+  if (isClosedLabelBlocked(data)) {
+    console.log(JSON.stringify(buildStructuredLog(data, {
+      status: 'skip_closed_label_encerrado',
+      sendEligibilityReason: 'closed_label_encerrado',
+    })));
+    output.push({
+      json: {
+        ...data,
+        sendEligible: false,
+        sendEligibilityReason: 'closed_label_encerrado',
+        outboundGuardStatus: 'skip_closed_label_encerrado',
+      },
+    });
+    continue;
+  }
+
   if (data.sendEligible !== true) {
     console.log(JSON.stringify(buildStructuredLog(data, {
       status: 'skip_not_eligible',
@@ -177,7 +205,7 @@ for (const item of items) {
     continue;
   }
 
-  if (weakSeenAt && (nowMs - weakSeenAt) < WEAK_TTL_MS) {
+  if (weakSeenAt && (nowMs - weakSeenAt) < WEAK_TTL_MS && !shouldBypassWeakDuplicate(data)) {
     console.log(JSON.stringify(buildStructuredLog(data, {
       status: 'suppressed_duplicate_weak',
       dedupeKey: weakKey,

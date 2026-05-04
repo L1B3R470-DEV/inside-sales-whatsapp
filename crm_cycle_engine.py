@@ -10,14 +10,20 @@ from datetime import datetime, timezone
 from xml.etree import ElementTree as ET
 from xml.sax.saxutils import escape as xml_escape
 
-N8N_DB = '/data/database.sqlite'
-CRM_DB = '/work/crm_operacional.sqlite'
-EXPORT_DIR = '/work/crm_exports'
-ML_DIR = '/work/CHATGPT_MACHINE_LEARNING'
-IGNORED_CONTACTS_FILE = '/work/LISTA_DE_CONTATOS_IGNORADOS.xlsx'
-IGNORED_CONTACTS_ML_FILE = os.path.join(ML_DIR, '_AUTO_LISTA_DE_CONTATOS_IGNORADOS.txt')
-LEADS_WORKBOOK_PATH = '/work/LEADS_INSIDE_SALES_AUTO.xlsx'
-LEADS_WORKBOOK_EXPORT_PATH = os.path.join(EXPORT_DIR, 'LEADS_INSIDE_SALES_AUTO.xlsx')
+N8N_DB = os.getenv('N8N_DB', '/data/database.sqlite')
+CRM_DB = os.getenv('CRM_DB', '/work/crm_operacional.sqlite')
+EXPORT_DIR = os.getenv('CRM_EXPORT_DIR', os.getenv('EXPORT_DIR', '/work/crm_exports'))
+ML_DIR = os.getenv('CRM_ML_DIR', os.getenv('ML_DIR', '/work/CHATGPT_MACHINE_LEARNING'))
+IGNORED_CONTACTS_FILE = os.getenv('IGNORED_CONTACTS_FILE', '/work/LISTA_DE_CONTATOS_IGNORADOS.xlsx')
+IGNORED_CONTACTS_ML_FILE = os.getenv(
+    'IGNORED_CONTACTS_ML_FILE',
+    os.path.join(ML_DIR, '_AUTO_LISTA_DE_CONTATOS_IGNORADOS.txt'),
+)
+LEADS_WORKBOOK_PATH = os.getenv('LEADS_WORKBOOK_PATH', '/work/LEADS_INSIDE_SALES_AUTO.xlsx')
+LEADS_WORKBOOK_EXPORT_PATH = os.getenv(
+    'LEADS_WORKBOOK_EXPORT_PATH',
+    os.path.join(EXPORT_DIR, 'LEADS_INSIDE_SALES_AUTO.xlsx'),
+)
 WORKFLOW_ID = 'zN3heKJVLO8w4dG6'
 
 STOPWORDS = {
@@ -61,10 +67,72 @@ BINARY_OFFICE_EXTENSIONS = {'.doc', '.xls'}
 OTHER_DOC_EXTENSIONS = {'.pdf', '.rtf'}
 ML_EXTENSIONS = TEXT_EXTENSIONS | OFFICE_XML_EXTENSIONS | BINARY_OFFICE_EXTENSIONS | OTHER_DOC_EXTENSIONS
 EXCLUDED_B2B_REASONS = {'cnpj_inativo_ou_ausente', 'sem_loja_fisica'}
+DEFAULT_CRM_REPORTING_EXCLUDED_NUMBERS = {
+    # Numeros internos, homologacao, testes e denylist operacional conhecida.
+    '557583211367',
+    '557588340000',
+    '5575999991111',
+    '557599991111',
+    '553498066683',
+    '556282755369',
+    '557182157263',
+    '557581495845',
+    '557581534233',
+    '557581542771',
+    '557581960700',
+    '557588270211',
+    '557588270407',
+    '557588330352',
+    '557588340002',
+    '557591433132',
+    '557591612728',
+    '557591691926',
+    '557591711025',
+    '557591932073',
+    '557591958170',
+    '5575920008385',
+    '557592305601',
+    '557592385248',
+    '557592490290',
+    '557592637709',
+    '557592832955',
+    '557599001144',
+    '557599668464',
+    '557599669915',
+    '557599966316',
+    '558796686768',
+    '557382474263',
+}
+TEST_ARTIFACT_RE = re.compile(
+    r'\b(teste|test|e2e|debug|dedupe|homolog|phelper|infra|validacao|dashboard|numero\s+resolvido)\b',
+    re.IGNORECASE,
+)
 
 
 def now_iso():
     return datetime.now(timezone.utc).isoformat()
+
+
+def digits_only(value: str) -> str:
+    return re.sub(r'\D+', '', str(value or ''))
+
+
+def env_number_set(name: str) -> set:
+    raw = os.getenv(name, '')
+    return {digits_only(x) for x in re.split(r'[,;\s]+', raw) if digits_only(x)}
+
+
+def crm_reporting_excluded_numbers() -> set:
+    return set(DEFAULT_CRM_REPORTING_EXCLUDED_NUMBERS) | env_number_set('CRM_REPORTING_EXCLUDED_NUMBERS')
+
+
+def normalized_question_key(value: str) -> str:
+    return re.sub(r'\s+', ' ', str(value or '').strip().lower())
+
+
+def is_test_artifact_text(*values: str) -> bool:
+    joined = ' '.join(str(v or '') for v in values)
+    return bool(TEST_ARTIFACT_RE.search(joined))
 
 
 def sha_text(value: str) -> str:
@@ -1331,6 +1399,53 @@ except sqlite3.OperationalError:
     pass
 
 ignored_contacts_data = ingest_ignored_contacts_source(crm)
+reporting_excluded_numbers = crm_reporting_excluded_numbers()
+
+
+def upsert_b2b_exclusion(number, reason, source, profile, now_value):
+    crm.execute('DELETE FROM leads WHERE number = ?', (number,))
+    crm.execute(
+        '''
+        INSERT INTO b2b_reporting_exclusions (
+          number, exclusion_reason, source, push_name, customer_name,
+          last_inbound_text, last_seen_at, created_at, updated_at, active
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+        ON CONFLICT(number) DO UPDATE SET
+          exclusion_reason=excluded.exclusion_reason,
+          source=excluded.source,
+          push_name=excluded.push_name,
+          customer_name=excluded.customer_name,
+          last_inbound_text=excluded.last_inbound_text,
+          last_seen_at=excluded.last_seen_at,
+          updated_at=excluded.updated_at,
+          active=1
+        ''',
+        (
+            number,
+            reason,
+            source,
+            profile.get('pushName', ''),
+            profile.get('customerName', ''),
+            str(profile.get('lastInboundText', ''))[:600],
+            profile.get('lastSeenAt', now_value),
+            now_value,
+            now_value,
+        ),
+    )
+
+
+def profile_exclusion_reason(number, profile):
+    if number in reporting_excluded_numbers:
+        return 'numero_interno_teste_ou_bloqueado'
+    if is_test_artifact_text(
+        profile.get('pushName', ''),
+        profile.get('customerName', ''),
+        profile.get('lastInboundText', ''),
+        profile.get('lastReplyText', ''),
+    ):
+        return 'artefato_teste_homologacao'
+    return ''
 
 row = n8n.execute('SELECT staticData FROM workflow_entity WHERE id = ?', (WORKFLOW_ID,)).fetchone()
 if not row:
@@ -1352,6 +1467,11 @@ new_backlog = 0
 for number, p in profiles.items():
     number = str(number or '').strip()
     if not number:
+        continue
+
+    reporting_exclusion_reason = profile_exclusion_reason(number, p)
+    if reporting_exclusion_reason:
+        upsert_b2b_exclusion(number, reporting_exclusion_reason, 'crm_auto_triage', p, now)
         continue
 
     revenda_script = p.get('revendaScript', {}) if isinstance(p.get('revendaScript', {}), dict) else {}
@@ -1522,6 +1642,92 @@ for item in (backlog or []):
     )
     if cur.rowcount:
         new_backlog += 1
+
+
+def auto_triage_learning_backlog(now_value):
+    updates = {'empty': 0, 'test_artifact': 0, 'duplicate': 0}
+
+    cur = crm.execute(
+        '''
+        UPDATE learning_backlog
+        SET status='auto_closed_empty', updated_at=?
+        WHERE status='open' AND trim(coalesce(customer_question, '')) = ''
+        ''',
+        (now_value,),
+    )
+    updates['empty'] = cur.rowcount
+
+    rows = crm.execute(
+        '''
+        SELECT id, number, push_name, intent, customer_question
+        FROM learning_backlog
+        WHERE status='open'
+        '''
+    ).fetchall()
+    test_ids = [
+        int(r['id'])
+        for r in rows
+        if digits_only(r['number']) in reporting_excluded_numbers
+        or is_test_artifact_text(r['number'], r['push_name'], r['customer_question'])
+    ]
+    if test_ids:
+        placeholders = ','.join('?' for _ in test_ids)
+        cur = crm.execute(
+            f'''
+            UPDATE learning_backlog
+            SET status='auto_closed_test_artifact', updated_at=?
+            WHERE id IN ({placeholders})
+            ''',
+            (now_value, *test_ids),
+        )
+        updates['test_artifact'] = cur.rowcount
+
+    rows = crm.execute(
+        '''
+        SELECT id, number, intent, customer_question, source_created_at
+        FROM learning_backlog
+        WHERE status='open' AND trim(coalesce(customer_question, '')) <> ''
+        ORDER BY source_created_at DESC, id DESC
+        '''
+    ).fetchall()
+    by_key = {}
+    for r in rows:
+        key = (str(r['intent'] or '').strip(), normalized_question_key(r['customer_question']))
+        if not key[1]:
+            continue
+        by_key.setdefault(key, []).append(r)
+
+    duplicate_ids = []
+    for items in by_key.values():
+        if len(items) <= 1:
+            continue
+        ranked = sorted(
+            items,
+            key=lambda r: (
+                1 if digits_only(r['number']) else 0,
+                str(r['source_created_at'] or ''),
+                int(r['id']),
+            ),
+            reverse=True,
+        )
+        duplicate_ids.extend(int(r['id']) for r in ranked[1:])
+
+    if duplicate_ids:
+        placeholders = ','.join('?' for _ in duplicate_ids)
+        cur = crm.execute(
+            f'''
+            UPDATE learning_backlog
+            SET status='auto_closed_duplicate', updated_at=?
+            WHERE id IN ({placeholders})
+            ''',
+            (now_value, *duplicate_ids),
+        )
+        updates['duplicate'] = cur.rowcount
+
+    return updates
+
+
+backlog_triage = auto_triage_learning_backlog(now)
 
 # Index/update external machine learning folder
 ml_data = ingest_machine_learning_folder(crm)
@@ -1726,7 +1932,12 @@ crm.execute(
         generated_rules,
         int(ml_data['indexedNow']),
         int(ml_data['activeDocuments']),
-        f'Auto cycle from n8n workflow {WORKFLOW_ID}',
+        (
+            f'Auto cycle from n8n workflow {WORKFLOW_ID}; '
+            f'backlog_triage_empty={backlog_triage["empty"]}; '
+            f'backlog_triage_test={backlog_triage["test_artifact"]}; '
+            f'backlog_triage_duplicate={backlog_triage["duplicate"]}'
+        ),
     ),
 )
 
@@ -1929,6 +2140,9 @@ print(json.dumps({
     'mandatoryDirectives': len(ml_data.get('mandatoryDirectives') or []),
     'ignoredContactsIndexedNow': int(ignored_contacts_data['indexedNow']),
     'ignoredContactsActive': int(ignored_contacts_data['activeContacts']),
+    'backlogTriagedEmpty': int(backlog_triage['empty']),
+    'backlogTriagedTestArtifacts': int(backlog_triage['test_artifact']),
+    'backlogTriagedDuplicates': int(backlog_triage['duplicate']),
     'exportsDir': EXPORT_DIR,
     'leadsWorkbookPath': LEADS_WORKBOOK_PATH,
 }, ensure_ascii=False))

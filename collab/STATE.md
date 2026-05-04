@@ -1,0 +1,96 @@
+# COLLAB STATE
+
+Atualizado em: 2026-05-01 03:08:00 -03:00
+
+## Estado atual
+
+Projeto migrado para:
+C:\Users\User\Desktop\CODEX_PROJECTS\PROJETO_ATENDIMENTO_WHATSAPP_INSIDE_SALES
+
+## Responsabilidades
+
+Codex:
+- executar alteracoes no projeto
+- validar stack e runtime
+- integrar respostas de sidecars
+- manter rastreabilidade final
+
+Claude Code:
+- revisar fluxo e payloads
+- procurar lacunas em guardrails/router/n8n
+- propor correcao minima quando solicitado
+- nao executar mudanca em producao sem task explicita
+
+## Proxima tarefa recomendada
+
+Executar validacao operacional completa do checklist em FLOW_AUDIT_2026-04-28.md e atacar P0:
+- garantir um unico router em 8091
+- validar inbound real de numero nao bloqueado ate outbound Evolution
+- confirmar dashboard coerente
+
+## Ultima decisao conhecida
+
+Reset completo do numero homologado 557588340000 nao era necessario para liberar atendimento global. So limpar se houver evidencia nova de contaminacao.
+## Bloqueio runtime registrado em 2026-04-28
+
+Docker Desktop/engine estava parado durante a migracao:
+- com.docker.service = Stopped
+- pipes Docker ausentes
+- n8n/router recusando conexao
+
+Proxima sessao deve tratar isso como P0 antes de qualquer afirmacao de runtime 100%.
+
+## Radar IA Codex em 2026-05-01 03:03 -03
+
+Execucao inicial da automacao `radar-ia-auditor-evolutivo-do-stack-whatsapp-inside-sales` concluida sem alterar producao.
+
+Artefatos:
+- `ANALISES/RADAR_IA_CODEX.md`
+- `NOTIFICACAO_RADAR_IA.md`
+
+Achados principais:
+- stack Docker operacional em PC CLS `100.113.13.27`;
+- Git ja estava sujo antes da execucao;
+- `/metrics` do router apresentou falha intermitente SQLite antes de voltar a responder;
+- `.mcp.json` ainda aponta para paths antigos fora do workspace atual;
+- recomendacao pratica: branch/backup antes de corrigir MCP, observabilidade e testes do n8n MCP oficial.
+
+## Monitor de memorias Codex em 2026-05-01 03:08 -03
+
+Execucao recorrente `monitor-de-memorias-e-correcoes-codex`:
+- criou `.collab/README.md` apenas como ponteiro de compatibilidade para o fluxo ativo `collab/`;
+- manteve `collab/` como fonte operacional de protocolo/estado, sem migracao ou renomeacao;
+- corrigiu `.mcp.json` para executaveis MCP instalados no Python 3.14 e bancos runtime em `C:\AUTOMACAO\dados`;
+- confirmou PC CLS `100.113.13.27`;
+- validou `/health` e `/metrics` do router repetidamente apos erro SQLite transitorio;
+- manteve pendencias humanas: teste inbound WhatsApp real e decisao sobre `learning_backlog`.
+
+## Correcao CRM / backlog / SQLite em 2026-05-01 04:40 -03
+
+Execucao operacional solicitada por Rodrigo:
+- causa raiz do CRM estagnado: tarefa `CRM_CYCLE_N8N` apontava para `C:\Users\User\Desktop\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES`, e o ciclo CRM gravava em `/work/crm_operacional.sqlite` em vez do runtime `C:\AUTOMACAO\dados\crm_operacional.sqlite`;
+- corrigidos `run-crm-cycle*.ps1`, `crm_cycle_engine.py` e `crm_sheet_sync.py` para usar o projeto vigente e o CRM runtime;
+- criados wrappers no caminho antigo para compatibilidade com a tarefa `SISTEMA` existente;
+- criada tarefa redundante `CRM_CYCLE_N8N_USER` como usuario `User`, validada com `LastTaskResult=0`;
+- ciclo CRM importou 59 interacoes, depois teste controlado importou mais 1; CRM agora tem 756 interacoes e ultima interaction em `2026-05-01T07:39:24.018Z`;
+- backlog aberto caiu de 121 para 47; fechamentos preservaram historico com status `auto_closed_empty`, `auto_closed_test_artifact` e `auto_closed_duplicate`;
+- leads elegiveis do dashboard ficaram em 5; numeros internos/teste/bloqueados foram excluidos de relatorio B2B via `b2b_reporting_exclusions`;
+- router recebeu retry/timeout para conexao SQLite e dashboard passou a ler `b2b_eligible_leads`;
+- `docker-compose.yml` conectou o router tambem a rede legada `projetoatendimentowhatsappinsidesales_default`, restaurando `n8n -> router` e `router -> postgres/evolution/redis`;
+- teste controlado no webhook n8n com `557588340000` gerou execution `7943`, route_log `635` e outbound Evolution `DELIVERY_ACK`;
+- logs do router apos correcao sem novos matches de erro/warning/sqlite/postgres.
+
+Pendencia residual:
+- disco C ainda critico em 98.5% usado; prune Docker seguro removeu cache/imagens nao usadas sem tocar volumes, mas o volume `ai_n8n_data` segue grande e exige manutencao planejada se o espaco voltar a causar risco.
+
+## Saneamento Git em 2026-05-04
+
+Execucao operacional solicitada para resolver worktree sujo:
+- confirmado PC CLS `100.113.13.27`, branch `main` e origem `https://github.com/L1B3R470-DEV/inside-sales-whatsapp.git`;
+- removido `.git/index.lock` obsoleto apos encerrar processos Git travados da sessao;
+- segregados artefatos locais/volateis em `.gitignore` (`qr_reconectar.html`, `.fuse_hidden*`, bancos locais, `sms-receive-module/`, `node_modules/`, dumps/raws de relatorio e `stress-test-runs/`);
+- restaurados arquivos textuais corrompidos por normalizacao defeituosa a partir de blobs bons do object database Git;
+- mantido backup temporario da versao corrompida em `%LOCALAPPDATA%\Temp\inside_sales_git_repair_20260504_111103`.
+
+Proxima regra operacional:
+- antes de novo commit grande, executar `git diff --cached --check`, validadores de sintaxe e revisar se algum artefato de runtime/sessao entrou no stage.

@@ -1,0 +1,25 @@
+{
+  "testRunId": "STRESSREAL-2026-04-28-5575988340000",
+  "clientNumber": "5575988340000",
+  "clientInstance": "STRESS_CLIENT_SETOR",
+  "attendantInstance": "ATENDIMENTO_VENDAS_CLEAN",
+  "attendantNumber": "557583211367",
+  "goal": "Stress test real do atendimento IA usando uma instancia cliente isolada no Evolution.",
+  "rules": {
+    "clientInstanceWebhook": "disabled",
+    "resetScope": "clientNumber only",
+    "preserveBlockedNumbers": true,
+    "doNotUseOwnAttendantNumberAsLead": true
+  },
+  "validationTargets": [
+    "Evolution inbound from client number",
+    "n8n execution success",
+    "router route_logs with client number",
+    "Evolution outbound to client number",
+    "dashboard coherent status"
+  ],
+  "cleanupScripts": [
+    "stress-test-snapshot.ps1",
+    "stress-test-reset.ps1"
+  ]
+}

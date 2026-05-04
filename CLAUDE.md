@@ -1,4 +1,4 @@
-# CLAUDE.md — Atendente WhatsApp B2B Inside Sales (Classe Couro)
+# CLAUDE.md — Atendente WhatsApp B2B Inside Sales (Classe)
 
 Este arquivo é lido automaticamente pelo Claude Code a cada nova sessão neste projeto.
 
@@ -14,14 +14,14 @@ git config user.email "dev@insidesales.local"
 
 ## O Projeto
 
-Sistema de atendimento inteligente via WhatsApp B2B para captação e qualificação de leads revendedores da **Classe Couro**. Opera em produção.
+Sistema de atendimento inteligente via WhatsApp B2B para captação e qualificação de leads revendedores da **Classe**. Opera em produção.
 
 ### Stack
 | Componente | Localização | Porta |
 |---|---|---|
 | Evolution API (WhatsApp) | Docker container | 8080 |
 | n8n (automação de fluxo) | Docker container | 5678 |
-| router_service.py (Python/Flask) | Local venv `.venv-router/` | 8091 |
+| router_service.py (Python/Flask) | Docker `router` | 8091 |
 | Redis (cache Evolution) | Docker container | 6379 |
 | PostgreSQL (banco Evolution) | Docker container | 5432 |
 | Qdrant (vetorial RAG) | Local | — |
@@ -69,8 +69,8 @@ Tabelas: `response_cache`, `route_logs`, `rag_documents`, `rag_chunks`
 ---
 
 ## Persona SDR
-- **Nome:** Eduardo
-- **Cargo:** Consultor de Vendas Internas, Classe Couro
+- **Nome:** Eduardo Vinhas
+- **Cargo:** Consultor de Vendas Internas, Classe
 - **Tom:** humano, simpático, consultivo, comercial
 - **Horário:** Seg-Sex 08:00-12:00 e 13:30-18:00 (America/Bahia)
 
@@ -130,9 +130,9 @@ Invoque com `/nome-do-agente`:
 ---
 
 ## Caminhos Importantes
-- Projeto: `C:\Users\User\Desktop\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\`
+- Projeto: `C:\Users\User\Desktop\CODEX_PROJECTS\PROJETO_ATENDIMENTO_WHATSAPP_INSIDE_SALES\`
 - Venv router: `.venv-router\Scripts\activate`
-- docker-compose: `C:\Users\User\Desktop\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\docker-compose.yml`
+- docker-compose: `C:\Users\User\Desktop\CODEX_PROJECTS\PROJETO_ATENDIMENTO_WHATSAPP_INSIDE_SALES\docker-compose.yml`
 - Logs: `C:\AUTOMACAO\logs\`
 - Backups: `C:\AUTOMACAO\backups\`
 
@@ -145,3 +145,4 @@ Invoque com `/nome-do-agente`:
 - 61 documentos indexados no CRM
 - 22 regras de conhecimento ativas
 - 27 contatos ignorados
+\n

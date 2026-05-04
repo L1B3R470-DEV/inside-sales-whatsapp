@@ -83,8 +83,6 @@ evolution_send_json_body = '''={{ $json.sendMode === "buttons"
         "linkPreview": false
       }) }}'''
 
-router_base_expr = "={{ String($env.ROUTER_BASE_URL || 'http://router:8091').replace(/\\/$/, '') }}"
-
 
 def patch_nodes_json(nodes_text: str):
     nodes = json.loads(nodes_text)
@@ -141,20 +139,64 @@ def patch_nodes_json(nodes_text: str):
                 changed = True
 
         if name in {'Resolve Recipient API', 'Router Decision', 'Router Learn'} and ntype == 'n8n-nodes-base.httpRequest':
+            explicit_router_payload = (
+                "={{ ({ "
+                "instance: $json.instance || '', "
+                "remoteJid: $json.remoteJid || '', "
+                "resolvedJid: $json.resolvedJid || '', "
+                "resolutionStatus: $json.resolutionStatus || '', "
+                "number: $json.number || '', "
+                "customerNumber: $json.customerNumber || $json.number || '', "
+                "contactKey: $json.customerNumber || $json.number || $json.contactKey || '', "
+                "sendTarget: $json.customerNumber || $json.number || $json.sendTarget || '', "
+                "pushName: $json.pushName || '', "
+                "messageId: $json.messageId || '', "
+                "quotedMessageId: $json.quotedMessageId || '', "
+                "quotedText: $json.quotedText || '', "
+                "inboundText: $json.inboundText || $json.promptInput || '', "
+                "detectedIntent: $json.detectedIntent || '', "
+                "intent: $json.detectedIntent || '', "
+                "isLid: $json.isLid || false, "
+                "sendEligible: $json.sendEligible, "
+                "sendEligibilityReason: $json.sendEligibilityReason || '', "
+                "blockReason: $json.blockReason || '', "
+                "closedLabelActive: $json.closedLabelActive || false, "
+                "closedWhatsappLabelActive: $json.closedWhatsappLabelActive || false, "
+                "closedLabelReason: $json.closedLabelReason || '', "
+                "closedLabelId: $json.closedLabelId || '', "
+                "closedLabelName: $json.closedLabelName || '', "
+                "labels: $json.labels || [], "
+                "label: $json.label || null, "
+                "chatLabels: $json.chatLabels || [], "
+                "contactLabels: $json.contactLabels || [], "
+                "topology: { "
+                "operationalHostRole: \"PC_CLS\", operationalHostIp: \"100.113.13.27\", "
+                "operationalDockerHostRole: \"PC_CLS\", operationalDockerHostIp: \"100.113.13.27\", "
+                "interactiveHostRole: \"PC_LBN\", interactiveHostIp: \"100.101.106.95\", "
+                "interactiveModeOnly: true, rejectLbnAsRuntime: true, rejectLbnDocker: true "
+                "} "
+                "}) }}"
+            )
             if name == 'Resolve Recipient API':
-                desired_url = router_base_expr + " + '/resolve-recipient'"
+                desired_url = "={{ String($env.ROUTER_BASE_URL || 'http://router:8091').replace(/\\/$/, '') + '/resolve-recipient' }}"
                 if params.get('url') != desired_url:
                     params['url'] = desired_url
                     changed = True
             if name == 'Router Decision':
-                desired_url = router_base_expr + " + '/route'"
+                desired_url = "={{ String($env.ROUTER_BASE_URL || 'http://router:8091').replace(/\\/$/, '') + '/route' }}"
                 if params.get('url') != desired_url:
                     params['url'] = desired_url
                     changed = True
+                if params.get('jsonBody') != explicit_router_payload:
+                    params['jsonBody'] = explicit_router_payload
+                    changed = True
             if name == 'Router Learn':
-                desired_url = router_base_expr + " + '/learn-response'"
+                desired_url = "={{ String($env.ROUTER_BASE_URL || 'http://router:8091').replace(/\\/$/, '') + '/learn-response' }}"
                 if params.get('url') != desired_url:
                     params['url'] = desired_url
+                    changed = True
+                if params.get('jsonBody') != explicit_router_payload:
+                    params['jsonBody'] = explicit_router_payload
                     changed = True
             if int(node.get('timeout', 0) or 0) != 5000:
                 node['timeout'] = 5000
@@ -226,6 +268,62 @@ def patch_nodes_json(nodes_text: str):
     return json.dumps(nodes, ensure_ascii=False, separators=(',', ':'))
 
 
+def patch_connections_json(connections_text: str):
+    connections = json.loads(connections_text)
+    changed = False
+
+    def ensure_main(node_name: str):
+        node = connections.setdefault(node_name, {})
+        main = node.setdefault('main', [])
+        if not isinstance(main, list):
+            node['main'] = []
+            main = node['main']
+        while len(main) < 1:
+            main.append([])
+        return main
+
+    extract_main = ensure_main('Extract Reply')
+    desired_extract_targets = [
+        {'node': 'Router Learn', 'type': 'main', 'index': 0},
+        {'node': 'DEBUG Payload Before Can Send', 'type': 'main', 'index': 0},
+    ]
+    if extract_main[0] != desired_extract_targets:
+        extract_main[0] = desired_extract_targets
+        changed = True
+
+    router_learn_main = ensure_main('Router Learn')
+    if router_learn_main[0] != []:
+        router_learn_main[0] = []
+        changed = True
+
+    debug_main = ensure_main('DEBUG Payload Before Can Send')
+    desired_debug_targets = [
+        {'node': 'Can Send?', 'type': 'main', 'index': 0},
+    ]
+    if debug_main[0] != desired_debug_targets:
+        debug_main[0] = desired_debug_targets
+        changed = True
+
+    can_send = connections.setdefault('Can Send?', {})
+    can_send_main = can_send.setdefault('main', [])
+    while len(can_send_main) < 2:
+        can_send_main.append([])
+    desired_can_send_ready = [
+        {'node': 'Evolution Send Text', 'type': 'main', 'index': 0},
+    ]
+    if can_send_main[0] != desired_can_send_ready:
+        can_send_main[0] = desired_can_send_ready
+        changed = True
+    if can_send_main[1] != []:
+        can_send_main[1] = []
+        changed = True
+
+    if not changed:
+        return None
+
+    return json.dumps(connections, ensure_ascii=False, separators=(',', ':'))
+
+
 conn = sqlite3.connect(DB)
 cur = conn.cursor()
 
@@ -242,6 +340,16 @@ if row and row[1]:
             (patched, WORKFLOW_ID),
         )
         entity_changes = cur.rowcount
+cur.execute('SELECT id, connections FROM workflow_entity WHERE id = ?', (WORKFLOW_ID,))
+row = cur.fetchone()
+if row and row[1]:
+    patched = patch_connections_json(row[1])
+    if patched is not None:
+        cur.execute(
+            'UPDATE workflow_entity SET connections = ?, updatedAt = STRFTIME("%Y-%m-%d %H:%M:%f", "NOW") WHERE id = ?',
+            (patched, WORKFLOW_ID),
+        )
+        entity_changes = max(entity_changes, cur.rowcount)
 
 cur.execute('SELECT versionId, nodes FROM workflow_history WHERE workflowId = ?', (WORKFLOW_ID,))
 for version_id, nodes_text in cur.fetchall():
@@ -251,6 +359,17 @@ for version_id, nodes_text in cur.fetchall():
     if patched is not None:
         cur.execute(
             'UPDATE workflow_history SET nodes = ?, updatedAt = STRFTIME("%Y-%m-%d %H:%M:%f", "NOW") WHERE versionId = ?',
+            (patched, version_id),
+        )
+        history_changes += cur.rowcount
+cur.execute('SELECT versionId, connections FROM workflow_history WHERE workflowId = ?', (WORKFLOW_ID,))
+for version_id, connections_text in cur.fetchall():
+    if not connections_text:
+        continue
+    patched = patch_connections_json(connections_text)
+    if patched is not None:
+        cur.execute(
+            'UPDATE workflow_history SET connections = ?, updatedAt = STRFTIME("%Y-%m-%d %H:%M:%f", "NOW") WHERE versionId = ?',
             (patched, version_id),
         )
         history_changes += cur.rowcount

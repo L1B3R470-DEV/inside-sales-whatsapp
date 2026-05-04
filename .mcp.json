@@ -1,27 +1,27 @@
 {
   "mcpServers": {
     "sqlite": {
-      "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\mcp-server-sqlite.exe",
+      "command": "C:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\Scripts\\mcp-server-sqlite.exe",
       "args": [
         "--db-path",
-        "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\crm_operacional.sqlite"
+        "C:\\AUTOMACAO\\dados\\crm_operacional.sqlite"
       ]
     },
     "sqlite-router": {
-      "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\mcp-server-sqlite.exe",
+      "command": "C:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\Scripts\\mcp-server-sqlite.exe",
       "args": [
         "--db-path",
-        "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\router_runtime.sqlite"
+        "C:\\AUTOMACAO\\dados\\router_runtime.sqlite"
       ]
     },
     "fetch": {
-      "command": "C:\\Users\\User\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\mcp-server-fetch.exe",
+      "command": "C:\\Users\\User\\AppData\\Roaming\\Python\\Python314\\Scripts\\mcp-server-fetch.exe",
       "args": []
     },
     "bridge-monitor": {
-      "command": "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\.venv-router\\Scripts\\python.exe",
+      "command": "C:\\Program Files\\Python314\\python.exe",
       "args": [
-        "C:\\Users\\User\\Desktop\\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\\mcp_bridge_monitor.py"
+        "C:\\Users\\User\\Desktop\\CODEX_PROJECTS\\PROJETO_ATENDIMENTO_WHATSAPP_INSIDE_SALES\\mcp_bridge_monitor.py"
       ]
     }
   }

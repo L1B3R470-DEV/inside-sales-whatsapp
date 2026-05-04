@@ -29,6 +29,7 @@ except Exception as exc:
 BRIDGE_ROOT = Path(os.getenv("CLAUDE_BRIDGE_ROOT", r"C:\AUTOMACAO\cowork\claude_bridge"))
 INBOX_DIR = BRIDGE_ROOT / "inbox_for_claude"
 OUTBOX_DIR = BRIDGE_ROOT / "outbox_from_claude"
+PROCESSED_DIR = BRIDGE_ROOT / "processed_by_claude"
 STATE_FILE = BRIDGE_ROOT / "worker_state.json"
 POLL_SECONDS = int(os.getenv("CLAUDE_BRIDGE_POLL_SECONDS", "5"))
 MUTEX_NAME = os.getenv("CLAUDE_COWORK_MUTEX_NAME", r"Local\WA_Claude_Cowork_Worker")
@@ -55,7 +56,7 @@ def now_iso() -> str:
 
 
 def ensure_dirs() -> None:
-    for p in (BRIDGE_ROOT, INBOX_DIR, OUTBOX_DIR):
+    for p in (BRIDGE_ROOT, INBOX_DIR, OUTBOX_DIR, PROCESSED_DIR):
         p.mkdir(parents=True, exist_ok=True)
     if not STATE_FILE.exists():
         STATE_FILE.write_text(
@@ -273,11 +274,24 @@ def build_prompt(task: Dict) -> str:
 
 
 def task_files() -> List[Path]:
-    return sorted(INBOX_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime)
+    # Prioritize fresh handoffs so new delegations are not blocked by stale backlog.
+    return sorted(INBOX_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
 
 
 def reply_path(reply_id: str) -> Path:
     return OUTBOX_DIR / f"{reply_id}.json"
+
+
+def archive_task_file(task_file: Path, task_id: str) -> None:
+    target = PROCESSED_DIR / task_file.name
+    if target.exists():
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        target = PROCESSED_DIR / f"{task_file.stem}-{stamp}{task_file.suffix}"
+    try:
+        task_file.rename(target)
+    except Exception:
+        # Keep the worker non-fatal if audit archival cannot move the file.
+        pass
 
 
 def process_task(client: Anthropic, task_file: Path, state: Dict) -> bool:
@@ -366,6 +380,7 @@ def process_task(client: Anthropic, task_file: Path, state: Dict) -> bool:
     processed.add(task_id)
     state["processed_tasks"] = sorted(processed)
     write_state(state)
+    archive_task_file(task_file, task_id)
     return True
 
 

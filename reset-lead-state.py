@@ -14,7 +14,7 @@ except Exception:
     openpyxl = None
 
 
-DEFAULT_PROJECT_DIR = Path(r"C:\Users\User\Desktop\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES")
+DEFAULT_PROJECT_DIR = Path(__file__).resolve().parent
 DEFAULT_RUNTIME_ROOT = Path(r"C:\AUTOMACAO")
 DEFAULT_WORKFLOW_ID = "zN3heKJVLO8w4dG6"
 
@@ -40,7 +40,16 @@ def build_number_variants(number: str) -> list[str]:
         variants.add(f"{area}{subscriber}")
         variants.add(f"+55 ({area}) {subscriber}")
         if len(subscriber) == 9 and subscriber.startswith("9"):
-            variants.add(area + subscriber[1:])
+            without_mobile_nine = area + subscriber[1:]
+            variants.add(without_mobile_nine)
+            variants.add(f"55{without_mobile_nine}")
+            variants.add(f"+55{without_mobile_nine}")
+            variants.add(f"{without_mobile_nine}@s.whatsapp.net")
+            variants.add(f"55{without_mobile_nine}@s.whatsapp.net")
+            variants.add(f"{without_mobile_nine}@c.us")
+            variants.add(f"55{without_mobile_nine}@c.us")
+            variants.add(f"{without_mobile_nine}@lid")
+            variants.add(f"55{without_mobile_nine}@lid")
         if len(subscriber) == 8:
             variants.add(area + "9" + subscriber)
 
@@ -368,7 +377,7 @@ def cleanup_router_cache(db_path: Path, normalized_messages: list[str], dry_run:
     return {"matchedKeys": len(normalized_messages), "deletedRows": before, "remainingRows": after}
 
 
-def configure_router_gate(db_path: Path, authorized_number: str, dry_run: bool):
+def configure_router_gate(db_path: Path, authorized_number: str, dry_run: bool, exclusive_allowlist: bool = False):
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     cur = conn.cursor()
@@ -382,10 +391,11 @@ def configure_router_gate(db_path: Path, authorized_number: str, dry_run: bool):
 
     if not dry_run:
         cur.execute("DELETE FROM always_allowed_numbers")
-        cur.execute(
-            "INSERT OR REPLACE INTO always_allowed_numbers (number, reason, added_at) VALUES (?, ?, ?)",
-            (authorized_number, "controlled_real_test_authorized_only", datetime.utcnow().isoformat() + "Z"),
-        )
+        if exclusive_allowlist:
+            cur.execute(
+                "INSERT OR REPLACE INTO always_allowed_numbers (number, reason, added_at) VALUES (?, ?, ?)",
+                (authorized_number, "controlled_real_test_authorized_only", datetime.utcnow().isoformat() + "Z"),
+            )
         cur.execute("DELETE FROM blocked_numbers WHERE number = ?", (authorized_number,))
         conn.commit()
 
@@ -601,7 +611,7 @@ def main_reset(args):
         args.dry_run,
     )
     result["routerCache"] = cleanup_router_cache(router_db, cache_keys, args.dry_run)
-    result["gate"] = configure_router_gate(router_db, number, args.dry_run)
+    result["gate"] = configure_router_gate(router_db, number, args.dry_run, args.exclusive_allowlist)
     result["n8n"] = cleanup_n8n_via_docker(
         project_dir,
         number,

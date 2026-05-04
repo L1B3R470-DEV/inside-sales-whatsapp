@@ -50,6 +50,7 @@ ANTHROPIC_MODEL_FAST = _cfg('ANTHROPIC_MODEL_FAST', 'claude-haiku-4-5-20251001')
 OPENAI_API_KEY = _cfg('OPENAI_API_KEY')
 OPENAI_MODEL_MAIN = _cfg('OPENAI_MODEL', 'gpt-4o-mini')
 OPENAI_MODEL_STRUCTURED = _cfg('OPENAI_MODEL_STRUCTURED', 'gpt-4o-mini')
+SALES_REPLY_PRIMARY_PROVIDER = _cfg('DUAL_LLM_SALES_REPLY_PRIMARY', 'anthropic').lower()
 
 ANTHROPIC_RETRY_ATTEMPTS = int(_cfg('ANTHROPIC_RETRY_ATTEMPTS', '4') or '4')
 ANTHROPIC_RETRY_BASE_DELAY_SECONDS = float(_cfg('ANTHROPIC_RETRY_BASE_DELAY_SECONDS', '0.8') or '0.8')
@@ -188,6 +189,14 @@ def _preferred_provider_for_role(role: str, allowed: List[str]) -> str:
     return allowed[0] if allowed else ''
 
 
+def _preferred_sales_reply_provider() -> str:
+    if SALES_REPLY_PRIMARY_PROVIDER in {'anthropic', 'claude'}:
+        return 'anthropic'
+    if SALES_REPLY_PRIMARY_PROVIDER in {'openai', 'gpt'}:
+        return 'openai'
+    return _preferred_provider_for_role('commercial_reasoning', ['anthropic', 'openai'])
+
+
 def _anthropic_messages_create_with_retry(client, **kwargs):
     last_exc = None
     attempts = max(1, int(ANTHROPIC_RETRY_ATTEMPTS))
@@ -251,7 +260,7 @@ def generate_sales_reply(
     user_content = '\n\n'.join(sections)
     messages.append({'role': 'user', 'content': user_content})
 
-    preferred_provider = _preferred_provider_for_role('commercial_reasoning', ['anthropic', 'openai'])
+    preferred_provider = _preferred_sales_reply_provider()
 
     client = _get_anthropic() if preferred_provider == 'anthropic' else None
     if client and not _anthropic_cooldown_active():
@@ -634,7 +643,7 @@ def llm_status() -> Dict:
             'anthropic_overloaded_cooldown_seconds': ANTHROPIC_OVERLOADED_COOLDOWN_SECONDS,
         },
         'delegation': {
-            'sales_reply': _preferred_provider_for_role('commercial_reasoning', ['anthropic', 'openai']),
+            'sales_reply': _preferred_sales_reply_provider(),
             'structured_extract': _preferred_provider_for_role('structured_extraction', ['openai', 'anthropic']),
             'conversation_summary': _preferred_provider_for_role('post_conversation_learning', ['anthropic', 'openai']),
             'lead_score_analysis': _preferred_provider_for_role('post_conversation_learning', ['anthropic', 'openai']),

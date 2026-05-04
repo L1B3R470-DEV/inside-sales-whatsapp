@@ -1,8 +1,8 @@
 ﻿const response = $json;
 const guardrails = $node['Guardrails'].json;
 
-const fallbackBusy = 'Aqui e o Eduardo, Consultor de Vendas Internas da Classe Couro. Seu atendimento ja esta em prioridade. Me diga qual produto voce precisa para eu adiantar seu atendimento.';
-const fallbackWaiting = 'Aqui e o Eduardo, Consultor de Vendas Internas da Classe Couro. Recebi sua mensagem e vou te atender pessoalmente em instantes. Para agilizar, me diga qual produto voce precisa e a quantidade desejada.';
+const fallbackBusy = 'Seu atendimento ja esta em prioridade. Me diga qual produto voce precisa para eu adiantar por aqui.';
+const fallbackWaiting = 'Recebi sua mensagem e ja sigo com voce por aqui. Me diga qual produto voce precisa e a quantidade desejada.';
 
 function extractRawText(apiResponse) {
   let text = apiResponse?.output_text ?? '';
@@ -194,7 +194,7 @@ function stripUnauthorizedLinks(value, authorizedLinks) {
   const allowed = authorizedLinks instanceof Set ? authorizedLinks : new Set();
   const keepOrDrop = (match, offset, source) => {
     const prev = offset > 0 ? String(source || '').charAt(offset - 1) : '';
-    if (prev === '@') return match;
+    if (prev === '@' || prev === ':' || prev === '/') return match;
     return allowed.has(normalizeAuthorizedLink(match)) ? match : '';
   };
 
@@ -219,6 +219,198 @@ function sanitizeOutboundText(value, options) {
     text = text.slice(0, maxChars).trim();
   }
   return text;
+}
+
+function escapeRegExp(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function sentenceTrim(text, maxSentences, maxChars) {
+  const raw = String(text || '').trim();
+  if (!raw) return '';
+  const parts = raw
+    .replace(/\s+/g, ' ')
+    .split(/(?<=[.!?])\s+/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+  const limited = parts.slice(0, Math.max(1, Number(maxSentences || 3))).join(' ').trim();
+  if (!maxChars || limited.length <= maxChars) return limited;
+  const sliced = limited.slice(0, maxChars);
+  const cut = Math.max(sliced.lastIndexOf('.'), sliced.lastIndexOf('?'), sliced.lastIndexOf('!'));
+  return (cut >= 80 ? sliced.slice(0, cut + 1) : sliced).trim();
+}
+
+function dropLocationSentences(text) {
+  const parts = String(text || '')
+    .replace(/\s+/g, ' ')
+    .split(/(?<=[.!?])\s+/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+  return parts
+    .filter((part) => {
+      const norm = normalizeForDedupe(part);
+      const hasLeadingCityPattern = /^(?:para|em|na|no)\s+[A-ZÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ][\p{L}.-]+(?:\s+[A-ZÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ][\p{L}.-]+){0,2}(?:,|\s)/u.test(part);
+      return !/\b(praca|mercado de|mercado local|na sua regiao|para sua regiao|na regiao|na sua cidade|para sua cidade|perfil local|funcione bem em|aderencia em|na cidade de|na cidade)\b/.test(norm)
+        && !hasLeadingCityPattern;
+    })
+    .join(' ')
+    .trim();
+}
+
+function sanitizeCommercialStyle(value, ctx) {
+  let text = String(value || '');
+  if (!text) return '';
+
+  text = text.replace(/\r\n?/g, '\n');
+  text = text.replace(/---[\s\S]*$/g, ' ');
+  text = text.replace(/\*+/g, '');
+
+  const lines = text
+    .split('\n')
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .filter((line) => {
+      const norm = normalizeForDedupe(line);
+      if (norm === 'eduardo silva' || norm === 'eduardo vinhas') return false;
+      if (norm.includes('consultor de vendas internas') && norm.length < 90) return false;
+      if (/^\|\s*classe\b/i.test(line) && norm.length < 40) return false;
+      return true;
+    });
+  text = lines.join(' ');
+
+  text = text.replace(/\bClasse\s+Couro\b/gi, 'Classe');
+  text = text.replace(/\bEduardo\s+Silva\b/gi, 'Eduardo Vinhas');
+  text = text.replace(/^aqui e o eduardo(?:\s+vinhas|\s+silva)?(?:,?\s*consultor de vendas internas(?: da classe(?: couro)?)?)?[.!:\-\s]*/i, '');
+  text = text.replace(/\b(bolsas?|carteiras?|cintos?|mochilas?|kits?|acessorios?|produtos?|modelos?)\s+(femininas?|masculinas?|feminino|masculino)\b/gi, '$1');
+  text = text.replace(/\b(femininas?|masculinas?|feminino|masculino|premium)\b/gi, '');
+  text = text.replace(/\s{2,}/g, ' ').trim();
+
+  const cityCandidates = [];
+  const entities = ctx?.extractedEntities && typeof ctx.extractedEntities === 'object' ? ctx.extractedEntities : {};
+  const structured = ctx?.llmStructuredData && typeof ctx.llmStructuredData === 'object' ? ctx.llmStructuredData : {};
+  for (const candidate of [entities.city, entities.cidade, entities.cityHint, structured.cidade]) {
+    const city = String(candidate || '').trim();
+    if (city && city.length >= 3) cityCandidates.push(city);
+  }
+  for (const city of [...new Set(cityCandidates)]) {
+    const escaped = escapeRegExp(city);
+    text = text.replace(new RegExp(`\\b(?:em|para|de|na|no)\\s+${escaped}\\b`, 'gi'), '');
+    text = text.replace(new RegExp(`\\b${escaped}\\b`, 'gi'), '');
+  }
+  text = text.replace(/\b(?:em|para|na|no)\s+[A-ZÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ][\p{L}.-]+(?:\s+[A-ZÁÀÂÃÉÈÊÍÌÎÓÒÔÕÚÙÛÇ][\p{L}.-]+){0,2}\b/gu, '');
+  text = dropLocationSentences(text);
+
+  const sentences = text
+    .replace(/\s+/g, ' ')
+    .split(/(?<=[.!?])\s+/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+  const kept = [];
+  let cnpjSeen = false;
+  for (const sentence of sentences) {
+    const norm = normalizeForDedupe(sentence);
+    const hasCnpj = norm.includes('cnpj');
+    if (hasCnpj && cnpjSeen) continue;
+    if (cnpjSeen && /aguardo seu cnpj|aguardo o cnpj|para darmos continuidade|para prosseguirmos|com essa informacao|assim consigo acessar nosso sistema|margens? de lucro|previsao de giro|mix de modelos/.test(norm)) {
+      continue;
+    }
+    kept.push(sentence);
+    if (hasCnpj) cnpjSeen = true;
+  }
+  text = kept.join(' ').replace(/\s{2,}/g, ' ').trim();
+  text = sentenceTrim(text, 3, Number(ctx?.maxOutputChars || 420));
+  return text;
+}
+
+function wantsB2BLink(text) {
+  const norm = normalizeForDedupe(text);
+  return [
+    'link b2b', 'site b2b', 'portal b2b', 'link do b2b', 'link do portal',
+    'link do site', 'site de pedidos', 'portal de pedidos', 'acesso ao sistema',
+    'login b2b', 'entrar no portal', 'acessar o portal', 'me enviar o link b2b',
+    'me manda o link b2b', 'consegue me enviar o link b2b'
+  ].some((k) => norm.includes(normalizeForDedupe(k)));
+}
+
+function isValidCnpjDigits(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (digits.length !== 14) return false;
+  if (/^(\d)\1{13}$/.test(digits)) return false;
+  const calc = (base, factors) => {
+    const sum = factors.reduce((acc, factor, idx) => acc + Number(base[idx] || 0) * factor, 0);
+    const rem = sum % 11;
+    return rem < 2 ? 0 : 11 - rem;
+  };
+  const first = calc(digits, [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  const second = calc(digits, [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  return first === Number(digits[12]) && second === Number(digits[13]);
+}
+
+function extractCnpjFromValue(value) {
+  const raw = String(value || '');
+  const candidates = [];
+  const pushDigits = (candidate) => {
+    const digits = String(candidate || '').replace(/\D/g, '');
+    if (digits.length >= 14) candidates.push(digits.slice(0, 14));
+  };
+
+  for (const match of raw.matchAll(/cnpj\D{0,30}([0-9][0-9.\-\/\s]{13,30})/gi)) {
+    pushDigits(match[1]);
+  }
+  for (const match of raw.matchAll(/\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/g)) {
+    pushDigits(match[0]);
+  }
+
+  const allDigits = raw.replace(/\D/g, '');
+  if (allDigits.length === 14) candidates.push(allDigits);
+  if (allDigits.length > 14) {
+    for (let i = 0; i <= allDigits.length - 14; i++) {
+      candidates.push(allDigits.slice(i, i + 14));
+    }
+  }
+
+  const unique = [...new Set(candidates.filter((c) => c.length === 14))];
+  return unique.find((c) => isValidCnpjDigits(c)) || unique[0] || '';
+}
+
+function extractCnpjDigits(ctx) {
+  const candidates = [
+    ctx?.inboundTextOriginal,
+    ctx?.companyCnpj,
+    ctx?.lastCnpj,
+    ctx?.customerSnapshot?.cnpj,
+    ctx?.leadMemory?.cnpj,
+    ctx?.extractedEntities?.cnpj,
+    ctx?.llmStructuredData?.cnpj
+  ];
+  const extracted = candidates.map(extractCnpjFromValue).filter(Boolean);
+  return extracted.find((c) => isValidCnpjDigits(c)) || extracted[0] || '';
+}
+
+function hasRecentB2BContext(ctx) {
+  const explicit = String(ctx?.orderChoiceSelection || '').trim().toLowerCase() === 'b2b';
+  if (explicit) return true;
+  if (String(ctx?.b2bLinkSentAt || '').trim()) return true;
+  if (String(ctx?.b2bConsentGrantedAt || '').trim()) return true;
+  const lastReply = normalizeForDedupe(String(ctx?.lastReplyText || ''));
+  return /\bportal b2b\b|\blink b2b\b|\blogin e a senha inicial\b/.test(lastReply);
+}
+
+function buildB2BDirectReply(ctx) {
+  const url = String(ctx?.b2bUrl || '').trim();
+  if (!url) return '';
+  const label = String(ctx?.b2bDisplayLabel || 'Portal B2B Classe').trim();
+  const cnpj = extractCnpjDigits(ctx);
+  if (cnpj) {
+    return `Segue o acesso ao ${label}: ${url}\nLOGIN: ${cnpj}\nSENHA: ${cnpj.slice(0, 8)}`;
+  }
+  return `Segue o acesso ao ${label}: ${url} Se quiser, me envie seu CNPJ e eu te passo tambem o login e a senha inicial.`;
+}
+
+function isB2BCredentialsReply(ctx) {
+  const cnpj = extractCnpjDigits(ctx);
+  if (!isValidCnpjDigits(cnpj)) return false;
+  return hasRecentB2BContext(ctx);
 }
 
 function suppressDuplicateOutbound(instance, number, replyText, messageId) {
@@ -425,7 +617,7 @@ function buildRuleBasedReply(ctx) {
   }
 
   if (intent === 'institucional_empresa') {
-    return 'Claro. A Classe Couro e referencia em bolsas e acessorios de couro, com mais de 30 anos de mercado, unindo design e alta qualidade. Se quiser, te mostro as linhas com melhor saida para revenda no seu perfil.';
+    return 'Claro. A Classe atua com produtos e acessorios em couro, com foco em revenda e bom giro. Se fizer sentido, eu te mostro as linhas com melhor aderencia ao seu perfil.';
   }
 
   if (intent === 'atacado_quantidade' || intent === 'preco_orcamento') {
@@ -461,7 +653,7 @@ function buildRuleBasedReply(ctx) {
 
     if (productHint.includes('kit') || focus === 'KITS' || category.includes('KITS')) {
       if (!audienceHint && !category) {
-        return 'Temos kits com otima percepcao de presente e excelente potencial de revenda. Voce procura mais kits masculinos, femininos ou uma selecao mista?';
+        return 'Temos kits com otima percepcao de presente e excelente potencial de revenda. Voce quer uma selecao mais classica, presenteavel ou mista?';
       }
       const categoryText = category ? ` ${category.toLowerCase()}` : (audienceHint ? ` ${audienceHint}` : '');
       return `Temos kits${categoryText} com boa percepcao de valor e otima aceitacao na revenda. Voce quer uma linha mais classica, presenteavel ou uma selecao mista?`;
@@ -469,15 +661,15 @@ function buildRuleBasedReply(ctx) {
 
     if (productHint.includes('carteira')) {
       if (!audienceHint) {
-        return 'Temos otimas opcoes de carteiras com excelente giro para revenda. Voce procura mais modelos masculinos, femininos ou uma selecao mista?';
+        return 'Temos otimas opcoes de carteiras com excelente giro para revenda. Voce procura uma selecao mais classica, casual ou mista?';
       }
       const audienceText = audienceHint ? ` ${audienceHint}` : '';
-      return `Temos otimas opcoes de carteiras${audienceText} em couro, com excelente giro para revenda. Voce prefere linha basica, intermediaria ou premium?`;
+      return `Temos otimas opcoes de carteiras${audienceText} em couro, com excelente giro para revenda. Voce prefere linha basica ou intermediaria?`;
     }
 
     if (productHint.includes('cinto')) {
       if (!audienceHint) {
-        return 'Temos linhas de cintos com otima saida e excelente percepcao de valor. Voce procura mais modelos masculinos, femininos ou uma selecao mista?';
+        return 'Temos linhas de cintos com otima saida e excelente percepcao de valor. Voce procura uma selecao mais casual, social ou mista?';
       }
       const audienceText = audienceHint ? ` ${audienceHint}` : '';
       return `Temos linhas de cintos${audienceText} com otima saida e excelente percepcao de valor. Voce prefere modelos casuais, sociais ou misto?`;
@@ -518,8 +710,8 @@ function enforceProspectingQuality(replyText, ctx) {
   ];
   const looksTooGeneric = genericSnippets.some((snippet) => norm.includes(snippet));
 
-  if (intent === 'institucional_empresa' && !/classe couro|classe/i.test(text)) {
-    text = 'Claro! A Classe Couro atua com acessórios de couro, unindo qualidade, design e atendimento consultivo para ajudar cada cliente a encontrar a melhor solução. Se fizer sentido para você, eu também posso te mostrar as linhas com melhor saída no seu perfil.';
+  if (intent === 'institucional_empresa' && !/\bclasse\b/i.test(text)) {
+    text = 'Claro! A Classe atua com produtos em couro e atendimento consultivo para apoiar cada cliente na escolha do mix certo. Se fizer sentido, eu tambem posso te mostrar as linhas com melhor saida no seu perfil.';
   }
 
   if (intent === 'produto_catalogo' && (focus || category) && looksTooGeneric) {
@@ -693,6 +885,9 @@ if (response?.error || response?.statusCode >= 400) {
 }
 
 const routerOwnsReplyText = Boolean(llmReplyText) && /^rag_claude$|^claude_direct$/i.test(routeDecision);
+const directB2BReply = (
+  wantsB2BLink(String(guardrails.inboundTextOriginal || '')) || isB2BCredentialsReply(guardrails)
+) ? buildB2BDirectReply(guardrails) : '';
 if (routerOwnsReplyText && !modelRequestedHuman) {
   reply = llmReplyText;
   confidence = Math.max(confidence, 0.74);
@@ -706,6 +901,23 @@ if (routerOwnsReplyText && !modelRequestedHuman) {
 const minConfidence = Number(guardrails.minConfidenceForAutoSend || 0.4);
 const lowConfidence = confidence < minConfidence;
 const intentSensitive = sensitiveIntents.has(intent);
+
+// When the router already produced a commercial reply with Claude, keep that
+// answer as the source of truth for normal sales flows. Otherwise, later
+// fallback logic may incorrectly replace a valid reply with human handoff text.
+if (routerOwnsReplyText && !guardrails.humanPriority && !intentSensitive) {
+  needsHuman = false;
+  humanReason = '';
+  modelRequestedHuman = false;
+}
+
+if (directB2BReply) {
+  reply = directB2BReply;
+  confidence = Math.max(confidence, 0.88);
+  needsHuman = false;
+  humanReason = '';
+  modelRequestedHuman = false;
+}
 
 if (guardrails.humanPriority || intentSensitive) {
   needsHuman = needsHuman || modelRequestedHuman || lowConfidence;
@@ -722,14 +934,16 @@ if (followUpQuestion && !reply.includes('?') && !needsHuman) {
   reply = `${reply} ${String(followUpQuestion).trim()}`;
 }
 
-reply = enforceMandatoryDirective(reply, guardrails);
-if (!needsHuman) {
+if (!routerOwnsReplyText) {
+  reply = enforceMandatoryDirective(reply, guardrails);
+}
+if (!needsHuman && !routerOwnsReplyText) {
   reply = enforceProspectingQuality(reply, guardrails);
 }
 
 let requiresHumanCall = false;
 if (needsHuman) {
-  reply = 'Aqui e o Eduardo, Consultor de Vendas Internas da Classe Couro. Peco um instante enquanto assumo seu atendimento pessoalmente.';
+  reply = 'Aqui e o Eduardo Vinhas. Peco um instante enquanto assumo seu atendimento pessoalmente.';
   requiresHumanCall = /openai_rate_limit|openai_error|api_timeout/.test(String(humanReason || ''));
 }
 
@@ -741,7 +955,7 @@ if (!needsHuman && (requestedProductCategory || requestedProductFocus)) {
     'qual produto voce quer priorizar agora',
     'voce quer comecar por carteiras cintos ou ambos',
     'voce precisa mais de cintos carteiras ou ambos',
-    'voce prefere linha basica intermediaria ou premium'
+    'voce prefere linha basica ou intermediaria'
   ].some((snippet) => genericReply.includes(snippet));
 
   if (tooGeneric) {
@@ -756,6 +970,11 @@ reply = applySalutation(reply, {
   workTimezone: guardrails.workTimezone,
   isFirstInbound: guardrails.isFirstInbound,
   inboundText: guardrails.inboundTextOriginal
+});
+reply = sanitizeCommercialStyle(reply, {
+  extractedEntities,
+  llmStructuredData,
+  maxOutputChars: Number(guardrails.maxOutputChars || 420)
 });
 const authorizedOutboundLinks = getAuthorizedOutboundLinks(guardrails);
 reply = sanitizeOutboundText(reply, {

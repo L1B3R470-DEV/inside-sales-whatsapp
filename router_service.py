@@ -20,7 +20,7 @@ import time
 import unicodedata
 import uuid
 import zipfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Tuple
 from xml.etree import ElementTree as ET
@@ -89,6 +89,10 @@ EVOLUTION_PG_DB = os.getenv('ROUTER_EVOLUTION_PG_DB', os.getenv('POSTGRES_DB', '
 EVOLUTION_PG_USER = os.getenv('ROUTER_EVOLUTION_PG_USER', os.getenv('POSTGRES_USER', 'evolution')).strip() or 'evolution'
 EVOLUTION_PG_PASSWORD = os.getenv('ROUTER_EVOLUTION_PG_PASSWORD', os.getenv('POSTGRES_PASSWORD', 'evolution')).strip()
 EVOLUTION_CONTACT_LOOKUP_ENABLED = str(os.getenv('ROUTER_EVOLUTION_CONTACT_LOOKUP_ENABLED', 'true')).strip().lower() in {'1', 'true', 'yes', 'on'}
+EVOLUTION_API_KEY = os.getenv('EVOLUTION_API_KEY', '').strip()
+EVOLUTION_API_URL = os.getenv('ROUTER_EVOLUTION_API_URL', 'http://evolution:8080').rstrip('/')
+# Domains that serve ENCRYPTED WhatsApp media (not usable directly for transcription)
+_WHATSAPP_ENCRYPTED_DOMAINS = ('mmg.whatsapp.net', 'media.whatsapp.net', 'media-mia3', 'media-eze', 'media-gru', 'media-bog')
 
 TEXT_EXTENSIONS = {'.txt', '.md', '.csv', '.json', '.log', '.xml', '.html', '.htm'}
 OFFICE_XML_EXTENSIONS = {'.docx', '.xlsx'}
@@ -105,6 +109,15 @@ QDRANT_LAST_FAILURE_EPOCH = 0
 EMBED_RATE_LIMIT_RPM = int(os.getenv('ROUTER_EMBED_RATE_LIMIT_RPM', '500'))
 EMBED_RATE_LIMIT_BURST = int(os.getenv('ROUTER_EMBED_RATE_LIMIT_BURST', '10'))
 LID_CACHE_TTL_SECONDS = int(os.getenv('ROUTER_LID_CACHE_TTL_SECONDS', '3600'))
+ROUTE_IDEMPOTENCY_TTL_SECONDS = int(os.getenv('ROUTER_ROUTE_IDEMPOTENCY_TTL_SECONDS', '900'))
+ROUTE_DUPLICATE_LOG_WINDOW_SECONDS = int(os.getenv('ROUTER_DUPLICATE_LOG_WINDOW_SECONDS', '120'))
+ROUTE_DUPLICATE_HISTORY_WINDOW_SECONDS = int(os.getenv('ROUTER_DUPLICATE_HISTORY_WINDOW_SECONDS', '120'))
+CLOSED_WHATSAPP_LABEL_NAMES_RAW = os.getenv('ROUTER_CLOSED_WHATSAPP_LABEL_NAMES', 'ENCERRADO')
+CLOSED_WHATSAPP_LABEL_IDS = {
+    item.strip()
+    for item in os.getenv('ROUTER_CLOSED_WHATSAPP_LABEL_IDS', '21').split(',')
+    if item.strip()
+}
 
 # --- Dual-LLM: SDR persona system prompt for Claude/GPT reply generation ---
 def _load_sdr_prompt() -> str:
@@ -119,7 +132,13 @@ def _load_sdr_prompt() -> str:
         'Responda de forma curta, objetiva e comercial. '
         'Nunca escreva Classe Couro. Nunca use premium. '
         'Nunca defina produtos por genero. '
+        'Nunca use calcados como categoria da Classe. '
+        'Evite mencionar couro como atributo generico; fale em produtos, modelos, linhas e acessorios. '
         'Nunca mencione a cidade informada pelo lead. '
+        'Quando houver contexto de conhecimento, responda primeiro usando esse contexto. '
+        'Nao peca CNPJ em duvidas factuais sobre marca, book, produto, cor, PV/PVL, ranking, audio, lista de ignorados ou regras operacionais. '
+        'Peca CNPJ somente no fluxo real de pre-cadastro, compra, revenda, cotacao personalizada ou formalizacao. '
+        'Nao use assinatura, cargo ou apresentacao no final da mensagem. '
         'Se precisar pedir CNPJ, faca isso uma unica vez e sem assinatura.'
     )
 
@@ -241,6 +260,9 @@ class LidCache:
 
 lid_cache = LidCache(LID_CACHE_TTL_SECONDS)
 evolution_contact_cache = TTLCache(maxsize=2048, ttl=900)
+route_result_cache = TTLCache(maxsize=1024, ttl=max(30, ROUTE_IDEMPOTENCY_TTL_SECONDS))
+route_inflight = {}
+route_idempotency_lock = threading.Lock()
 
 ATTENDANT_OPERATIONAL_HOST_ROLE = os.getenv('ATTENDANT_OPERATIONAL_HOST_ROLE', 'PC_CLS').strip() or 'PC_CLS'
 ATTENDANT_OPERATIONAL_HOST_IP = os.getenv('ATTENDANT_OPERATIONAL_HOST_IP', '100.113.13.27').strip() or '100.113.13.27'
@@ -349,6 +371,172 @@ def digits_only(value: str) -> str:
     return re.sub(r'\D', '', str(value or ''))
 
 
+def closed_whatsapp_label_names() -> set:
+    return {
+        normalize_ascii(item)
+        for item in CLOSED_WHATSAPP_LABEL_NAMES_RAW.split(',')
+        if normalize_ascii(item)
+    }
+
+
+def collect_label_entries(value) -> List[Dict[str, str]]:
+    entries: List[Dict[str, str]] = []
+
+    def walk(node):
+        if node is None:
+            return
+        if isinstance(node, list):
+            for item in node:
+                walk(item)
+            return
+        if isinstance(node, dict):
+            label_id = str(node.get('labelId') or node.get('id') or node.get('predefinedId') or '').strip()
+            label_name = str(node.get('labelName') or node.get('name') or node.get('text') or node.get('title') or '').strip()
+            if label_id or label_name:
+                entries.append({'id': label_id, 'name': label_name})
+            for key, child in node.items():
+                if re.search(r'label|tag|etiqueta', str(key), flags=re.I):
+                    walk(child)
+            return
+        if isinstance(node, str):
+            entries.append({'id': '', 'name': node})
+
+    walk(value)
+    return entries
+
+
+def extract_closed_label_info(payload: Dict) -> Dict:
+    if not isinstance(payload, dict):
+        return {}
+    if payload.get('closedLabelActive') is True or payload.get('closedWhatsappLabelActive') is True:
+        return {'active': True, 'reason': 'closed_label_encerrado', 'source': 'payload_flag'}
+
+    sources = [
+        payload.get('labels'),
+        payload.get('label'),
+        payload.get('chatLabels'),
+        payload.get('contactLabels'),
+        payload.get('whatsappLabels'),
+        payload.get('closedLabel'),
+    ]
+    names = closed_whatsapp_label_names()
+    for source in sources:
+        for entry in collect_label_entries(source):
+            label_id = str(entry.get('id') or '').strip()
+            label_name = normalize_ascii(entry.get('name') or '')
+            if (label_id and label_id in CLOSED_WHATSAPP_LABEL_IDS) or (label_name and label_name in names):
+                return {
+                    'active': True,
+                    'reason': 'closed_label_encerrado',
+                    'labelId': label_id,
+                    'labelName': entry.get('name') or 'ENCERRADO',
+                    'source': 'payload_label',
+                }
+    return {}
+
+
+def closed_label_route_result(info: Dict, audio_transcription: Dict = None) -> Dict:
+    return {
+        'routeDecision': 'closed_label_encerrado',
+        'cacheHit': False,
+        'cachedReplyText': '',
+        'routeIntent': 'blocked',
+        'messageComplexity': 'blocked',
+        'leadScore': 0,
+        'ragContextLines': [],
+        'ragContextSummary': '',
+        'ragTopScore': 0,
+        'conversationHistory': [],
+        'contextCarryover': {
+            'carriedIntent': '',
+            'effectiveIntent': 'blocked',
+            'isContextCarry': False,
+            'maxLeadScore': 0,
+            'conversationTurns': 0,
+            'pendingQuestion': '',
+            'answeringOpenQuestion': False,
+            'memoryLeadStage': '',
+        },
+        'leadMemory': {},
+        'memoryGuidance': [],
+        'audioTranscription': audio_transcription or {'ok': False, 'reason': 'closed_label_encerrado', 'text': ''},
+        'llmReplyText': '',
+        'llmProvider': 'system',
+        'llmModel': 'closed_label_guard',
+        'llmLatencyMs': 0,
+        'llmStructuredData': {},
+        'llmLeadScore': {},
+        'sendEligible': False,
+        'sendEligibilityReason': 'closed_label_encerrado',
+        'blockReason': 'closed_label_encerrado',
+        'closedWhatsappLabelActive': True,
+        'closedLabelInfo': info or {},
+    }
+
+
+def _is_whatsapp_cdn_url(url: str) -> bool:
+    """Return True if the URL is a WhatsApp CDN URL that serves encrypted (unusable) media."""
+    if not url:
+        return False
+    return any(domain in url for domain in _WHATSAPP_ENCRYPTED_DOMAINS)
+
+
+def _fetch_audio_via_evolution(message_id: str, remote_jid: str, instance: str) -> Tuple[bytes, str, str]:
+    """Fetch decrypted audio base64 from Evolution API using the message key.
+
+    Evolution API v2 endpoint: POST /chat/getBase64FromMediaMessage/{instance}
+    Returns: (audio_bytes, mime_type, file_name)
+    Raises ValueError if not configured or if Evolution returns no data.
+    """
+    if not EVOLUTION_API_KEY:
+        raise ValueError('evolution_api_key_missing')
+    if not instance:
+        raise ValueError('evolution_instance_missing')
+    if not message_id:
+        raise ValueError('evolution_message_id_missing')
+
+    url = f'{EVOLUTION_API_URL}/chat/getBase64FromMediaMessage/{instance}'
+    body = json.dumps({
+        'message': {
+            'key': {
+                'remoteJid': remote_jid or '',
+                'fromMe': False,
+                'id': message_id,
+            },
+        },
+        'convertToMp4': False,
+    }).encode('utf-8')
+
+    req = urllib.request.Request(
+        url,
+        data=body,
+        headers={
+            'Content-Type': 'application/json',
+            'apikey': EVOLUTION_API_KEY,
+        },
+        method='POST',
+    )
+    log.info('_fetch_audio_via_evolution', instance=instance, message_id=message_id, remote_jid=remote_jid[:30] if remote_jid else '')
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        data = json.loads(resp.read())
+
+    b64 = str(data.get('base64') or '').strip()
+    if not b64:
+        raise ValueError('evolution_empty_base64')
+
+    mime_type = 'audio/ogg'
+    if b64.startswith('data:') and ';base64,' in b64:
+        header, b64 = b64.split(';base64,', 1)
+        mime_type = header.replace('data:', '').strip() or mime_type
+
+    raw = base64.b64decode(b64, validate=False)
+    if not raw:
+        raise ValueError('evolution_empty_after_decode')
+
+    log.info('_fetch_audio_via_evolution', result='ok', bytes_len=len(raw), mime=mime_type)
+    return raw, mime_type, ''
+
+
 def _safe_audio_suffix(file_name: str, mime_type: str) -> str:
     name = str(file_name or '').lower().strip()
     mime = str(mime_type or '').lower().strip()
@@ -381,10 +569,13 @@ def _read_audio_bytes_from_payload(audio_payload: Dict) -> Tuple[bytes, str, str
             audio_base64 = audio_base64.split(';base64,', 1)[1]
         raw = base64.b64decode(audio_base64, validate=False)
         if not raw:
+            log.warning('_read_audio_bytes_from_payload', source='base64', reason='empty_after_decode')
             raise ValueError('audio_base64_empty')
+        log.debug('_read_audio_bytes_from_payload', source='base64', bytes_len=len(raw), mime=mime_type)
         return raw, mime_type, file_name
 
     if audio_url:
+        log.debug('_read_audio_bytes_from_payload', source='url', url_prefix=audio_url[:100], timeout_sec=OPENAI_TRANSCRIBE_TIMEOUT_SECONDS)
         req = urllib.request.Request(
             audio_url,
             headers={'User-Agent': 'wa-router/1.0'},
@@ -393,11 +584,30 @@ def _read_audio_bytes_from_payload(audio_payload: Dict) -> Tuple[bytes, str, str
         with urllib.request.urlopen(req, timeout=OPENAI_TRANSCRIBE_TIMEOUT_SECONDS) as resp:
             raw = resp.read(MAX_AUDIO_BYTES + 1)
             if len(raw) > MAX_AUDIO_BYTES:
+                log.warning('_read_audio_bytes_from_payload', source='url', reason='file_too_large', bytes_len=len(raw), max_bytes=MAX_AUDIO_BYTES)
                 raise ValueError('audio_too_large')
             mime = str(resp.headers.get('Content-Type') or mime_type).strip()
+            log.debug('_read_audio_bytes_from_payload', source='url', bytes_len=len(raw), mime=mime, status=resp.status)
             return raw, mime, file_name
 
+    log.warning('_read_audio_bytes_from_payload', reason='no_audio_source', has_base64=bool(audio_base64), has_url=bool(audio_url))
     raise ValueError('audio_source_missing')
+
+
+def _call_openai_transcription(audio_bytes: bytes, mime_type: str, file_name: str) -> str:
+    """Write audio bytes to temp file and call OpenAI transcription. Returns transcript text (may be empty)."""
+    suffix = _safe_audio_suffix(file_name, mime_type)
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=True) as tmp:
+        tmp.write(audio_bytes)
+        tmp.flush()
+        with open(tmp.name, 'rb') as fh:
+            resp = openai_client.audio.transcriptions.create(
+                model=OPENAI_TRANSCRIBE_MODEL,
+                file=fh,
+                response_format='json',
+                prompt=OPENAI_TRANSCRIBE_PROMPT if OPENAI_TRANSCRIBE_PROMPT else None,
+            )
+    return str(getattr(resp, 'text', '') or '').strip()
 
 
 def transcribe_inbound_audio(payload: Dict) -> Dict:
@@ -408,28 +618,50 @@ def transcribe_inbound_audio(payload: Dict) -> Dict:
         log.error('transcribe_inbound_audio', reason='openai_client_missing')
         return {'ok': False, 'reason': 'openai_client_missing', 'text': ''}
 
+    audio_url = str(inbound_audio.get('url') or inbound_audio.get('audioUrl') or '').strip()
+    is_encrypted_cdn = _is_whatsapp_cdn_url(audio_url)
+    message_id = str(payload.get('messageId') or '').strip()
+    remote_jid = str(payload.get('remoteJid') or '').strip()
+    instance = str(payload.get('instance') or '').strip()
+
+    # Log the audio source at INFO level for diagnosability
+    log.info('transcribe_inbound_audio', start=True,
+             has_url=bool(audio_url), is_encrypted_cdn=is_encrypted_cdn,
+             has_base64=bool(inbound_audio.get('base64') or inbound_audio.get('audioBase64')),
+             has_evolution_key=bool(EVOLUTION_API_KEY), instance=instance, message_id=message_id[:20] if message_id else '')
+
+    # --- Strategy 1: Evolution API fetch (preferred when URL is encrypted WhatsApp CDN) ---
+    # Evolution API returns the already-decrypted audio bytes, which OpenAI can transcribe.
+    if is_encrypted_cdn and EVOLUTION_API_KEY and instance and message_id:
+        try:
+            audio_bytes, mime_type, file_name = _fetch_audio_via_evolution(message_id, remote_jid, instance)
+            text = _call_openai_transcription(audio_bytes, mime_type, file_name)
+            if text:
+                log.info('transcribe_inbound_audio', reason='ok_evolution', text_length=len(text))
+                return {'ok': True, 'reason': 'ok_evolution', 'text': text, 'model': OPENAI_TRANSCRIBE_MODEL}
+            log.warning('transcribe_inbound_audio', reason='empty_transcript_evolution',
+                        note='Evolution API returned audio but OpenAI transcript is empty')
+            # Fall through to direct URL attempt as last resort
+        except Exception as ev_exc:
+            log.warning('transcribe_inbound_audio', reason='evolution_fetch_failed',
+                        error_type=type(ev_exc).__name__, error_msg=str(ev_exc)[:200])
+            # Fall through to direct URL attempt
+
+    # --- Strategy 2: Direct payload (base64 or URL) ---
     try:
         audio_bytes, mime_type, file_name = _read_audio_bytes_from_payload(inbound_audio)
         if len(audio_bytes) > MAX_AUDIO_BYTES:
             log.warning('transcribe_inbound_audio', reason='audio_too_large', size_bytes=len(audio_bytes), max_bytes=MAX_AUDIO_BYTES)
             return {'ok': False, 'reason': 'audio_too_large', 'text': ''}
 
-        suffix = _safe_audio_suffix(file_name, mime_type)
-        with tempfile.NamedTemporaryFile(suffix=suffix, delete=True) as tmp:
-            tmp.write(audio_bytes)
-            tmp.flush()
-            with open(tmp.name, 'rb') as fh:
-                resp = openai_client.audio.transcriptions.create(
-                    model=OPENAI_TRANSCRIBE_MODEL,
-                    file=fh,
-                    response_format='json',
-                    prompt=OPENAI_TRANSCRIBE_PROMPT if OPENAI_TRANSCRIBE_PROMPT else None,
-                )
-        text = str(getattr(resp, 'text', '') or '').strip()
+        log.info('transcribe_inbound_audio', source='direct', bytes_len=len(audio_bytes), mime=mime_type, is_encrypted_cdn=is_encrypted_cdn)
+        text = _call_openai_transcription(audio_bytes, mime_type, file_name)
         if text:
             log.info('transcribe_inbound_audio', reason='ok', text_length=len(text))
         else:
-            log.warning('transcribe_inbound_audio', reason='empty_transcript')
+            log.warning('transcribe_inbound_audio', reason='empty_transcript', bytes_len=len(audio_bytes),
+                        mime=mime_type, is_encrypted_cdn=is_encrypted_cdn,
+                        note='empty_transcript on encrypted CDN URL is expected — ensure Evolution API key is configured' if is_encrypted_cdn else '')
         return {
             'ok': bool(text),
             'reason': 'ok' if text else 'empty_transcript',
@@ -442,18 +674,7 @@ def transcribe_inbound_audio(payload: Dict) -> Dict:
         try:
             time.sleep(2)
             audio_bytes, mime_type, file_name = _read_audio_bytes_from_payload(inbound_audio)
-            suffix = _safe_audio_suffix(file_name, mime_type)
-            with tempfile.NamedTemporaryFile(suffix=suffix, delete=True) as tmp:
-                tmp.write(audio_bytes)
-                tmp.flush()
-                with open(tmp.name, 'rb') as fh:
-                    resp = openai_client.audio.transcriptions.create(
-                        model=OPENAI_TRANSCRIBE_MODEL,
-                        file=fh,
-                        response_format='json',
-                        prompt=OPENAI_TRANSCRIBE_PROMPT if OPENAI_TRANSCRIBE_PROMPT else None,
-                    )
-            text = str(getattr(resp, 'text', '') or '').strip()
+            text = _call_openai_transcription(audio_bytes, mime_type, file_name)
             if text:
                 log.info('transcribe_inbound_audio', reason='ok_retry', text_length=len(text))
             else:
@@ -514,6 +735,87 @@ def jid_to_number(value: str) -> str:
     return ''
 
 
+def whatsapp_jid_candidates(number: str) -> List[str]:
+    digits = digits_only(number)
+    if not digits:
+        return []
+    variants = {digits}
+    # Brazilian mobile numbers can appear in WhatsApp without the ninth digit.
+    if digits.startswith('55') and len(digits) == 13 and digits[4] == '9':
+        variants.add(digits[:4] + digits[5:])
+    if digits.startswith('55') and len(digits) == 12:
+        variants.add(digits[:4] + '9' + digits[4:])
+    jids = []
+    for item in sorted(variants):
+        jids.append(f'{item}@s.whatsapp.net')
+        jids.append(f'{item}@c.us')
+    return jids
+
+
+def load_evolution_outbound_by_number(numbers: List[str]) -> Dict[str, List[Dict]]:
+    if not HAS_PSYCO_PG or not numbers:
+        return {}
+    number_by_jid: Dict[str, str] = {}
+    for number in numbers:
+        digits = digits_only(number)
+        if not digits:
+            continue
+        for jid in whatsapp_jid_candidates(digits):
+            number_by_jid[jid] = digits
+    if not number_by_jid:
+        return {}
+    placeholders = ','.join(['%s'] * len(number_by_jid))
+    query = f'''
+        SELECT
+          "messageTimestamp",
+          key->>'remoteJid' AS remote_jid,
+          key->>'id' AS message_id,
+          status,
+          COALESCE(
+            message->>'conversation',
+            message#>>'{{extendedTextMessage,text}}',
+            message#>>'{{viewOnceMessage,message,interactiveMessage,body,text}}',
+            message#>>'{{interactiveMessage,body,text}}'
+          ) AS text,
+          CASE WHEN message ? 'conversation' THEN 0 ELSE 1 END AS text_priority
+        FROM "Message"
+        WHERE key->>'fromMe' = 'true'
+          AND key->>'remoteJid' IN ({placeholders})
+        ORDER BY "messageTimestamp" DESC, text_priority ASC
+        LIMIT 500
+    '''
+    out: Dict[str, List[Dict]] = {}
+    try:
+        with psycopg.connect(evolution_pg_dsn(), connect_timeout=3) as conn:
+            with conn.cursor() as cur:
+                cur.execute(query, list(number_by_jid.keys()))
+                for ts, remote_jid, message_id, status, text, _priority in cur.fetchall():
+                    safe_text = sanitize_outbound_text(text or '', 2000)
+                    if not safe_text:
+                        continue
+                    number = number_by_jid.get(remote_jid or '')
+                    if not number:
+                        continue
+                    try:
+                        event_dt = datetime.fromtimestamp(int(ts), timezone.utc)
+                    except Exception:
+                        continue
+                    out.setdefault(number, []).append({
+                        'number': number,
+                        'text': safe_text,
+                        'intent': 'evolution_outbound',
+                        'confidence': None,
+                        'needs_human': 0,
+                        'event_ts': event_dt.isoformat(),
+                        'source': 'evolution_postgres',
+                        'message_id': message_id,
+                        'status': status,
+                    })
+    except Exception as exc:
+        log.warning('evolution_outbound_lookup_failed', error_type=type(exc).__name__, error_msg=str(exc)[:200])
+    return out
+
+
 def payload_number_candidate(payload: Dict) -> str:
     merged = dict(payload or {})
     candidates = [
@@ -534,6 +836,68 @@ def payload_number_candidate(payload: Dict) -> str:
 
 def sha_text(value: str) -> str:
     return hashlib.sha256(value.encode('utf-8')).hexdigest()
+
+
+def route_idempotency_key(payload: Dict) -> str:
+    merged = dict(payload or {})
+    message_id = str(merged.get('messageId') or '').strip()
+    contact_key = str(
+        merged.get('contactKey')
+        or merged.get('number')
+        or merged.get('customerNumber')
+        or merged.get('remoteJid')
+        or merged.get('resolvedJid')
+        or ''
+    ).strip().lower()
+    if message_id and contact_key:
+        return sha_text(f'message_id|{contact_key}|{message_id}')
+    inbound_text = normalize_ascii(str(merged.get('inboundText') or ''))
+    if contact_key and inbound_text:
+        # Fallback only catches tight duplicate deliveries when Evolution/n8n omits messageId.
+        minute_bucket = now_epoch() // 60
+        return sha_text(f'fallback|{contact_key}|{inbound_text}|{minute_bucket}')
+    return ''
+
+
+def route_message_idempotent(resolved_payload: Dict) -> Dict:
+    key = route_idempotency_key(resolved_payload)
+    if not key:
+        return route_message(resolved_payload)
+
+    while True:
+        with route_idempotency_lock:
+            cached = route_result_cache.get(key)
+            if cached is not None:
+                result = dict(cached)
+                result['routeIdempotencyHit'] = True
+                result['routeIdempotencyKey'] = key[:12]
+                log.warning('route_duplicate_replayed', key=key[:12], messageId=str(resolved_payload.get('messageId') or '')[:60])
+                return result
+            event = route_inflight.get(key)
+            if event is None:
+                event = threading.Event()
+                route_inflight[key] = event
+                owner = True
+            else:
+                owner = False
+
+        if owner:
+            try:
+                result = route_message(resolved_payload)
+                stored = dict(result)
+                stored['routeIdempotencyHit'] = False
+                stored['routeIdempotencyKey'] = key[:12]
+                with route_idempotency_lock:
+                    route_result_cache[key] = stored
+                return stored
+            finally:
+                with route_idempotency_lock:
+                    done_event = route_inflight.pop(key, None)
+                    if done_event is not None:
+                        done_event.set()
+
+        log.warning('route_duplicate_waiting', key=key[:12], messageId=str(resolved_payload.get('messageId') or '')[:60])
+        event.wait(timeout=120)
 
 
 def normalize_authorized_link(value: str) -> str:
@@ -577,10 +941,39 @@ def sanitize_outbound_text(value: str, limit: int = 0, authorized_links=None) ->
     text = str(value or '').replace('\r\n', '\n').replace('\r', '\n')
     text = strip_unauthorized_links(text, authorized_links=authorized_links)
     text = strip_emoji_characters(text)
+    text = re.sub(r'\b(?:nunca|jamais|evite)\s+(?:mencionar|usar|escrever)\s+["“”\']?Classe\s+Couro["“”\']?', 'Use sempre apenas Classe', text, flags=re.IGNORECASE)
+    text = re.sub(r'\b(?:nunca|jamais|evite)\s+(?:usar|mencionar)\s+(?:a\s+palavra\s+)?["“”\']?premium["“”\']?', 'Evite adjetivos vazios de posicionamento', text, flags=re.IGNORECASE)
     text = re.sub(r'\bClasse\s+Couro\b', 'Classe', text, flags=re.IGNORECASE)
     text = re.sub(r'\bEduardo\s+Silva\b', 'Eduardo Vinhas', text, flags=re.IGNORECASE)
-    text = re.sub(r'\b(bolsas?|carteiras?|cintos?|mochilas?|kits?|acessorios?|produtos?|modelos?)\s+(femininas?|masculinas?|feminino|masculino)\b', r'\1', text, flags=re.IGNORECASE)
-    text = re.sub(r'\b(femininas?|masculinas?|feminino|masculino|premium)\b', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'\b(bolsas?|carteiras?|cintos?|mochilas?|kits?|acessorios?|produtos?|modelos?)\s+(femininas?|femininos?|masculinas?|masculinos?|feminino|masculino)\b', r'\1', text, flags=re.IGNORECASE)
+    text = re.sub(r'\bcouro\s+(leg[ií]timo|sint[eé]tico|genu[ií]no)\b', 'material de qualidade', text, flags=re.IGNORECASE)
+    text = re.sub(r'\b(femininas?|femininos?|masculinas?|masculinos?|feminino|masculino|premium)\b', '', text, flags=re.IGNORECASE)
+    text = re.sub(r'\(\s*/\s*\)', '', text)
+    text = re.sub(r'palavra\s+["“”\']{2}', 'termo proibido', text, flags=re.IGNORECASE)
+    text = re.sub(r'["“”\']{2}', '', text)
+    text = re.sub(r'Use sempre apenas ["“”\']?Classe["“”\']?\s*-\s*nunca mencionar ["“”\']?Classe["“”\']?\s+ou termos antigos\.?', 'Use sempre apenas Classe, sem termos antigos.', text, flags=re.IGNORECASE)
+    text = re.sub(r'Sempre usar apenas ["“”\']?Classe["“”\']?\s*-\s*nunca\s+["“”\']?Classe["“”\']?\.?', 'Use sempre apenas Classe, sem termos antigos.', text, flags=re.IGNORECASE)
+    text = re.sub(r'Use sempre\s+["“”\']?Classe["“”\']?\s*\(\s*nunca\s+["“”\']?Classe["“”\']?\s*\)', 'Use sempre apenas Classe, sem termos antigos', text, flags=re.IGNORECASE)
+    text = re.sub(r'(Use sempre apenas\s+["“”\']?Classe["“”\']?)\s*,?\s*nunca\s+["“”\']?Classe["“”\']?', r'\1, sem termos antigos', text, flags=re.IGNORECASE)
+    text = re.sub(r'\(\s*nunca\s+["“”\']?Classe["“”\']?\s*\)', '(sem termos antigos)', text, flags=re.IGNORECASE)
+    text = re.sub(r'\(\s*nunca\s+Classe\s*\)', '(sem termos antigos)', text, flags=re.IGNORECASE)
+    text = re.sub(r'\bnunca\s+Classe\b', 'sem termos antigos', text, flags=re.IGNORECASE)
+    text = re.sub(r'\bevitar\s+["“”\']?cal[cç]ados["“”\']?\s+como\s+categoria', 'evitar categorias fora do posicionamento atual', text, flags=re.IGNORECASE)
+    text = re.sub(r'\bcal[cç]ados\b', 'categoria incorreta', text, flags=re.IGNORECASE)
+    text = re.sub(r'\b(?:podemos|posso|conseguimos|consigo|aceitamos|oferecemos|trabalhamos\s+com)\s+(?:fazer\s+)?meia\s+nota\b', 'trabalhamos somente com nota cheia', text, flags=re.IGNORECASE)
+    text = re.sub(r'\bmeia\s+nota\s+(?:e|é)\s+(?:possivel|possível|opcao|opção|alternativa)\b', 'a regra do canal e somente nota cheia', text, flags=re.IGNORECASE)
+    text = re.sub(r'Nunca mencionar categoria incorreta como categoria da empresa', 'Nao cite categorias fora do posicionamento atual', text, flags=re.IGNORECASE)
+    text = re.sub(r'Nunca use\s+ou\s+["“”\']?categoria incorreta["“”\']?\s+como categoria', 'Nao cite categorias fora do posicionamento atual', text, flags=re.IGNORECASE)
+    text = re.sub(r'\bMix\s*:\s*', 'Mix sugerido: ', text, flags=re.IGNORECASE)
+    text = re.sub(r'duas opções de Mix sugerido:', 'duas opções de mix:', text, flags=re.IGNORECASE)
+    text = re.sub(r'\*\*Mix sugerido:\s*\*\*\s*Focado em bolsas', '**Mix de bolsas e acessórios:** Focado em bolsas', text, flags=re.IGNORECASE)
+    text = re.sub(r'\*\*Mix sugerido:\s*\*\*\s*Centrado em carteiras', '**Mix de carteiras e cintos:** Centrado em carteiras', text, flags=re.IGNORECASE)
+    text = re.sub(r'entre produtos\s+e\s*:', 'com produtos variados:', text, flags=re.IGNORECASE)
+    text = re.sub(r'\*\*Mix\s+\*\*:', '**Mix sugerido:**', text, flags=re.IGNORECASE)
+    text = re.sub(r'Qual perfil de público[^?\n]*\?', 'Prefere começar por bolsas e acessórios ou por carteiras e cintos?', text, flags=re.IGNORECASE)
+    text = re.sub(r'Qual perfil de cliente[^?\n]*?:\s*,\s*ou\s*misto\?', 'Prefere começar por bolsas e acessórios ou por carteiras?', text, flags=re.IGNORECASE)
+    text = re.sub(r'Você tem preferência por alguma linha específica ou quer focar mais no público\s+ou\s+\?', 'Você prefere começar por bolsas e acessórios ou por carteiras e cintos?', text, flags=re.IGNORECASE)
+    text = re.sub(r'\btanto\s+quanto\b', 'combinando linhas diferentes', text, flags=re.IGNORECASE)
     text = re.sub(r'^aqui e o eduardo(?:\s+vinhas|\s+silva)?(?:,?\s*consultor de vendas internas(?: da classe(?: couro)?)?)?[.!:\-\s]*', '', text, flags=re.IGNORECASE)
     text = re.sub(r'---[\s\S]*$', ' ', text)
     text = re.sub(r'[ \t]+\n', '\n', text)
@@ -667,12 +1060,22 @@ def summarize_answered_slots(answered_slots: Dict) -> str:
 
 
 def db() -> sqlite3.Connection:
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute('PRAGMA journal_mode=WAL')
-    conn.execute('PRAGMA synchronous=NORMAL')
-    conn.execute('PRAGMA busy_timeout=30000')
-    return conn
+    last_error = None
+    for attempt in range(4):
+        try:
+            DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+            conn = sqlite3.connect(DB_PATH, timeout=30)
+            conn.row_factory = sqlite3.Row
+            conn.execute('PRAGMA journal_mode=WAL')
+            conn.execute('PRAGMA synchronous=NORMAL')
+            conn.execute('PRAGMA busy_timeout=30000')
+            return conn
+        except sqlite3.OperationalError as exc:
+            last_error = exc
+            if attempt >= 3:
+                break
+            time.sleep(0.2 * (attempt + 1))
+    raise last_error
 
 
 def has_column(conn: sqlite3.Connection, table: str, column: str) -> bool:
@@ -1097,10 +1500,10 @@ def lookup_evolution_contact_mapping(remote_jid: str, push_name: str = '') -> Di
     query = '''
     WITH candidates AS (
       SELECT DISTINCT
-        regexp_replace(split_part("remoteJid", '@', 1), '\D', '', 'g') AS phone_number,
+        regexp_replace(split_part("remoteJid", '@', 1), '\\D', '', 'g') AS phone_number,
         "remoteJid" AS resolved_jid
       FROM "Contact"
-      WHERE lower(regexp_replace(btrim(coalesce("pushName", '')), '\s+', ' ', 'g')) = %s
+      WHERE lower(regexp_replace(btrim(coalesce("pushName", '')), '\\s+', ' ', 'g')) = %s
         AND "remoteJid" LIKE '%%@s.whatsapp.net'
     )
     SELECT phone_number, resolved_jid
@@ -1567,6 +1970,41 @@ def classify_complexity(text: str) -> str:
     return 'medium'
 
 
+RAG_FACTUAL_TRIGGER_TERMS = (
+    'book', 'catalogo', 'catalogo', 'modelo', 'referencia', 'ref ', 'pv', 'pvl',
+    'preco', 'valor', 'ranking', 'giro', 'mix', 'produto', 'produtos',
+    'vitrine', 'pedido inicial', 'mini kit', 'porta moeda', 'porta celular',
+    'hit', 'sofia', 'becca', 'carteira', 'cinto', 'bolsa', 'mochila',
+    '3466', '2846', '3476', 'ctm', 'ctf', 'cm ', 'cf ', 'pm ', 'ch ', 'pl ',
+    'marca', 'quanto tempo', 'foco da marca', 'lojista', 'apresentar a classe',
+    'tom do atendimento', 'sem cansar', 'lead', 'pessoa fisica', 'cliente final',
+    'requests', 'operacionais', 'lista de ignorados', 'ignorados', 'audio',
+    'linguagem da classe', 'objecao', 'inseguro', 'insegura',
+    'sac', 'reclamacao', 'defeito', 'defeituoso', 'garantia', 'pos venda',
+    'pos-venda', 'foto', 'fotos', 'fabrica', 'pix', 'devolucao', 'devolver',
+    'pagamento', 'boleto', 'cartao', 'cartao de credito', 'parcelamento',
+    '30/60', '60/90', '90/120', '6x', 'sem juros', 'prazo', 'envio',
+    'entrega', 'pronta entrega', 'producao', 'producao', 'nota fiscal',
+    'nota cheia', 'meia nota', 'suporte comercial', 'suporte', 'lucratividade',
+    'markup', 'multiplicador', 'multiplicador comercial', 'investimento',
+    'retorno financeiro', 'retorno', 'margem', 'simular', 'simulacao',
+    'estoque sugerido', 'estoque inicial', 'portal', 'portal b2b', 'b2b',
+    'login', 'senha', 'credenciais', 'acesso',
+)
+
+
+def should_force_rag_lookup(text: str, intent: str = '') -> bool:
+    """Force RAG for short factual/product questions that would otherwise be classified as simple."""
+    norm = f" {normalize_ascii(text)} "
+    if not norm.strip():
+        return False
+    if intent in {'catalogo', 'produto', 'book', 'preco'}:
+        return True
+    if re.search(r'\b(pv|pvl|ref|ctm|ctf|cm|cf|pm|ch|pl)\b', norm):
+        return True
+    return any(term in norm for term in RAG_FACTUAL_TRIGGER_TERMS)
+
+
 def score_lead(text: str) -> int:
     norm = normalize_ascii(text)
     score = 0
@@ -1875,6 +2313,32 @@ def log_route(payload: Dict, route_decision: str, message_complexity: str, cache
     conn = db()
     top_score = float(rag_hits[0]['score']) if rag_hits else 0.0
     route_number = payload_number_candidate(payload)
+    inbound_text = str(payload.get('inboundText') or '')
+    normalized_message = normalize_ascii(inbound_text)
+    cutoff = (datetime.now(timezone.utc) - timedelta(seconds=max(5, ROUTE_DUPLICATE_LOG_WINDOW_SECONDS))).isoformat()
+    duplicate = conn.execute(
+        '''
+        SELECT id, created_at
+        FROM route_logs
+        WHERE COALESCE(number, '') = ?
+          AND COALESCE(normalized_message, '') = ?
+          AND COALESCE(route_decision, '') = ?
+          AND created_at >= ?
+        ORDER BY id DESC
+        LIMIT 1
+        ''',
+        (route_number, normalized_message, route_decision, cutoff),
+    ).fetchone()
+    if duplicate:
+        log.warning(
+            'route_log_duplicate_skipped',
+            existing_id=duplicate['id'],
+            number=route_number,
+            routeDecision=route_decision,
+            normalizedMessage=normalized_message[:80],
+        )
+        conn.close()
+        return
     conn.execute(
         '''
         INSERT INTO route_logs (number, push_name, inbound_text, normalized_message, route_decision, message_complexity, cache_hit, lead_score, rag_hit_count, rag_top_score, created_at)
@@ -1883,8 +2347,8 @@ def log_route(payload: Dict, route_decision: str, message_complexity: str, cache
         (
             route_number,
             str(payload.get('pushName') or ''),
-            str(payload.get('inboundText') or ''),
-            normalize_ascii(str(payload.get('inboundText') or '')),
+            inbound_text,
+            normalized_message,
             route_decision,
             message_complexity,
             1 if cache_hit else 0,
@@ -1901,18 +2365,28 @@ def log_route(payload: Dict, route_decision: str, message_complexity: str, cache
 def search_rag(query_text: str, limit: int = 5) -> List[Dict]:
     global COLLECTION_READY
     client = get_qdrant()
+    vector_hits = []
     if client is not None and not COLLECTION_READY:
         collections = [c.name for c in client.get_collections().collections]
         COLLECTION_READY = QDRANT_COLLECTION in collections
     if client is not None and COLLECTION_READY and openai_client and EMBEDDINGS_AVAILABLE:
         try:
             vector = embed_texts([query_text])[0]
-            results = client.search(
-                collection_name=QDRANT_COLLECTION,
-                query_vector=vector,
-                limit=limit,
-                with_payload=True,
-            )
+            if hasattr(client, 'search'):
+                results = client.search(
+                    collection_name=QDRANT_COLLECTION,
+                    query_vector=vector,
+                    limit=limit,
+                    with_payload=True,
+                )
+            else:
+                response = client.query_points(
+                    collection_name=QDRANT_COLLECTION,
+                    query=vector,
+                    limit=limit,
+                    with_payload=True,
+                )
+                results = getattr(response, 'points', response)
             hits = []
             for item in results:
                 payload = item.payload or {}
@@ -1924,10 +2398,226 @@ def search_rag(query_text: str, limit: int = 5) -> List[Dict]:
                     'source': 'vector',
                 })
             if hits:
-                return hits
+                vector_hits = hits
         except Exception as exc:
             log.warning('rag_vector_search_failed', query=query_text[:60], error=str(exc))
-    return lexical_search(query_text, limit=limit)
+    lexical_hits = lexical_search(query_text, limit=limit)
+    targeted_hits = [
+        *targeted_commercial_rules_hits(query_text),
+        *targeted_order_suggestion_hits(query_text),
+    ]
+    if not vector_hits:
+        return rerank_rag_hits([*targeted_hits, *lexical_hits], query_text, limit)
+    if not lexical_hits:
+        return rerank_rag_hits([*targeted_hits, *vector_hits], query_text, limit)
+
+    merged = []
+    seen = set()
+    for hit in [*targeted_hits, *lexical_hits, *vector_hits]:
+        key = (hit.get('filePath') or hit.get('fileName') or '', str(hit.get('text') or '')[:160])
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(hit)
+    return rerank_rag_hits(merged, query_text, limit)
+
+
+def targeted_order_suggestion_hits(query_text: str) -> List[Dict]:
+    query = normalize_ascii(query_text)
+    amount = ''
+    if re.search(r'\b(2000|2\.000)\b', query):
+        amount = '2000'
+    elif re.search(r'\b(4000|4\.000)\b', query):
+        amount = '4000'
+    elif re.search(r'\b(6000|6\.000)\b', query):
+        amount = '6000'
+    if not amount:
+        return []
+
+    conn = db()
+    rows = conn.execute(
+        '''
+        SELECT rc.file_path, rc.file_name, rc.chunk_text
+        FROM rag_chunks rc
+        JOIN rag_documents rd ON rd.file_path = rc.file_path
+        WHERE rd.status = 'active'
+          AND lower(rc.file_name) LIKE ?
+        ORDER BY rc.file_name
+        LIMIT 4
+        ''',
+        (f'%sugestao_pedido_{amount}%',),
+    ).fetchall()
+    conn.close()
+    return [
+        {
+            'score': 1.0,
+            'fileName': sanitize_order_suggestion_file_name(str(row['file_name'] or '')),
+            'filePath': str(row['file_path'] or ''),
+            'text': sanitize_order_suggestion_context(str(row['chunk_text'] or '').strip()),
+            'source': 'targeted_order_suggestion',
+        }
+        for row in rows
+    ]
+
+
+def targeted_commercial_rules_hits(query_text: str) -> List[Dict]:
+    query = normalize_ascii(query_text)
+    triggers = (
+        'sac', 'reclamacao', 'defeito', 'garantia', 'pix', 'fabrica',
+        'pagamento', 'boleto', 'cartao', 'parcelamento', 'prazo', 'envio',
+        'entrega', 'pronta entrega', 'producao', 'nota fiscal', 'nota cheia',
+        'meia nota', 'suporte comercial', 'suporte', 'lucratividade', 'markup',
+        'multiplicador', 'investimento', 'retorno', 'margem', 'simular',
+        'estoque inicial', 'estoque', 'giro', 'portal b2b', 'b2b', 'login',
+        'senha', 'credenciais', 'valores do book', 'book fazem sentido',
+        'antes de passar dados', 'seguranca', 'seguranca em comprar',
+    )
+    if not any(term in query for term in triggers):
+        return []
+
+    conn = db()
+    rows = conn.execute(
+        '''
+        SELECT rc.file_path, rc.file_name, rc.chunk_text
+        FROM rag_chunks rc
+        JOIN rag_documents rd ON rd.file_path = rc.file_path
+        WHERE rd.status = 'active'
+          AND lower(rc.file_name) IN (
+            'regras_comerciais_criticas_inside_sales_classe.md',
+            'regras_comerciais_complementares_rodada2_classe.md'
+          )
+        ORDER BY CASE
+          WHEN lower(rc.file_name) = 'regras_comerciais_complementares_rodada2_classe.md' THEN 0
+          ELSE 1
+        END
+        LIMIT 2
+        '''
+    ).fetchall()
+    conn.close()
+    hits = []
+    for row in rows:
+        raw_text = str(row['chunk_text'] or '').strip()
+        selected_text = select_commercial_rules_section(raw_text, query) or raw_text
+        hits.append({
+            'score': 3.0,
+            'fileName': str(row['file_name'] or ''),
+            'filePath': str(row['file_path'] or ''),
+            'text': selected_text,
+            'source': 'targeted_commercial_rules',
+        })
+    return hits
+
+
+def select_commercial_rules_section(text: str, normalized_query: str) -> str:
+    raw = str(text or '').strip()
+    if not raw:
+        return ''
+    section_titles = []
+    if any(term in normalized_query for term in ['seguranca', 'seguranca em comprar']):
+        section_titles.append('Seguranca comercial para revender Classe')
+    if any(term in normalized_query for term in ['valores do book', 'book fazem sentido', 'antes de passar dados', 'preco antes']):
+        section_titles.append('Como responder sobre valores antes do cadastro')
+        section_titles.append('Referencias exatas que nao podem ser trocadas')
+    if any(term in normalized_query for term in ['portal b2b', 'b2b', 'login', 'senha', 'credenciais']):
+        section_titles.append('Portal B2B apos cadastro liberado')
+    if any(term in normalized_query for term in ['estoque inicial', 'estoque', 'giro']):
+        section_titles.append('Estoque inicial com giro')
+        section_titles.append('Referencias exatas que nao podem ser trocadas')
+    if any(term in normalized_query for term in ['nota fiscal', 'nota cheia', 'meia nota']):
+        section_titles.append('Nota fiscal')
+    if any(term in normalized_query for term in ['sac', 'reclamacao', 'defeito', 'garantia', 'pix', 'fabrica']):
+        section_titles.append('SAC exclusivo e personalizado')
+    if any(term in normalized_query for term in ['pagamento', 'boleto', 'cartao', 'parcelamento']):
+        section_titles.append('Condicoes de pagamento')
+    if any(term in normalized_query for term in ['prazo', 'envio', 'entrega', 'pronta entrega', 'producao']):
+        section_titles.append('Prazo de envio')
+    if any(term in normalized_query for term in ['markup', 'multiplicador', 'lucratividade', 'retorno', 'simular']):
+        section_titles.append('Lucratividade, markup e simulacao')
+    if any(term in normalized_query for term in ['suporte comercial', 'suporte']):
+        section_titles.append('Suporte comercial')
+
+    chunks = []
+    for title in section_titles:
+        pattern = re.compile(rf'(^|\n)##\s+{re.escape(title)}\s*\n', flags=re.IGNORECASE)
+        match = pattern.search(raw)
+        if not match:
+            continue
+        start = match.start()
+        next_match = re.search(r'\n##\s+', raw[match.end():])
+        end = match.end() + next_match.start() if next_match else len(raw)
+        chunks.append(raw[start:end].strip())
+    if chunks:
+        return '\n\n'.join(chunks)
+    return ''
+
+
+def sanitize_order_suggestion_file_name(file_name: str) -> str:
+    name = str(file_name or '')
+    name = re.sub(r'_FEMININO', '_MIX_A', name, flags=re.IGNORECASE)
+    name = re.sub(r'_MASCULINO', '_MIX_B', name, flags=re.IGNORECASE)
+    return name
+
+
+def sanitize_order_suggestion_context(text: str) -> str:
+    safe = str(text or '')
+    replacements = {
+        'PEDIDO MIX (MASCULINO)': 'PEDIDO MIX B',
+        'PEDIDOTESTE R$2.000,00 VENDAS INTERNAS': 'PEDIDO MIX A R$2.000,00 VENDAS INTERNAS',
+        'CART FEM': 'CARTEIRA',
+        'CINTO FEM': 'CINTO',
+        'CINTO MASC': 'CINTO',
+        'MASCULINO': 'MIX B',
+        'FEMININO': 'MIX A',
+        'MASC': '',
+        'FEM': '',
+    }
+    for old, new in replacements.items():
+        safe = re.sub(re.escape(old), new, safe, flags=re.IGNORECASE)
+    safe = re.sub(r'\s{2,}', ' ', safe)
+    return safe.strip()
+
+
+def rag_rank_score(hit: Dict, query_text: str) -> float:
+    score = float(hit.get('score') or 0)
+    if hit.get('source') == 'targeted_commercial_rules':
+        score += 2.0
+    query = normalize_ascii(query_text)
+    file_name = normalize_ascii(str(hit.get('fileName') or ''))
+    text = normalize_ascii(str(hit.get('text') or ''))
+
+    amount_match = re.search(r'\b(2000|2\.000|4000|4\.000|6000|6\.000)\b', query)
+    if amount_match:
+        amount = amount_match.group(1).replace('.', '')
+        if f'sugestao_pedido_{amount}' in file_name:
+            score += 2.0
+        elif 'sugestao_pedido' in file_name:
+            score += 0.35
+        if amount in text:
+            score += 0.25
+
+    if any(term in query for term in ['ranking', 'rank', 'giro', 'mais vende', 'maior saida', 'fortes']):
+        if 'ranking' in file_name:
+            score += 1.2
+        if any(term in text for term in ['unidades', 'vendas', 'ranking']):
+            score += 0.25
+
+    if any(term in query for term in ['book', 'catalogo', 'pv', 'pvl', 'modelo']):
+        if 'book' in file_name:
+            score += 0.8
+
+    return score
+
+
+def rerank_rag_hits(hits: List[Dict], query_text: str, limit: int) -> List[Dict]:
+    if not hits:
+        return []
+    ranked = []
+    for hit in hits:
+        item = dict(hit)
+        item['_rankScore'] = round(rag_rank_score(item, query_text), 4)
+        ranked.append(item)
+    ranked.sort(key=lambda item: float(item.get('_rankScore') or 0), reverse=True)
+    return ranked[:limit]
 
 
 def lexical_search(query_text: str, limit: int = 5) -> List[Dict]:
@@ -2019,10 +2709,80 @@ def lexical_search(query_text: str, limit: int = 5) -> List[Dict]:
     return []
 
 
+def build_rag_snippet(text: str, query_text: str, max_chars: int = 900) -> str:
+    raw = str(text or '').strip()
+    if len(raw) <= max_chars:
+        return raw
+
+    norm_text = normalize_ascii(raw)
+    norm_query = normalize_ascii(query_text)
+    query_tokens = [t for t in tokenize_words(query_text) if len(t) > 2 and t not in STOPWORDS]
+    priority_terms = []
+    for term in (
+        'ctf396', 'cf165', 'kit02', 'kit 02', 'mini kit', 'kits', 'kit',
+        'acessorios', 'acessorio', 'carteiras', 'carteira', 'cintos', 'cinto',
+        'bolsas', 'bolsa', 'portal b2b', 'b2b', 'login', 'senha',
+        'nota fiscal', 'nota cheia', 'meia nota', 'estoque inicial',
+        'seguranca comercial', 'seguranca', '30 anos', 'design', 'qualidade',
+        'valores do book', 'valores', 'revenda', 'antes de passar dados',
+        'pv', 'pvl', 'sac', 'defeito', 'pagamento', 'boleto', 'cartao',
+        'markup', 'multiplicador',
+    ):
+        if term in norm_query:
+            priority_terms.append(term)
+    phrase_candidates = []
+    for size in (4, 3, 2):
+        for idx in range(0, max(0, len(query_tokens) - size + 1)):
+            phrase_candidates.append(' '.join(query_tokens[idx:idx + size]))
+    phrase_candidates.extend(query_tokens)
+
+    best_idx = -1
+    ordered_phrases = []
+    seen_phrases = set()
+    for phrase in priority_terms:
+        if phrase and phrase not in seen_phrases:
+            ordered_phrases.append(phrase)
+            seen_phrases.add(phrase)
+    for phrase in sorted(set(phrase_candidates), key=len, reverse=True):
+        if phrase and phrase not in seen_phrases:
+            ordered_phrases.append(phrase)
+            seen_phrases.add(phrase)
+    for phrase in ordered_phrases:
+        if not phrase:
+            continue
+        idx = norm_text.find(phrase)
+        if idx >= 0:
+            best_idx = idx
+            break
+
+    if best_idx < 0:
+        return raw[:max_chars].strip()
+
+    start = max(0, best_idx - 180)
+    end = min(len(raw), start + max_chars)
+    snippet = raw[start:end].strip()
+    if start > 0:
+        snippet = '... ' + snippet
+    if end < len(raw):
+        snippet = snippet + ' ...'
+    return snippet
+
+
 def route_message(payload: Dict) -> Dict:
     resolved_payload = resolve_recipient_payload(payload)
     inbound_text = str(resolved_payload.get('inboundText') or '').strip()
     audio_transcription = {'ok': False, 'reason': 'not_needed', 'text': ''}
+    closed_label_info = extract_closed_label_info(resolved_payload)
+    if closed_label_info.get('active'):
+        log.warning(
+            'closed_label_route_suppressed',
+            contactKey=str(resolved_payload.get('contactKey') or '')[:80],
+            number=digits_only(resolved_payload.get('number') or resolved_payload.get('customerNumber'))[:20],
+            source=str(closed_label_info.get('source') or ''),
+            labelId=str(closed_label_info.get('labelId') or ''),
+            labelName=str(closed_label_info.get('labelName') or 'ENCERRADO')[:80],
+        )
+        return closed_label_route_result(closed_label_info, audio_transcription)
     if not inbound_text:
         audio_transcription = transcribe_inbound_audio(resolved_payload)
         if audio_transcription.get('ok') and audio_transcription.get('text'):
@@ -2076,8 +2836,9 @@ def route_message(payload: Dict) -> Dict:
         'source': 'route',
     }) if contact_key else {}
     memory_guidance = build_memory_guidance(lead_memory)
+    force_rag_lookup = should_force_rag_lookup(inbound_text, effective_intent)
 
-    cached = cache_lookup(normalized_message, effective_intent)
+    cached = None if force_rag_lookup else cache_lookup(normalized_message, effective_intent)
     if cached:
         lookup_type = str(cached.get('lookupType') or 'exact')
         route_decision = 'cache_semantic' if lookup_type == 'semantic' else 'cache'
@@ -2102,17 +2863,20 @@ def route_message(payload: Dict) -> Dict:
         log_route(resolved_payload, route_decision, complexity, True, lead_score, [])
         return result
 
-    rag_limit = 5 if complexity == 'complex' else 3
-    rag_hits = search_rag(inbound_text, limit=rag_limit) if complexity in {'medium', 'complex'} else []
+    rag_lookup_enabled = force_rag_lookup or complexity in {'medium', 'complex'}
+    rag_limit = 12 if force_rag_lookup else (5 if complexity == 'complex' else 3)
+    rag_hits = search_rag(inbound_text, limit=rag_limit) if rag_lookup_enabled else []
     strong_hits = [
         h for h in rag_hits
         if (
             (h.get('source') == 'vector' and h['score'] >= 0.72) or
-            (h.get('source') != 'vector' and h['score'] >= 0.34)
+            (h.get('source') != 'vector' and h['score'] >= 0.34) or
+            (force_rag_lookup and h.get('source') == 'vector' and h['score'] >= 0.55) or
+            (force_rag_lookup and h.get('source') != 'vector' and h['score'] >= 0.18)
         )
     ]
     rag_lines = [
-        f"[{item['fileName']}] {item['text'][:280]}"
+        f"[{item['fileName']}] {build_rag_snippet(item['text'], inbound_text)}"
         for item in strong_hits[:5]
     ]
     rag_summary = ' | '.join(rag_lines[:3])
@@ -2277,9 +3041,24 @@ def ingest_document(path: Path):
 
 
 def _ingest_document_inner(conn, path: Path, text: str, file_hash: str, modified: float):
-    existing = conn.execute('SELECT file_hash FROM rag_documents WHERE file_path = ?', (str(path),)).fetchone()
+    existing = conn.execute(
+        'SELECT file_hash, status, chunk_count FROM rag_documents WHERE file_path = ?',
+        (str(path),),
+    ).fetchone()
     if existing and str(existing['file_hash']) == file_hash:
-        return
+        chunk_count = conn.execute(
+            'SELECT COUNT(*) AS c FROM rag_chunks WHERE file_path = ?',
+            (str(path),),
+        ).fetchone()['c']
+        if str(existing['status'] or '') == 'active' and int(chunk_count or 0) > 0:
+            return
+        log.warning(
+            'rag_document_rehydrate_required',
+            path=str(path),
+            status=str(existing['status'] or ''),
+            declared_chunks=int(existing['chunk_count'] or 0),
+            actual_chunks=int(chunk_count or 0),
+        )
 
     chunks = chunk_text(text)
     if not chunks:
@@ -2447,6 +3226,11 @@ def health():
         'embeddingsAvailable': EMBEDDINGS_AVAILABLE,
         'embeddingRateLimit': embed_limiter.stats,
         'lidCache': lid_cache.stats,
+        'routeIdempotency': {
+            'cacheEntries': len(route_result_cache),
+            'inflightEntries': len(route_inflight),
+            'ttlSeconds': ROUTE_IDEMPOTENCY_TTL_SECONDS,
+        },
         'qdrantDisabled': QDRANT_DISABLED,
         'watchIntervalSeconds': WATCH_INTERVAL_SECONDS,
         'ingestRefreshOnRouteSeconds': INGEST_REFRESH_ON_ROUTE_SECONDS,
@@ -2510,7 +3294,7 @@ def route_endpoint():
                 'dynamicBlockedNumbers': list(blocked_set),
                 'dynamicAlwaysAllowedNumbers': list(allowed_set),
             })
-        decision = route_message(resolved_payload)
+        decision = route_message_idempotent(resolved_payload)
         return jsonify({
             **resolved_payload,
             **decision,
@@ -2804,10 +3588,17 @@ def sdr_dashboard_data():
         ).fetchall():
             outbound_by_number.setdefault(str(row['number'] or ''), []).append(dict(row))
 
+        leads_source = 'b2b_eligible_leads'
+        has_eligible_view = crm.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='view' AND name='b2b_eligible_leads'"
+        ).fetchone()
+        if not has_eligible_view:
+            leads_source = 'leads'
+
         leads_raw = [dict(r) for r in crm.execute(
-            '''SELECT number, push_name, lead_stage, last_intent, last_confidence,
+            f'''SELECT number, push_name, lead_stage, last_intent, last_confidence,
                awaiting_human, city, last_seen_at, revenda_script_stage, cnpj_ativo_answer
-               FROM leads ORDER BY last_seen_at DESC''',
+               FROM {leads_source} ORDER BY last_seen_at DESC''',
         ).fetchall()]
         lead_stage_map = {r['number']: r.get('lead_stage') for r in leads_raw if r.get('number')}
         awaiting_human_map = {r['number']: bool(r.get('awaiting_human')) for r in leads_raw if r.get('number')}
@@ -2822,12 +3613,27 @@ def sdr_dashboard_data():
 
         stats_crm = {
             'totalLeads': len(leads_raw),
-            'awaitingHuman': crm.execute("SELECT COUNT(*) AS c FROM leads WHERE awaiting_human=1").fetchone()['c'],
+            'awaitingHuman': crm.execute(f"SELECT COUNT(*) AS c FROM {leads_source} WHERE awaiting_human=1").fetchone()['c'],
             'interactionsToday': crm.execute(
                 "SELECT COUNT(*) AS c FROM interactions WHERE created_at >= ?", (today,)
             ).fetchone()['c'],
         }
         crm.close()
+
+        evolution_numbers = sorted({
+            digits_only(r.get('number') or '')
+            for r in recent_routes
+            if digits_only(r.get('number') or '')
+        } | {
+            digits_only(r.get('number') or '')
+            for r in leads_raw
+            if digits_only(r.get('number') or '')
+        })
+        evolution_outbound_by_number = load_evolution_outbound_by_number(evolution_numbers)
+        for number, rows in evolution_outbound_by_number.items():
+            bucket = outbound_by_number.setdefault(number, [])
+            bucket.extend(rows)
+            bucket.sort(key=lambda item: str(item.get('event_ts') or ''), reverse=True)
 
         for r in recent_routes:
             n = str(r.get('number') or '').strip()
@@ -2875,6 +3681,9 @@ def sdr_dashboard_data():
             else:
                 display_status = 'processing'
                 display_label = 'Processando'
+            outbound_source = best_out.get('source') if best_out else None
+            outbound_message_id = best_out.get('message_id') if best_out else None
+            outbound_delivery_status = best_out.get('status') if best_out else None
             activity.append({
                 **r,
                 'number': n,
@@ -2886,6 +3695,9 @@ def sdr_dashboard_data():
                 'needs_human': needs_human,
                 'display_status': display_status,
                 'display_label': display_label,
+                'outbound_source': outbound_source,
+                'outbound_message_id': outbound_message_id,
+                'outbound_delivery_status': outbound_delivery_status,
             })
 
     except Exception as exc:
@@ -3027,6 +3839,29 @@ def record_message(contact_key: str, direction: str, message_text: str,
     if not safe_text:
         return
     conn = db()
+    cutoff = (datetime.now(timezone.utc) - timedelta(seconds=max(5, ROUTE_DUPLICATE_HISTORY_WINDOW_SECONDS))).isoformat()
+    duplicate = conn.execute(
+        '''
+        SELECT id, created_at
+        FROM conversation_history
+        WHERE contact_key = ?
+          AND direction = ?
+          AND message_text = ?
+          AND created_at >= ?
+        ORDER BY id DESC
+        LIMIT 1
+        ''',
+        (contact_key, direction, safe_text, cutoff),
+    ).fetchone()
+    if duplicate:
+        log.warning(
+            'conversation_history_duplicate_skipped',
+            existing_id=duplicate['id'],
+            contactKey=str(contact_key)[:40],
+            direction=direction,
+        )
+        conn.close()
+        return
     conn.execute(
         '''INSERT INTO conversation_history
            (contact_key, direction, message_text, intent, complexity, lead_score, route_decision, created_at)

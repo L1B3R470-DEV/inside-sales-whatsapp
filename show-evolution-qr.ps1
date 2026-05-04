@@ -68,7 +68,7 @@ if ($parts.Count -ne 2) {
 
 $bytes = [Convert]::FromBase64String($parts[1])
 $safeName = ($InstanceName -replace "[^a-zA-Z0-9_-]", "_")
-$outFile = "C:\Users\User\Desktop\PROJETO ATENDIMENTO WHATSAPP INSIDE SALES\qr-$safeName.png"
+$outFile = Join-Path $PSScriptRoot "qr-$safeName.png"
 [IO.File]::WriteAllBytes($outFile, $bytes)
 
 Write-Host "QR salvo em: $outFile" -ForegroundColor Green

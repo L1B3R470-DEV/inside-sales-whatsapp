@@ -1,0 +1,21 @@
+{
+  "totalQuestions": 40,
+  "classificationCounts": {
+    "classification": "SATISFATORIA",
+    "count": 40
+  },
+  "containsClasseCouro": false,
+  "containsPremium": false,
+  "containsEduardoSilva": false,
+  "containsMeiaNotaOffer": false,
+  "qNotaFiscalOk": true,
+  "qPagamentoOk": true,
+  "qPrazoOk": true,
+  "qSacOk": true,
+  "qMarkupOk": true,
+  "finalAllSatisfactory": true,
+  "responseOnlyContainsMeiaNotaOffer": false,
+  "responseOnlyContainsClasseCouro": false,
+  "responseOnlyContainsPremium": false,
+  "fullMarkdownContainsMeiaNotaOfferPatternBecauseQuestionText": true
+}

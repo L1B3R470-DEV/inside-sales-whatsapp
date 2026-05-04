@@ -65,3 +65,27 @@ _archive/
 # Outputs de execução n8n (debug)
 exec-*.txt
 exec*.txt
+tmp_*
+_tmp_*
+dashboard_*.html
+artifacts/execution_*_expanded.json
+
+# Artefatos locais/temporarios do Windows, WSL e ferramentas
+.fuse_hidden*
+remoteJid
+sqlite_mcp_server.db
+*.db
+qr_reconectar.html
+qr-*.png
+
+# Dependencias instaladas localmente
+node_modules/
+sms-receive-module/
+sms-receive-module/cache/*.json
+
+# Evidencias geradas por testes e relatorios com snapshots/raws
+stress-test-runs/
+reports/**/backups_pre_change/
+reports/**/*.jsonl
+reports/**/responses_raw*.jsonl
+reports/**/n8n_workflow*_before_patch.json

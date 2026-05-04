@@ -1,5 +1,93 @@
 const body = $json.body ?? $json;
 const event = String(body.event || '').toUpperCase().replace(/\./g, '_');
+const staticData = $getWorkflowStaticData('global');
+
+const CLOSED_WHATSAPP_LABEL_NAMES = new Set(['encerrado']);
+// Current Evolution label id for "ENCERRADO" in ATENDIMENTO_VENDAS_CLEAN.
+const CLOSED_WHATSAPP_LABEL_IDS = new Set(['21']);
+
+function normalizeLabelText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function digitsOnly(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+function cleanJid(value) {
+  return String(value || '')
+    .replace(/:\d+(?=@)/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function closedContactKeysFromJid(value) {
+  const jid = cleanJid(value);
+  const keys = new Set();
+  if (jid) keys.add(jid);
+  const digits = digitsOnly(jid.replace(/@s\.whatsapp\.net|@g\.us|@lid/g, ''));
+  if (digits) keys.add(digits);
+  return [...keys];
+}
+
+function ensureClosedLabelRegistry() {
+  if (!staticData.closedByWhatsappLabel || typeof staticData.closedByWhatsappLabel !== 'object') {
+    staticData.closedByWhatsappLabel = {};
+  }
+  return staticData.closedByWhatsappLabel;
+}
+
+function isClosedWhatsappLabel(labelId, labelName) {
+  const id = String(labelId || '').trim();
+  const name = normalizeLabelText(labelName);
+  return (id && CLOSED_WHATSAPP_LABEL_IDS.has(id)) || (name && CLOSED_WHATSAPP_LABEL_NAMES.has(name));
+}
+
+function labelAssociationIsRemove(action) {
+  const norm = normalizeLabelText(action);
+  return ['remove', 'removed', 'delete', 'deleted', 'desassociar', 'desassociado', 'unlabel'].includes(norm);
+}
+
+function collectLabelEntries(value, out = []) {
+  if (!value) return out;
+  if (Array.isArray(value)) {
+    for (const item of value) collectLabelEntries(item, out);
+    return out;
+  }
+  if (typeof value === 'object') {
+    const id = value.labelId ?? value.id ?? value.predefinedId ?? '';
+    const name = value.labelName ?? value.name ?? value.text ?? value.title ?? '';
+    if (id || name) out.push({ id: String(id || '').trim(), name: String(name || '').trim() });
+    for (const [key, child] of Object.entries(value)) {
+      if (/label|tag|etiqueta/i.test(key)) collectLabelEntries(child, out);
+    }
+    return out;
+  }
+  if (typeof value === 'string') out.push({ id: '', name: value });
+  return out;
+}
+
+function payloadHasClosedWhatsappLabel(...sources) {
+  for (const source of sources) {
+    const entries = collectLabelEntries(source);
+    if (entries.some((entry) => isClosedWhatsappLabel(entry.id, entry.name))) return true;
+  }
+  return false;
+}
+
+function readClosedLabelState(keys) {
+  const registry = ensureClosedLabelRegistry();
+  for (const key of keys) {
+    const clean = cleanJid(key) || digitsOnly(key);
+    if (clean && registry[clean]) return registry[clean];
+  }
+  return null;
+}
 
 // --- Handle non-message events: ignore for auto-reply flow ---
 if (event === 'MESSAGES_UPDATE') {
@@ -47,16 +135,38 @@ if (event === 'CONNECTION_UPDATE') {
 
 if (event === 'LABELS_ASSOCIATION') {
   var lData = body.data ?? body;
-  return [{
-    json: {
-      _eventType: 'label',
-      instance: body.instance || body.instanceName || '',
-      remoteJid: String(lData.chatId || lData.remoteJid || ''),
-      labelId: String(lData.labelId || ''),
-      action: String(lData.type || lData.action || ''),
-      timestamp: Date.now()
+  const labelId = String(lData.labelId ?? lData.id ?? lData.label?.id ?? '').trim();
+  const labelName = String(lData.labelName ?? lData.name ?? lData.label?.name ?? '').trim();
+  const remoteJid = cleanJid(lData.chatId || lData.remoteJid || lData.jid || '');
+  const action = String(lData.type || lData.action || '').trim();
+  const registry = ensureClosedLabelRegistry();
+
+  if (remoteJid && isClosedWhatsappLabel(labelId, labelName)) {
+    const keys = closedContactKeysFromJid(remoteJid);
+    if (labelAssociationIsRemove(action)) {
+      for (const key of keys) delete registry[key];
+    } else {
+      const state = {
+        active: true,
+        labelId,
+        labelName: labelName || 'ENCERRADO',
+        remoteJid,
+        updatedAt: new Date().toISOString(),
+        source: 'LABELS_ASSOCIATION'
+      };
+      for (const key of keys) registry[key] = state;
     }
-  }];
+    console.log(JSON.stringify({
+      event: 'closed_label_registry_update',
+      remoteJid,
+      labelId,
+      labelName: labelName || 'ENCERRADO',
+      action: labelAssociationIsRemove(action) ? 'remove' : 'add'
+    }));
+  }
+
+  // Label-only events must never enter the auto-reply flow.
+  return [];
 }
 
 // Only process MESSAGES_UPSERT from here on
@@ -109,7 +219,6 @@ if (/^(MSG-|TEST-|DEBUG-)/i.test(messageId)) {
   }
 }
 
-const staticData = $getWorkflowStaticData('global');
 if (!staticData.processedMessageIds) staticData.processedMessageIds = {};
 if (!staticData.recentMessageFingerprints) staticData.recentMessageFingerprints = {};
 
@@ -148,6 +257,11 @@ const audioMessage =
   payload.message?.audioMessage ??
   payload.message?.viewOnceMessageV2?.message?.audioMessage ??
   {};
+const imageMessage =
+  payload.message?.imageMessage ??
+  payload.message?.viewOnceMessage?.message?.imageMessage ??
+  payload.message?.viewOnceMessageV2?.message?.imageMessage ??
+  {};
 const audioUrl = String(
   audioMessage?.url ??
   audioMessage?.mediaUrl ??
@@ -168,6 +282,26 @@ const audioBase64 = String(
   ''
 ).trim();
 const hasInboundAudio = Boolean(audioUrl || audioBase64 || Object.keys(audioMessage || {}).length > 0);
+const imageUrl = String(
+  imageMessage?.url ??
+  imageMessage?.mediaUrl ??
+  payload.mediaUrl ??
+  payload.message?.mediaUrl ??
+  ''
+).trim();
+const imageMimeType = String(
+  imageMessage?.mimetype ??
+  imageMessage?.mimeType ??
+  payload.mimetype ??
+  ''
+).trim();
+const imageBase64 = String(
+  payload.base64 ??
+  payload.message?.base64 ??
+  imageMessage?.base64 ??
+  ''
+).trim();
+const hasInboundImage = Boolean(imageUrl || imageBase64 || Object.keys(imageMessage || {}).length > 0);
 const quotedText =
   quotedMessage?.conversation ??
   quotedMessage?.extendedTextMessage?.text ??
@@ -180,7 +314,10 @@ const quotedMessageId = String(
   contextInfo?.quotedMessageId ??
   ''
 ).trim();
-if (!text && !hasInboundAudio) {
+if (!text && hasInboundImage) {
+  text = '[imagem recebida]';
+}
+if (!text && !hasInboundAudio && !hasInboundImage) {
   return [];
 }
 
@@ -231,6 +368,69 @@ const number = isLid
   : remoteJid
       .replace(/@s\.whatsapp\.net|@g\.us/g, '')
       .replace(/\D/g, '');
+const senderPhoneCandidate = String(
+  payload.senderPn ??
+  payload.sender_pn ??
+  payload.senderPhone ??
+  payload.sender_phone ??
+  body.senderPn ??
+  body.sender_pn ??
+  body.senderPhone ??
+  body.sender_phone ??
+  ''
+).trim();
+const participantJidCandidate = String(
+  key.participant ??
+  payload.participant ??
+  payload.participantJid ??
+  body.participant ??
+  contextInfo?.participant ??
+  ''
+).replace(/:\d+(?=@)/g, '').toLowerCase().trim();
+const senderJidCandidate = String(
+  payload.senderJid ??
+  payload.senderLid ??
+  payload.fromJid ??
+  body.senderJid ??
+  body.senderLid ??
+  ''
+).replace(/:\d+(?=@)/g, '').toLowerCase().trim();
+
+const closedLabelKeys = [
+  remoteJid,
+  number,
+  senderPhoneCandidate,
+  participantJidCandidate,
+  senderJidCandidate
+].flatMap((value) => {
+  const keys = closedContactKeysFromJid(value);
+  const digits = digitsOnly(value);
+  if (digits) keys.push(digits);
+  return keys;
+});
+const closedLabelState = readClosedLabelState(closedLabelKeys);
+const payloadClosedLabel = payloadHasClosedWhatsappLabel(
+  body.labels,
+  body.label,
+  body.chatLabels,
+  body.contactLabels,
+  payload.labels,
+  payload.label,
+  payload.chatLabels,
+  payload.contactLabels
+);
+
+if (closedLabelState || payloadClosedLabel) {
+  console.log(JSON.stringify({
+    event: 'closed_label_message_suppressed',
+    instance: body.instance ?? body.instanceName ?? '',
+    remoteJid,
+    number,
+    messageId,
+    label: 'ENCERRADO'
+  }));
+  return [];
+}
 
 return [{
   json: {
@@ -249,8 +449,20 @@ return [{
       seconds: Number(audioMessage?.seconds || 0),
       hasAudio: true
     } : null,
+    inboundImage: hasInboundImage ? {
+      url: imageUrl,
+      mimeType: imageMimeType,
+      base64: imageBase64,
+      fileName: String(imageMessage?.fileName || '').trim(),
+      caption: String(imageMessage?.caption || '').trim(),
+      hasImage: true
+    } : null,
+    inboundMedia: hasInboundImage ? { type: 'image', hasMedia: true } : null,
     messageId,
     quotedText: String(quotedText || '').trim(),
-    quotedMessageId
+    quotedMessageId,
+    senderPhoneCandidate,
+    participantJidCandidate,
+    senderJidCandidate
   }
 }];

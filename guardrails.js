@@ -1,4 +1,4 @@
-﻿const input = $json;
+const input = $json;
 
 const cfg = {
   maxInputChars: 600,
@@ -17,12 +17,16 @@ const cfg = {
   workTimezone: 'America/Bahia',
   workDays: [1, 2, 3, 4, 5],
   workWindows: ['08:00-12:00', '13:30-18:00'],
-  outOfHoursMessage: 'Aqui é o Eduardo, Consultor de Vendas Internas da Classe Couro. Obrigado pelo seu contato. Atendo de segunda a sexta, das 08:00 às 12:00 e das 13:30 às 18:00. No próximo horário eu sigo com prioridade. Se quiser adiantar, já me diga o produto e a quantidade que você procura.',
-  highVolumeMessage: 'Aqui é o Eduardo, Consultor de Vendas Internas da Classe Couro. Seu atendimento já está em prioridade. Para eu acelerar sua proposta, me diga agora o produto e a quantidade desejada.',
-  unresolvedRecipientMessage: 'Aqui é o Eduardo, Consultor de Vendas Internas da Classe Couro. Tive uma instabilidade para identificar seu contato neste momento, mas já estou cuidando disso. Pode repetir sua mensagem, por favor?',
-  missingKeyMessage: 'Aqui é o Eduardo, Consultor de Vendas Internas da Classe Couro. Nosso atendimento automático está em ajuste neste momento, mas seu contato já foi registrado e vou seguir com você por aqui.',
+  outOfHoursMessage: 'Aqui é Eduardo Vinhas, da Classe. Recebi sua mensagem. No próximo horário eu sigo com prioridade.',
+  highVolumeMessage: 'Aqui é Eduardo Vinhas, da Classe. Seu atendimento já está em prioridade. Me diga o produto e a quantidade desejada.',
+  unresolvedRecipientMessage: 'Aqui é Eduardo Vinhas, da Classe. Tive uma instabilidade para identificar seu contato. Pode repetir sua mensagem?',
+  missingKeyMessage: 'Aqui é Eduardo Vinhas, da Classe. Seu contato já foi registrado e sigo com você por aqui.',
   blockedNumberMessage: '',
-  testModeOnlyAllowedNumbers: true,
+  closedWhatsappLabelMessage: '',
+  closedWhatsappLabelNames: ['ENCERRADO'],
+  // Current Evolution label id for "ENCERRADO" in ATENDIMENTO_VENDAS_CLEAN.
+  closedWhatsappLabelIds: ['21'],
+  testModeOnlyAllowedNumbers: false,
   testModeSilentDrop: true,
   // Safety denylist for accidental recipients. Extend/adjust as needed.
   blockedNumbers: [
@@ -40,16 +44,16 @@ const cfg = {
   salesBook: {
     fileName: 'BOOK_PROSPECCAO_VENDAS_INTERNAS.pdf',
     mimeType: 'application/pdf',
-    documentCaption: 'BOOK DE VENDAS | Colecao Classe Couro'
+    documentCaption: 'BOOK DE VENDAS | Colecao Classe'
   },
   b2b: {
-    url: '',
-    displayLabel: 'Portal B2B Classe Couro',
-    operatorApprovalRequired: true
+    url: 'https://mstabletssl.ddns.net/wsB2BProspClasseCouro1ssl/acessocliente.aspx',
+    displayLabel: 'Portal B2B Classe',
+    operatorApprovalRequired: false
   },
   knowledge: {
-    companyName: 'Classe Couro',
-    consultantName: 'Eduardo',
+    companyName: 'Classe',
+    consultantName: 'Eduardo Vinhas',
     position: 'Consultor de Vendas Internas',
     businessSummary: [
       'Atendimento consultivo para produtos de couro com foco em solução para necessidade real do cliente.',
@@ -77,7 +81,7 @@ const cfg = {
     ],
     qualityGate: [
       'Antes de concluir a resposta, validar silenciosamente: respondi a pergunta principal?',
-      'Fortaleci confianca na Classe Couro?',
+      'Fortaleci confianca na Classe?',
       'Deixei um proximo passo claro e leve?',
       'Evitei repeticao, generalidade e desconexao com o contexto?'
     ]
@@ -145,6 +149,76 @@ function normalizeText(value) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase();
+}
+
+function normalizeNumber(value) {
+  return String(value || '').replace(/\D/g, '');
+}
+
+function normalizeLabel(value) {
+  return normalizeText(value).replace(/\s+/g, ' ').trim();
+}
+
+function closedContactKeys(...values) {
+  const out = new Set();
+  for (const value of values) {
+    const raw = String(value || '').replace(/:\d+(?=@)/g, '').toLowerCase().trim();
+    const digits = normalizeNumber(raw.replace(/@s\.whatsapp\.net|@g\.us|@lid/g, ''));
+    if (raw) out.add(raw);
+    if (digits) out.add(digits);
+  }
+  return [...out];
+}
+
+function collectLabelEntries(value, out = []) {
+  if (!value) return out;
+  if (Array.isArray(value)) {
+    for (const item of value) collectLabelEntries(item, out);
+    return out;
+  }
+  if (typeof value === 'object') {
+    const id = value.labelId ?? value.id ?? value.predefinedId ?? '';
+    const name = value.labelName ?? value.name ?? value.text ?? value.title ?? '';
+    if (id || name) out.push({ id: String(id || '').trim(), name: String(name || '').trim() });
+    for (const [key, child] of Object.entries(value)) {
+      if (/label|tag|etiqueta/i.test(key)) collectLabelEntries(child, out);
+    }
+    return out;
+  }
+  if (typeof value === 'string') out.push({ id: '', name: value });
+  return out;
+}
+
+function hasClosedWhatsappLabel(input, staticData, recipientNumber) {
+  const closedNames = new Set((cfg.closedWhatsappLabelNames || []).map(normalizeLabel).filter(Boolean));
+  const closedIds = new Set((cfg.closedWhatsappLabelIds || []).map((id) => String(id || '').trim()).filter(Boolean));
+  const directActive = input.closedLabelActive === true || input.closedWhatsappLabelActive === true;
+  if (directActive) return true;
+
+  const entries = collectLabelEntries([
+    input.labels,
+    input.label,
+    input.chatLabels,
+    input.contactLabels,
+    input.whatsappLabels,
+    input.closedLabel
+  ]);
+  if (entries.some((entry) => closedIds.has(entry.id) || closedNames.has(normalizeLabel(entry.name)))) return true;
+
+  const registry = staticData?.closedByWhatsappLabel && typeof staticData.closedByWhatsappLabel === 'object'
+    ? staticData.closedByWhatsappLabel
+    : {};
+  const keys = closedContactKeys(
+    recipientNumber,
+    input.number,
+    input.customerNumber,
+    input.remoteJid,
+    input.resolvedJid,
+    input.senderPhoneCandidate,
+    input.participantJidCandidate,
+    input.senderJidCandidate
+  );
+  return keys.some((key) => Boolean(registry[key]));
 }
 
 function toTitleName(name) {
@@ -517,9 +591,32 @@ function inferPhoneFromContext(text, profileNumber) {
 }
 
 function extractCnpj(text) {
-  const digits = String(text || '').replace(/\D/g, '');
-  if (digits.length < 14) return '';
-  return digits.slice(0, 14);
+  const raw = String(text || '');
+  const candidates = [];
+
+  const pushDigits = (value) => {
+    const digits = String(value || '').replace(/\D/g, '');
+    if (digits.length >= 14) candidates.push(digits.slice(0, 14));
+  };
+
+  for (const match of raw.matchAll(/cnpj\D{0,30}([0-9][0-9.\-\/\s]{13,30})/gi)) {
+    pushDigits(match[1]);
+  }
+
+  for (const match of raw.matchAll(/\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}/g)) {
+    pushDigits(match[0]);
+  }
+
+  const allDigits = raw.replace(/\D/g, '');
+  if (allDigits.length === 14) candidates.push(allDigits);
+  if (allDigits.length > 14) {
+    for (let i = 0; i <= allDigits.length - 14; i++) {
+      candidates.push(allDigits.slice(i, i + 14));
+    }
+  }
+
+  const unique = [...new Set(candidates.filter((c) => c.length === 14))];
+  return unique.find((c) => isValidCnpj(c)) || unique[0] || '';
 }
 
 function looksLikeMaskedCnpjInput(text) {
@@ -572,6 +669,82 @@ function extractCity(text) {
   if (m && m[1]) return m[1].trim();
   if (/^\p{L}[\p{L}\s-]{1,40}$/iu.test(t)) return t;
   return '';
+}
+
+function cleanCapturedValue(value) {
+  return String(value || '')
+    .replace(/^[\s"'`´^~.,!?;:()\-_/\\]+/, '')
+    .replace(/[\s"'`´^~.,!?;:()\-_/\\]+$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function extractAddress(text) {
+  const t = String(text || '').trim();
+  if (!t) return '';
+  const m = t.match(/(?:endereco|endereço|fica na|rua|avenida|av\.?|travessa|rodovia|estrada|praca|praça)\s*[:\-–]?\s*(.{6,120})/iu);
+  if (m && m[1]) return cleanCapturedValue(/^(rua|avenida|av\.?|travessa|rodovia|estrada|praca|praça)\b/i.test(m[0]) ? m[0] : m[1]);
+  return '';
+}
+
+function extractStoreName(text) {
+  const t = String(text || '').trim();
+  if (!t) return '';
+  const patterns = [
+    /(?:nome da loja|loja se chama|minha loja se chama|a loja chama|loja:)\s*[:\-–]?\s*([^\n.,;]{2,80})/iu,
+    /(?:loja|empresa)\s+([\p{L}\d&'`´^~.\-\s]{2,80})/iu
+  ];
+  for (const re of patterns) {
+    const m = t.match(re);
+    if (m && m[1]) return cleanCapturedValue(m[1]);
+  }
+  return '';
+}
+
+function extractStateRegistration(text) {
+  const t = String(text || '').trim();
+  if (!t) return '';
+  const norm = normalizeText(t);
+  if (/\b(isento|isenta|sem inscricao estadual|sem inscrição estadual)\b/.test(norm)) return 'isento';
+  const explicit = t.match(/(?:inscricao estadual|inscrição estadual|ie)\s*[:\-–]?\s*([A-Za-z0-9.\-\/]{5,20})/iu);
+  if (explicit && explicit[1]) return cleanCapturedValue(explicit[1]);
+  const digits = t.replace(/\D/g, '');
+  if (digits.length >= 8 && digits.length <= 14 && !isValidCnpj(digits)) return digits;
+  return '';
+}
+
+function extractEmail(text) {
+  const t = String(text || '').trim();
+  const m = t.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  return m ? m[0].trim().toLowerCase() : '';
+}
+
+function hasStorePhotoSignal(text, input) {
+  if (input?.inboundImage?.hasImage || input?.inboundMedia?.type === 'image') return true;
+  const norm = normalizeText(text);
+  return /\b(enviei|segue|anexei|mandei|vou enviar|vou mandar).{0,30}\b(foto|fotos|fachada|loja|imagem|imagens)\b/.test(norm);
+}
+
+function buildRevendaStageQuestion(stage, opts = {}) {
+  const materialLabel = opts.materialLabel || 'o material comercial';
+  const questions = {
+    1: 'Ola, seja bem-vindo a Classe. Para iniciar seu pre-cadastro: voce possui CNPJ ativo?',
+    2: 'Perfeito. Voce possui loja fisica?',
+    3: 'Me informe seu nome, por favor.',
+    4: 'Qual e o melhor telefone para contato?',
+    5: 'De qual cidade voce e?',
+    6: 'Qual e o endereco da loja?',
+    7: 'Qual e o nome da loja?',
+    8: 'Qual e o Instagram da loja? Se nao tiver, responda: nao tenho.',
+    9: 'Pode me informar o CNPJ completo da loja?',
+    10: 'Qual e a inscricao estadual? Se for isento, responda: isento.',
+    11: 'Qual e o e-mail para cadastro?',
+    12: 'Para concluir, envie fotos da fachada ou da loja.'
+  };
+  if (stage <= 1 && opts.materialGate) {
+    return `Consigo te orientar e separar ${materialLabel} apos um pre-cadastro rapido. Para avancarmos: voce possui CNPJ ativo?`;
+  }
+  return questions[stage] || questions[12];
 }
 
 function extractLikelyStandaloneName(text) {
@@ -656,7 +829,7 @@ function buildPessoaFisicaEcommerceReply(profile) {
 function buildSemCnpjSiteReply(profile) {
   const firstName = sanitizeCustomerName(profile?.customerName || '');
   const prefix = firstName ? `Sem problema, ${firstName}!` : 'Sem problema!';
-  return `${prefix} No momento, nao vamos conseguir prosseguir com o seu cadastramento no nosso B2B, porque a revenda direta exige CNPJ ativo. Agradeco sinceramente o seu interesse na Classe Couro. Quando esse requisito estiver regularizado, sera um prazer retomar seu atendimento por aqui e seguir com voce da forma correta. Obrigado pelo seu contato e conte com a gente.`;
+  return `${prefix} Obrigado pelo interesse. No momento, nao conseguimos seguir com o cadastro B2B porque a revenda exige CNPJ ativo. Quando esse requisito estiver regularizado, retomamos por aqui.`;
 }
 
 function likelyRevendaScript(normInbound, intent) {
@@ -682,7 +855,7 @@ function shouldRestartRevendaScript(script, inboundText) {
 
   const data = script.data || {};
   const hasAnyProgress = Boolean(
-    data.cnpjAtivo || data.lojaFisica || data.nome || data.telefone || data.cidade || data.instagram || data.cnpj
+    data.cnpjAtivo || data.lojaFisica || data.nome || data.telefone || data.cidade || data.endereco || data.nomeLoja || data.instagram || data.cnpj || data.inscricaoEstadual || data.email || data.fotosLoja
   );
   return hasAnyProgress;
 }
@@ -702,8 +875,13 @@ function initRevendaScriptState(nowIso) {
       nome: '',
       telefone: '',
       cidade: '',
+      endereco: '',
+      nomeLoja: '',
       instagram: '',
-      cnpj: ''
+      cnpj: '',
+      inscricaoEstadual: '',
+      email: '',
+      fotosLoja: ''
     }
   };
 }
@@ -764,49 +942,21 @@ function buildMaterialLabel(productSignals, profile) {
 function buildCommercialMaterialGateReply(script, productSignals, profile) {
   const stage = Number(script?.stage || 1);
   const materialLabel = buildMaterialLabel(productSignals, profile);
-
-  if (stage <= 1) {
-    return `Consigo sim te mostrar ${materialLabel}. Faz sentido voce querer avaliar antes de avancar. Eu libero esse material logo apos um pre-cadastro rapido, para ja te apresentar algo mais alinhado ao perfil da sua loja, alem de book e condicoes comerciais. Para avancarmos, voce possui CNPJ ativo?`;
-  }
-  if (stage === 2) {
-    return `Perfeito, ja deixo ${materialLabel} preparado para a proxima etapa. Antes, preciso confirmar um requisito obrigatorio da revenda para te atender do jeito certo: voce possui loja fisica?`;
-  }
-  if (stage === 3) {
-    return `Otimo, estamos avancando. Para eu direcionar seu atendimento da forma certa e ja preparar ${materialLabel}, me diz primeiro de qual cidade voce e.`;
-  }
-  if (stage === 4) {
-    return `Perfeito, isso ja me ajuda bastante. Para eu seguir com seu pre-cadastro e liberar o material da forma correta, me fala por favor o seu nome.`;
-  }
-  if (stage === 5) {
-    return `Falta pouco. Para eu concluir seu pre-cadastro e seguir com o material, me informa o melhor telefone para contato.`;
-  }
-  if (stage === 6) {
-    return `Estamos quase concluindo. Se tiver Instagram da loja, pode me passar. Se nao tiver, tudo bem; me avisa e seguimos para a proxima etapa.`;
-  }
-  return `Perfeito. Para eu liberar ${materialLabel} e seguir com seu atendimento comercial da forma correta, preciso validar tambem o CNPJ da loja. Pode me informar o numero completo?`;
+  return buildRevendaStageQuestion(stage, { materialGate: true, materialLabel });
 }
 
 function buildSalesBookGateReply(script) {
   const stage = Number(script?.stage || 1);
   if (stage <= 1) {
-    return 'Eu consigo liberar o BOOK DE VENDAS assim que concluirmos seu pre-cadastro. E rapidinho e isso garante que seu atendimento siga do jeito certo. Para avancarmos, voce possui CNPJ ativo?';
+    return 'Eu libero o BOOK DE VENDAS apos o pre-cadastro. Para avancarmos: voce possui CNPJ ativo?';
   }
-  if (stage === 2) {
-    return 'Eu ja separo o BOOK DE VENDAS para a proxima etapa, mas antes preciso confirmar um requisito obrigatorio da revenda. Voce possui loja fisica?';
-  }
-  if (stage === 3) {
-    return 'Estamos quase la. Para eu direcionar seu atendimento da forma certa e seguir com a analise, me diz primeiro de qual cidade voce e.';
-  }
-  if (stage === 4) {
-    return 'Perfeito, estamos avancando. Para seguir com a triagem e liberar o proximo passo, me fala por favor o seu nome.';
-  }
-  if (stage === 5) {
-    return 'Falta pouco. Para eu concluir essa etapa e seguir para a liberacao correta do atendimento, me informa o melhor telefone para contato.';
-  }
-  if (stage === 6) {
-    return 'Estamos na reta final. Se tiver Instagram da loja, pode me passar. Se nao tiver, tudo bem; me avisa e seguimos.';
-  }
-  return 'Para liberar o proximo passo do atendimento e o acesso ao material comercial, preciso validar tambem o seu CNPJ. Pode me informar o numero completo?';
+  return buildRevendaStageQuestion(stage);
+}
+
+function safeB2BUrlForMessage() {
+  const url = String(cfg.b2b.url || '').trim();
+  if (!url || /classe\s*couro|classecouro/i.test(url)) return '';
+  return url;
 }
 
 function buildSalesBookPresentation(profile, script, options = {}) {
@@ -817,12 +967,24 @@ function buildSalesBookPresentation(profile, script, options = {}) {
     ''
   );
   const mode = String(options.mode || 'release');
+  const cnpjDigits = String(
+    script?.data?.cnpj ||
+    profile?.cnpj ||
+    profile?.lastCnpj ||
+    profile?.companyCnpj ||
+    ''
+  ).replace(/\D/g, '');
+  const password = cnpjDigits.length >= 8 ? cnpjDigits.slice(0, 8) : '';
+  const safeUrl = safeB2BUrlForMessage();
+  const accessLine = cnpjDigits
+    ? `\n\nAcesso ao ${cfg.b2b.displayLabel} liberado.${safeUrl ? ` ${safeUrl}` : ''}\nLOGIN: ${cnpjDigits}\nSENHA: ${password}`
+    : '';
 
   if (mode === 'resend') {
-    return 'Estou te reenviando agora o nosso Book de Vendas para voce retomar a analise das linhas, do posicionamento comercial da Classe Couro e do potencial de revenda dos produtos. Vale revisar com calma porque isso vai te dar uma visao muito clara do perfil da marca e das oportunidades para a sua loja. Inclusive, trabalhamos com sugestoes de pedido inicial com mix bem assertivo a partir de R$ 2.000, alem de opcoes de R$ 4.000 e R$ 6.000, todas pensadas para bom giro, boa exposicao e excelente aceitacao entre os nossos clientes.';
+    return `Estou te reenviando o Book de Vendas para voce retomar a analise dos produtos da Classe.${accessLine}`;
   }
 
-  return 'Seu pre-cadastro foi recebido e validado. Estou te enviando agora o nosso Book de Vendas para voce conhecer melhor as linhas, o posicionamento comercial da Classe Couro e o potencial de revenda dos produtos. Vale analisar com calma porque isso ja vai te dar uma visao muito clara do perfil da marca e das oportunidades para a sua loja. Inclusive, trabalhamos com sugestoes de pedido inicial com mix bem assertivo a partir de R$ 2.000, alem de opcoes de R$ 4.000 e R$ 6.000, todas pensadas para bom giro, boa exposicao e excelente aceitacao entre os nossos clientes.';
+  return `Pre-cadastro recebido e validado. Estou te enviando o Book de Vendas da Classe.${accessLine}`;
 }
 
 function buildSalesBookCaption(profile, script) {
@@ -846,9 +1008,10 @@ function wantsVitrine(text) {
 function wantsB2BAccess(text) {
   const norm = normalizeText(text);
   return [
-    'site b2b', 'portal b2b', 'acesso b2b', 'link b2b', 'site de pedidos',
-    'portal de pedidos', 'acesso ao sistema', 'link do sistema', 'login b2b',
-    'entrar no portal', 'acessar o portal'
+    'site b2b', 'portal b2b', 'acesso b2b', 'link b2b', 'link do b2b',
+    'site do b2b', 'portal do b2b', 'site de pedidos', 'portal de pedidos',
+    'acesso ao sistema', 'link do sistema', 'login b2b', 'entrar no portal',
+    'acessar o portal', 'me enviar o link do b2b', 'me manda o link do b2b'
   ].some((k) => norm.includes(normalizeText(k)));
 }
 
@@ -880,7 +1043,7 @@ function buildVitrineConsentReply(profile) {
 }
 
 function buildVitrinePresentationReply(profile) {
-  return 'Para te ajudar a visualizar melhor o potencial da marca no ponto de venda, eu tambem posso te mostrar uma vitrine de referencia. Isso costuma facilitar bastante, porque voce consegue imaginar com mais clareza como os produtos da Classe Couro podem valorizar a apresentacao da sua loja, chamar mais atencao do cliente final e construir uma percepcao mais forte de desejo e qualidade. Quando o mix esta bem montado, a vitrine praticamente comeca a vender antes mesmo da abordagem.';
+  return 'Para te ajudar a visualizar melhor o potencial da marca no ponto de venda, eu tambem posso te mostrar uma vitrine de referencia. Isso facilita bastante a visualizacao do mix e da apresentacao dos produtos na loja.';
 }
 
 function buildB2BConsentReply(profile) {
@@ -892,7 +1055,20 @@ function buildB2BConsentReply(profile) {
 function buildB2BAccessReply(profile, script) {
   const firstName = sanitizeCustomerName(script?.data?.nome || profile?.customerName || profile?.pushName || '');
   const prefix = firstName ? `${firstName},` : 'Perfeito,';
-  return `${prefix} vou seguir com a liberacao assistida do seu acesso ao ${cfg.b2b.displayLabel}, sem enviar link automatico por aqui. Assim que a confirmacao estiver pronta, eu continuo com voce pelo canal seguro e oriento o proximo passo.`;
+  const cnpjDigits = String(
+    script?.data?.cnpj ||
+    profile?.cnpj ||
+    profile?.lastCnpj ||
+    ''
+  ).replace(/\D/g, '');
+  const password = cnpjDigits.length >= 8 ? cnpjDigits.slice(0, 8) : '';
+  const safeUrl = safeB2BUrlForMessage();
+  if (!cnpjDigits) {
+    return safeUrl
+      ? `${prefix} segue o acesso ao ${cfg.b2b.displayLabel}: ${safeUrl} Se quiser, me informe seu CNPJ e eu te passo tambem o login e a senha inicial.`
+      : `${prefix} acesso ao ${cfg.b2b.displayLabel} liberado. Me informe seu CNPJ e eu te passo o login e a senha inicial.`;
+  }
+  return `${prefix} acesso ao ${cfg.b2b.displayLabel} liberado.${safeUrl ? ` ${safeUrl}` : ''}\nLOGIN: ${cnpjDigits}\nSENHA: ${password}`;
 }
 
 function buildEduardoAssistedOrderReply(profile, script) {
@@ -1029,8 +1205,13 @@ function getRecentRevendaSignals(staticData, profile, script, nowIso) {
       cidade: '',
       nome: '',
       telefone: '',
+      endereco: '',
+      nomeLoja: '',
       instagram: '',
-      cnpj: ''
+      cnpj: '',
+      inscricaoEstadual: '',
+      email: '',
+      fotosLoja: ''
     };
   }
 
@@ -1053,8 +1234,13 @@ function getRecentRevendaSignals(staticData, profile, script, nowIso) {
     cidade: '',
     nome: '',
     telefone: '',
+    endereco: '',
+    nomeLoja: '',
     instagram: '',
-    cnpj: ''
+    cnpj: '',
+    inscricaoEstadual: '',
+    email: '',
+    fotosLoja: ''
   };
 
   for (const item of recent) {
@@ -1066,6 +1252,11 @@ function getRecentRevendaSignals(staticData, profile, script, nowIso) {
     const explicitPhone = extractPhone(text) || inferPhoneFromContext(text, profile?.number);
     const explicitCity = extractCity(text);
     const explicitInstagram = extractInstagram(text);
+    const explicitAddress = extractAddress(text);
+    const explicitStoreName = extractStoreName(text);
+    const explicitStateRegistration = extractStateRegistration(text);
+    const explicitEmail = extractEmail(text);
+    const explicitStorePhoto = hasStorePhotoSignal(text, {});
     const explicitLoja = inferLojaFisicaStatus(text);
     const explicitCnpjAtivo = inferCnpjAtivoStatus(text, explicitCnpj);
 
@@ -1075,7 +1266,12 @@ function getRecentRevendaSignals(staticData, profile, script, nowIso) {
     if (!out.cidade && explicitCity) out.cidade = explicitCity;
     if (!out.nome && explicitName) out.nome = explicitName;
     if (!out.telefone && explicitPhone) out.telefone = explicitPhone;
+    if (!out.endereco && explicitAddress) out.endereco = explicitAddress;
+    if (!out.nomeLoja && explicitStoreName) out.nomeLoja = explicitStoreName;
     if (!out.instagram && explicitInstagram) out.instagram = explicitInstagram;
+    if (!out.inscricaoEstadual && explicitStateRegistration) out.inscricaoEstadual = explicitStateRegistration;
+    if (!out.email && explicitEmail) out.email = explicitEmail;
+    if (!out.fotosLoja && explicitStorePhoto) out.fotosLoja = 'recebida';
   }
 
   return out;
@@ -1103,16 +1299,34 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
   const nameFromInput = sanitizeCustomerName(identifiedName || standaloneName);
   const phoneFromInput = extractPhone(inboundText) || inferPhoneFromContext(inboundText, profile.number);
   const cityFromInput = extractCity(inboundText);
+  const addressFromInput = extractAddress(inboundText);
+  const storeNameFromInput = extractStoreName(inboundText);
   const instagramFromInput = extractInstagram(inboundText);
   const cnpjFromInput = extractCnpj(inboundText);
+  const stateRegistrationFromInput = extractStateRegistration(inboundText);
+  const emailFromInput = extractEmail(inboundText);
+  const storePhotoFromInput = hasStorePhotoSignal(inboundText, input);
   const lojaFisicaStatus = inferLojaFisicaStatus(inboundText);
   const cnpjAtivoStatus = inferCnpjAtivoStatus(inboundText, cnpjFromInput);
+  const shortYesAnswer = yn === 'yes' && /^(sim|s|tenho|possuo|positivo|claro|isso|tenho sim|sim tenho|sim possuo)$/i.test(norm);
+  const shortNoAnswer = yn === 'no' && /^(nao|não|n|negativo|nao tenho|não tenho)$/i.test(norm);
   const pessoaFisicaInterest = shouldRoutePessoaFisicaEcommerce(inboundText, activeScript);
   const recentSignals = getRecentRevendaSignals(staticData, profile, activeScript, nowIso);
   const profileKnownName = sanitizeCustomerName(profile?.customerName || profile?.pushName || '');
   const vitrineAssetsAvailable = Array.isArray(staticData?.vitrineAssets?.items) && staticData.vitrineAssets.items.length > 0;
   const shortAcknowledgement = isShortAcknowledgement(inboundText);
   const currentIntent = String(detectIntent(inboundText)?.intent || 'geral');
+  const explicitB2BRequest = wantsB2BAccess(inboundText) || currentIntent === 'pedido_b2b';
+  const b2bCredentialFlow = Boolean(
+    cnpjFromInput &&
+    (
+      explicitB2BRequest ||
+      profile?.orderChoiceSelection === 'b2b' ||
+      profile?.b2bLinkSentAt ||
+      profile?.b2bConsentGrantedAt ||
+      activeScript?.completed
+    ) && activeScript?.completed
+  );
 
   if (!activeScript.active && !activeScript.completed) {
     activeScript.active = true;
@@ -1136,31 +1350,86 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
   // Prefill only with explicit information from this same inbound message.
   // A generic "sim/nao" must affect only the stage currently being answered.
   // Explicit signals from the recent conversation can be reused safely.
-  if (!activeScript.data.cnpj && (cnpjFromInput || recentSignals.cnpj) && (looksLikeMaskedCnpjInput(inboundText) || recentSignals.cnpj)) {
-    activeScript.data.cnpj = cnpjFromInput || recentSignals.cnpj;
+  if (cnpjFromInput && (looksLikeMaskedCnpjInput(inboundText) || /cnpj/i.test(inboundText))) {
+    activeScript.data.cnpj = cnpjFromInput;
+  } else if (!activeScript.data.cnpj && recentSignals.cnpj) {
+    activeScript.data.cnpj = recentSignals.cnpj;
   }
-  if (!activeScript.data.cnpjAtivo && (cnpjAtivoStatus || cnpjFromInput || recentSignals.cnpjAtivo || recentSignals.cnpj) && inboundStage <= 1) {
-    activeScript.data.cnpjAtivo = cnpjAtivoStatus || recentSignals.cnpjAtivo || (cnpjFromInput || recentSignals.cnpj ? 'sim' : '');
+  if (!activeScript.data.cnpjAtivo && (cnpjAtivoStatus || cnpjFromInput)) {
+    activeScript.data.cnpjAtivo = cnpjAtivoStatus || (cnpjFromInput ? 'sim' : '');
+  } else if (!activeScript.data.cnpjAtivo && (recentSignals.cnpjAtivo || recentSignals.cnpj) && inboundStage <= 1) {
+    activeScript.data.cnpjAtivo = recentSignals.cnpjAtivo || (recentSignals.cnpj ? 'sim' : '');
   }
-  if (!activeScript.data.lojaFisica && (lojaFisicaStatus || recentSignals.lojaFisica) && inboundStage <= 2) {
-    activeScript.data.lojaFisica = lojaFisicaStatus || recentSignals.lojaFisica;
+  if (!activeScript.data.lojaFisica && lojaFisicaStatus) {
+    activeScript.data.lojaFisica = lojaFisicaStatus;
+  } else if (!activeScript.data.lojaFisica && recentSignals.lojaFisica && inboundStage <= 2) {
+    activeScript.data.lojaFisica = recentSignals.lojaFisica;
   }
   // Cidade e um dado critico para marketing/raio de campanha.
   // Portanto, so aceitamos quando vier explicitamente na mensagem atual do lead.
-  if (!activeScript.data.cidade && cityFromInput && inboundStage <= 3) {
+  if (!activeScript.data.cidade && cityFromInput && (inboundStage === 5 || /(?:sou de|cidade|moro em|de)\s+/iu.test(inboundText))) {
     activeScript.data.cidade = cityFromInput;
   }
-  if (!activeScript.data.nome && (nameFromInput || recentSignals.nome || profileKnownName) && inboundStage <= 4) {
-    activeScript.data.nome = nameFromInput || recentSignals.nome || profileKnownName;
+  if (!activeScript.data.endereco && addressFromInput && (inboundStage === 6 || /endereco|endereço|fica na|rua|avenida|av\.?|travessa|rodovia|estrada|praca|praça/iu.test(inboundText))) {
+    activeScript.data.endereco = addressFromInput;
   }
-  if (!activeScript.data.telefone && (phoneFromInput || recentSignals.telefone) && inboundStage <= 5) {
-    activeScript.data.telefone = phoneFromInput || recentSignals.telefone;
+  if (!activeScript.data.nomeLoja && storeNameFromInput && (inboundStage === 7 || /nome da loja|loja se chama|minha loja se chama|a loja chama|loja:/iu.test(inboundText))) {
+    activeScript.data.nomeLoja = storeNameFromInput;
   }
-  if (!activeScript.data.instagram && (instagramFromInput || recentSignals.instagram) && inboundStage <= 6) {
-    activeScript.data.instagram = instagramFromInput || recentSignals.instagram;
+  if (!activeScript.data.inscricaoEstadual && stateRegistrationFromInput && (inboundStage === 10 || /inscricao estadual|inscrição estadual|\bie\b|isento/iu.test(inboundText))) {
+    activeScript.data.inscricaoEstadual = stateRegistrationFromInput;
   }
-  if (!activeScript.data.instagram && inboundStage <= 6 && (norm.includes('nao tenho instagram') || norm.includes('não tenho instagram') || norm.includes('nao tenho comigo no momento') || norm.includes('não tenho comigo no momento'))) {
+  if (!activeScript.data.email && emailFromInput) {
+    activeScript.data.email = emailFromInput;
+  }
+  if (!activeScript.data.fotosLoja && (storePhotoFromInput || (inboundStage === 12 && /foto|fotos|fachada|imagem|imagens|enviei|segue|anexei|mandei/iu.test(norm)))) {
+    activeScript.data.fotosLoja = 'recebida';
+  }
+  if (!activeScript.data.nome && nameFromInput && (identifiedName || inboundStage === 3)) {
+    activeScript.data.nome = nameFromInput;
+  } else if (!activeScript.data.nome && (recentSignals.nome || profileKnownName) && inboundStage <= 4) {
+    activeScript.data.nome = recentSignals.nome || profileKnownName;
+  }
+  if (!activeScript.data.telefone && phoneFromInput && (inboundStage === 4 || /telefone|celular|whats|whatsapp|contato/iu.test(inboundText))) {
+    activeScript.data.telefone = phoneFromInput;
+  } else if (!activeScript.data.telefone && recentSignals.telefone && inboundStage <= 5) {
+    activeScript.data.telefone = recentSignals.telefone;
+  }
+  if (!activeScript.data.instagram && instagramFromInput && (inboundStage === 8 || /instagram|@/iu.test(inboundText))) {
+    activeScript.data.instagram = instagramFromInput;
+  } else if (!activeScript.data.instagram && recentSignals.instagram && inboundStage <= 6) {
+    activeScript.data.instagram = recentSignals.instagram;
+  }
+  if (!activeScript.data.instagram && inboundStage <= 8 && (norm.includes('nao tenho instagram') || norm.includes('não tenho instagram') || norm.includes('nao tenho comigo no momento') || norm.includes('não tenho comigo no momento'))) {
     activeScript.data.instagram = 'nao informado';
+  }
+
+  if (b2bCredentialFlow) {
+    activeScript.data.cnpj = cnpjFromInput;
+    profile.companyCnpj = cnpjFromInput;
+    profile.lastCnpj = cnpjFromInput;
+    profile.awaitingB2BConsent = false;
+    profile.b2bConsentGrantedAt = profile.b2bConsentGrantedAt || nowIso;
+    profile.b2bLinkSentAt = nowIso;
+    profile.orderChoiceSelectedAt = nowIso;
+    profile.orderChoiceSelection = 'b2b';
+    profile.bookSalesAccess = 'eligible';
+    return {
+      forced: true,
+      reply: buildB2BAccessReply(profile, activeScript)
+    };
+  }
+
+  if (explicitB2BRequest) {
+    profile.awaitingB2BConsent = false;
+    profile.b2bConsentGrantedAt = nowIso;
+    profile.b2bLinkSentAt = nowIso;
+    profile.orderChoiceSelectedAt = nowIso;
+    profile.orderChoiceSelection = 'b2b';
+    return {
+      forced: true,
+      reply: buildB2BAccessReply(profile, activeScript)
+    };
   }
 
   if (wantsRevendaExplanation(inboundText)) {
@@ -1179,7 +1448,8 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
     }
   }
 
-  if (wantsCommercialMaterial(inboundText) && !activeScript.completed) {
+  const completingPhotoStage = Number(activeScript.stage || 1) === 12 && (storePhotoFromInput || /foto|fotos|fachada|imagem|imagens|enviei|segue|anexei|mandei/iu.test(norm));
+  if (wantsCommercialMaterial(inboundText) && !activeScript.completed && !completingPhotoStage) {
     profile.bookSalesAccess = 'locked_pending_triage';
     return {
       forced: true,
@@ -1261,6 +1531,7 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
       profile.vitrineConsentDismissedAt = nowIso;
     }
   }
+
 
   if (
     activeScript.completed &&
@@ -1350,114 +1621,101 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
   }
 
   if (!activeScript.completed) {
-  // Hard gate for mandatory sequence:
-  // without CNPJ ativo confirmed, do not move beyond stage 1;
-  // without loja fisica confirmed, do not move beyond stage 2.
-  if (!activeScript.data.cnpjAtivo && Number(activeScript.stage || 1) > 1) {
-    activeScript.stage = 1;
-  }
-  if (!activeScript.data.lojaFisica && Number(activeScript.stage || 1) > 2) {
-    activeScript.stage = 2;
-  }
-
-  // Fast-forward stages when mandatory fields were already provided.
-  for (let i = 0; i < 8; i++) {
-    if (activeScript.stage === 1) {
-      if (!activeScript.data.cnpjAtivo && inboundStage === 1 && yn === 'yes') activeScript.data.cnpjAtivo = 'sim';
-      if (!activeScript.data.cnpjAtivo && inboundStage === 1 && yn === 'no') activeScript.data.cnpjAtivo = 'nao';
-      if (activeScript.data.cnpjAtivo === 'sim') {
-        activeScript.stage = 2;
-        continue;
-      }
-      if (activeScript.data.cnpjAtivo === 'nao') {
-        activeScript.active = false;
-        activeScript.disqualified = true;
-        activeScript.disqualifiedReason = 'cnpj_inativo_ou_ausente';
-        profile.bookSalesAccess = 'locked_ineligible';
-        profile.leadStage = 'encerrado_sem_cnpj';
-        return {
-          forced: true,
-          reply: buildSemCnpjSiteReply(profile)
-        };
-      }
-      break;
+    if (Number(activeScript.stage || 1) < 7 && !/nome da loja|loja se chama|minha loja se chama|a loja chama|loja:/iu.test(inboundText)) activeScript.data.nomeLoja = '';
+    if (Number(activeScript.stage || 1) < 10 && !/inscricao estadual|inscrição estadual|\bie\b|isento/iu.test(inboundText)) activeScript.data.inscricaoEstadual = '';
+    if (Number(activeScript.stage || 1) < 12 && !storePhotoFromInput) activeScript.data.fotosLoja = '';
+    // Hard gate for mandatory sequence:
+    // without CNPJ ativo confirmed, do not move beyond stage 1;
+    // without loja fisica confirmed, do not move beyond stage 2.
+    if (!activeScript.data.cnpjAtivo && Number(activeScript.stage || 1) > 1) {
+      activeScript.stage = 1;
+    }
+    if (!activeScript.data.lojaFisica && Number(activeScript.stage || 1) > 2) {
+      activeScript.stage = 2;
     }
 
-    if (activeScript.stage === 2) {
-      if (!activeScript.data.lojaFisica && inboundStage === 2 && yn === 'yes') activeScript.data.lojaFisica = 'sim';
-      if (!activeScript.data.lojaFisica && inboundStage === 2 && yn === 'no') activeScript.data.lojaFisica = 'nao';
-      if (activeScript.data.lojaFisica === 'sim') {
-        activeScript.stage = 3;
-        continue;
-      }
-      if (activeScript.data.lojaFisica === 'nao') {
-        activeScript.active = false;
-        activeScript.disqualified = true;
-        activeScript.disqualifiedReason = 'sem_loja_fisica';
-        profile.bookSalesAccess = 'locked_ineligible';
-        profile.leadStage = 'encerrado_sem_loja_fisica';
-        return {
-          forced: true,
-          reply: 'Sem problema, obrigado pela sinceridade. No momento, nao vamos conseguir prosseguir com o seu cadastramento no nosso B2B, porque a revenda direta exige loja fisica. Agradeco sinceramente o seu interesse na Classe Couro. Quando esse requisito estiver atendido, sera um prazer continuar seu atendimento por aqui. Obrigado pelo seu contato e conte com a gente.'
-        };
-      }
-      break;
-    }
-
-    if (activeScript.stage === 3) {
-      if (activeScript.data.cidade) {
-        activeScript.stage = 4;
-        continue;
-      }
-      break;
-    }
-
-    if (activeScript.stage === 4) {
-      if (activeScript.data.nome) {
-        activeScript.stage = 5;
-        continue;
-      }
-      break;
-    }
-
-    if (activeScript.stage === 5) {
-      if (activeScript.data.telefone) {
-        activeScript.stage = 6;
-        continue;
-      }
-      break;
-    }
-
-    if (activeScript.stage === 6) {
-      if (activeScript.data.instagram) {
-        activeScript.stage = 7;
-        continue;
-      }
-      break;
-    }
-
-    if (activeScript.stage === 7) {
-      if (looksLikeMaskedCnpjInput(inboundText) && cnpjFromInput) {
-        activeScript.data.cnpj = cnpjFromInput;
-      }
-      if (activeScript.data.cnpj) {
-        if (!isValidCnpj(activeScript.data.cnpj)) {
-          activeScript.data.cnpj = '';
-          activeScript.cnpjValidationStatus = 'checksum_invalid';
-          profile.bookSalesAccess = 'locked_invalid_cnpj';
-          return {
-            forced: true,
-            reply: 'Quero seguir com voce da forma certa, mas esse CNPJ parece invalido no formato informado. Pode me enviar novamente o numero completo do CNPJ?'
-          };
+    // Fast-forward stages when mandatory fields were already provided.
+    for (let i = 0; i < 16; i++) {
+      if (activeScript.stage === 1) {
+        if (!activeScript.data.cnpjAtivo && inboundStage === 1 && (cnpjAtivoStatus === 'sim' || shortYesAnswer)) activeScript.data.cnpjAtivo = 'sim';
+        if (!activeScript.data.cnpjAtivo && inboundStage === 1 && (cnpjAtivoStatus === 'nao' || shortNoAnswer)) activeScript.data.cnpjAtivo = 'nao';
+        if (activeScript.data.cnpjAtivo === 'sim') { activeScript.stage = 2; continue; }
+        if (activeScript.data.cnpjAtivo === 'nao') {
+          activeScript.active = false;
+          activeScript.disqualified = true;
+          activeScript.disqualifiedReason = 'cnpj_inativo_ou_ausente';
+          profile.bookSalesAccess = 'locked_ineligible';
+          profile.leadStage = 'encerrado_sem_cnpj';
+          return { forced: true, reply: buildSemCnpjSiteReply(profile) };
         }
-        activeScript.stage = 8;
-        activeScript.active = false;
-        activeScript.cnpjValidationStatus = 'checksum_valid';
-        const cnpjLookup = await lookupCnpjPublicData(activeScript.data.cnpj, staticData);
-        if (!cnpjLookup.ok) {
+        break;
+      }
+
+      if (activeScript.stage === 2) {
+        if (!activeScript.data.lojaFisica && inboundStage === 2 && (lojaFisicaStatus === 'sim' || shortYesAnswer)) activeScript.data.lojaFisica = 'sim';
+        if (!activeScript.data.lojaFisica && inboundStage === 2 && (lojaFisicaStatus === 'nao' || shortNoAnswer)) activeScript.data.lojaFisica = 'nao';
+        if (activeScript.data.lojaFisica === 'sim') { activeScript.stage = 3; continue; }
+        if (activeScript.data.lojaFisica === 'nao') {
+          activeScript.active = false;
+          activeScript.disqualified = true;
+          activeScript.disqualifiedReason = 'sem_loja_fisica';
+          profile.bookSalesAccess = 'locked_ineligible';
+          profile.leadStage = 'encerrado_sem_loja_fisica';
+          return { forced: true, reply: 'Obrigado pelas informacoes. No momento, nao conseguimos seguir com o cadastro B2B, porque a revenda exige loja fisica. Quando tiver esse requisito, retomamos por aqui.' };
+        }
+        break;
+      }
+
+      if (activeScript.stage === 3) { if (activeScript.data.nome) { activeScript.stage = 4; continue; } break; }
+      if (activeScript.stage === 4) { if (activeScript.data.telefone) { activeScript.stage = 5; continue; } break; }
+      if (activeScript.stage === 5) { if (activeScript.data.cidade) { activeScript.stage = 6; continue; } break; }
+      if (activeScript.stage === 6) { if (activeScript.data.endereco) { activeScript.stage = 7; continue; } break; }
+      if (activeScript.stage === 7) { if (activeScript.data.nomeLoja) { activeScript.stage = 8; continue; } break; }
+      if (activeScript.stage === 8) { if (activeScript.data.instagram) { activeScript.stage = 9; continue; } break; }
+
+      if (activeScript.stage === 9) {
+        if (looksLikeMaskedCnpjInput(inboundText) && cnpjFromInput) activeScript.data.cnpj = cnpjFromInput;
+        if (activeScript.data.cnpj) {
+          if (!isValidCnpj(activeScript.data.cnpj)) {
+            activeScript.data.cnpj = '';
+            activeScript.cnpjValidationStatus = 'checksum_invalid';
+            profile.bookSalesAccess = 'locked_invalid_cnpj';
+            return { forced: true, reply: 'Esse CNPJ parece invalido. Pode enviar novamente o numero completo?' };
+          }
+          activeScript.cnpjValidationStatus = 'checksum_valid';
+          const cnpjLookup = await lookupCnpjPublicData(activeScript.data.cnpj, staticData);
+          if (!cnpjLookup.ok) {
+            activeScript.cnpjLookupStatus = 'lookup_unavailable';
+            profile.companyCnpj = activeScript.data.cnpj;
+          } else {
+            activeScript.data.razaoSocial = String(cnpjLookup.razaoSocial || '').trim();
+            activeScript.data.cnpjSituacao = String(cnpjLookup.situation || '').trim();
+            activeScript.cnpjLookupStatus = cnpjLookup.isActive ? 'active' : 'inactive';
+            profile.companyLegalName = activeScript.data.razaoSocial || profile.companyLegalName || '';
+            profile.companyCnpj = activeScript.data.cnpj;
+            profile.companyCnpjSituation = activeScript.data.cnpjSituacao;
+            if (!cnpjLookup.isActive) {
+              activeScript.stage = 9;
+              activeScript.active = true;
+              activeScript.completed = false;
+              activeScript.data.cnpj = '';
+              profile.bookSalesAccess = 'locked_invalid_cnpj_status';
+              return { forced: true, reply: buildInactiveCnpjReply(profile, activeScript) };
+            }
+          }
+          activeScript.stage = 10;
+          continue;
+        }
+        break;
+      }
+
+      if (activeScript.stage === 10) { if (activeScript.data.inscricaoEstadual) { activeScript.stage = 11; continue; } break; }
+      if (activeScript.stage === 11) { if (activeScript.data.email) { activeScript.stage = 12; continue; } break; }
+      if (activeScript.stage === 12) {
+        if (activeScript.data.fotosLoja) {
+          activeScript.stage = 13;
+          activeScript.active = false;
           activeScript.completed = true;
-          activeScript.cnpjLookupStatus = 'lookup_unavailable';
-          profile.companyCnpj = activeScript.data.cnpj;
           profile.leadStage = 'qualificando';
           profile.bookSalesAccess = 'eligible';
           profile.awaitingVitrineConsent = false;
@@ -1473,85 +1731,15 @@ async function runRevendaScript(profile, inboundText, identifiedName, nowIso, st
             salesBookCaption: buildSalesBookCaption(profile, activeScript)
           };
         }
-
-        activeScript.data.razaoSocial = String(cnpjLookup.razaoSocial || '').trim();
-        activeScript.data.cnpjSituacao = String(cnpjLookup.situation || '').trim();
-        activeScript.cnpjLookupStatus = cnpjLookup.isActive ? 'active' : 'inactive';
-        profile.companyLegalName = activeScript.data.razaoSocial || profile.companyLegalName || '';
-        profile.companyCnpj = activeScript.data.cnpj;
-        profile.companyCnpjSituation = activeScript.data.cnpjSituacao;
-
-        if (!cnpjLookup.isActive) {
-          activeScript.stage = 7;
-          activeScript.active = true;
-          activeScript.completed = false;
-          activeScript.data.cnpj = '';
-          profile.bookSalesAccess = 'locked_invalid_cnpj_status';
-          return {
-            forced: true,
-            reply: buildInactiveCnpjReply(profile, activeScript)
-          };
-        }
-
-        activeScript.completed = true;
-        profile.leadStage = 'qualificando';
-        profile.bookSalesAccess = 'eligible';
-        profile.awaitingVitrineConsent = false;
-        profile.vitrineConsentAskedAt = nowIso;
-        profile.vitrineShownAt = nowIso;
-        profile.orderChoiceAskedAt = nowIso;
-        return {
-          forced: true,
-          reply: buildSalesBookPresentation(profile, activeScript, { mode: 'release' }),
-          sendSalesBookPdf: true,
-          sendVitrineAssets: true,
-          sendOrderChoiceButtons: true,
-          salesBookCaption: buildSalesBookCaption(profile, activeScript)
-        };
+        break;
       }
+
       break;
     }
 
-    break;
-  }
-
-  if (activeScript.stage === 1) {
-    return {
-      forced: true,
-      reply: 'Ola, seja bem-vindo a Classe. Vou te fazer algumas perguntas rapidas para entender seu perfil e seguir com o pre-cadastro. Voce possui CNPJ ativo?'
-    };
-  }
-
-  if (activeScript.stage === 2) {
-    return { forced: true, reply: 'Perfeito, isso ja nos permite seguir para a proxima etapa. Voce possui loja fisica?' };
-  }
-
-  if (activeScript.stage === 3) {
-    return {
-      forced: true,
-      reply: 'Otimo, isso tambem e um dos requisitos para seguirmos com o pre-cadastro. Para eu direcionar seu atendimento da forma certa, de qual cidade voce e?'
-    };
-  }
-
-  if (activeScript.stage === 4) {
-    return {
-      forced: true,
-      reply: 'Perfeito, isso ja me ajuda bastante. Me fala por favor o seu nome.'
-    };
-  }
-
-  if (activeScript.stage === 5) {
-    return { forced: true, reply: `Perfeito, ${activeScript.data.nome || 'tudo certo'}. Qual e o melhor telefone para contato?` };
-  }
-
-  if (activeScript.stage === 6) {
-    return { forced: true, reply: 'Perfeito, isso nos ajuda a direcionar seu atendimento para o representante da sua regiao. Voce tem Instagram da loja? Se tiver, pode me passar. Se nao tiver, tudo bem.' };
-  }
-
-  if (activeScript.stage === 7) {
-    return { forced: true, reply: 'Perfeito, obrigado por compartilhar. Pode me informar o numero do seu CNPJ?' };
-  }
-
+    if (activeScript.stage >= 1 && activeScript.stage <= 12) {
+      return { forced: true, reply: buildRevendaStageQuestion(Number(activeScript.stage || 1)) };
+    }
   } // end if (!activeScript.completed)
 
   return { forced: false, reply: '' };
@@ -1906,6 +2094,7 @@ if (!staticData.learningBacklog) staticData.learningBacklog = [];
 if (!staticData.lastAiCallMs) staticData.lastAiCallMs = 0;
 if (!staticData.dynamicKnowledge) staticData.dynamicKnowledge = {};
 if (!staticData.crmSync) staticData.crmSync = {};
+if (!staticData.closedByWhatsappLabel) staticData.closedByWhatsappLabel = {};
 
 for (const key of Object.keys(staticData.dailyCounts)) {
   if (key !== dayKey) delete staticData.dailyCounts[key];
@@ -1922,7 +2111,9 @@ for (const key of Object.keys(staticData.aiMinuteCounts)) {
 
 const inboundText = String(input.inboundText || '').slice(0, cfg.maxInputChars).trim();
 const lidManualMap = {
-  '114062134407423@lid': '557588340000'
+  '114062134407423@lid': '557588340000',
+  '5093848051920@lid': '557591691926',   // Emersoninho +55 75 9169-1926 — mapeado 2026-04-16
+  '181475437711612@lid': '558781050990'  // Rejane Monteiro +55 87 8105-0990 — mapeado 2026-04-16
 };
 const remoteJid = String(input.remoteJid || '').toLowerCase();
 const recipientFromLid = String(lidManualMap[remoteJid] || '').replace(/\D/g, '');
@@ -1962,6 +2153,7 @@ const detectedIntent = routeIntent || intentDetection.intent;
 const detectedIntentScore = intentDetection.score;
 const extractedEntities = extractEntities(inboundText);
 const humanPriority = ['pos_venda_reclamacao', 'troca_devolucao', 'cancelamento'].includes(detectedIntent);
+const b2bDirectRequest = wantsB2BAccess(inboundText) || detectedIntent === 'pedido_b2b';
 
 let allowAi = true;
 let blockReason = '';
@@ -1970,8 +2162,15 @@ let sendEligibilityReason = 'eligible';
 const ignoredNumbers = getIgnoredNumbersSet(staticData, input.dynamicBlockedNumbers);
 const alwaysAllowedNumbers = getAlwaysAllowedNumbersSet(staticData, input.dynamicAlwaysAllowedNumbers);
 const alwaysAllowedNumber = Boolean(recipientNumber && alwaysAllowedNumbers.has(recipientNumber));
+const closedWhatsappLabelActive = hasClosedWhatsappLabel(input, staticData, recipientNumber);
 
-if (!recipientNumber) {
+if (closedWhatsappLabelActive) {
+  allowAi = false;
+  blockReason = 'closed_label_encerrado';
+  outboundNumber = '';
+  sendEligible = false;
+  sendEligibilityReason = 'closed_label_encerrado';
+} else if (!recipientNumber) {
   allowAi = false;
   blockReason = 'no_recipient';
   outboundNumber = '';
@@ -1989,7 +2188,7 @@ if (!recipientNumber) {
   outboundNumber = '';
   sendEligible = false;
   sendEligibilityReason = 'blocked_number';
-} else if (!inBusinessHours) {
+} else if (!inBusinessHours && !b2bDirectRequest) {
   allowAi = false;
   blockReason = 'out_of_hours';
 } else {
@@ -2136,7 +2335,7 @@ const shouldHandleRevendaScript = (
   Boolean(profile.revendaScript?.active) ||
   Boolean(profile.revendaScript?.completed && profile.bookSalesAccess === 'eligible')
 );
-const scriptCanOverrideNow = !['blocked_number', 'no_recipient', 'out_of_hours', 'missing_key'].includes(blockReason);
+const scriptCanOverrideNow = !['blocked_number', 'no_recipient', 'missing_key'].includes(blockReason);
 if (recipientNumber && shouldHandleRevendaScript && scriptCanOverrideNow) {
   const scriptResult = await runRevendaScript(profile, inboundText, identifiedName, nowIso, staticData, productSignals);
   if (scriptResult?.forced && scriptResult.reply) {
@@ -2205,6 +2404,13 @@ const aiSystemPrompt = [
   '- NUNCA repita estrutura fixa em mensagens consecutivas.',
   '- NUNCA faca mais de 1 pergunta por mensagem.',
   '- NUNCA inicie com saudacao (o sistema ja adiciona automaticamente).',
+  '- Use somente o nome da marca Classe. Nunca escreva Classe Couro.',
+  '- Nunca use premium nas respostas.',
+  '- Nunca defina os produtos por genero. Use produto, linha, mix, bolsas, carteiras, cintos ou acessorios sem feminino/masculino.',
+  '- Nunca mencione a cidade informada pelo lead na resposta.',
+  '- Seja curto: 1 a 3 frases, sem textao.',
+  '- Se precisar pedir CNPJ, faca isso uma unica vez de forma direta. Nao repita o pedido no mesmo texto.',
+  '- Nunca use assinatura, cargo ou apresentacao longa no fim da mensagem.',
   '',
   'DIRETRIZES PRINCIPAIS:',
   '- Antes de redigir a resposta, releia internamente a pergunta do cliente e confirme que sua resposta responde diretamente aquilo.',
@@ -2315,7 +2521,9 @@ const fallbackText = (!sendEligible && cfg.testModeSilentDrop)
   ? ''
   : blockReason === 'blocked_number'
     ? cfg.blockedNumberMessage
-    : blockReason === 'mandatory_script'
+  : blockReason === 'closed_label_encerrado'
+    ? cfg.closedWhatsappLabelMessage
+  : blockReason === 'mandatory_script'
       ? effectiveMandatoryScriptReply
     : blockReason === 'cache_hit'
       ? cachedReplyText
@@ -2348,6 +2556,7 @@ return [{
     allowAi,
     sendEligible,
     sendEligibilityReason,
+    closedWhatsappLabelActive,
     alwaysAllowedNumber,
     blockReason,
     testModeOnlyAllowedNumbers: Boolean(cfg.testModeOnlyAllowedNumbers),
@@ -2368,6 +2577,8 @@ return [{
     humanPriority,
     mandatoryScriptActive: Boolean(profile.revendaScript?.active),
     mandatoryScriptStage: Number(profile.revendaScript?.stage || 0),
+    mandatoryScriptData: profile.revendaScript?.data || {},
+    mandatoryScriptCompleted: Boolean(profile.revendaScript?.completed),
     mandatoryScriptForced: blockReason === 'mandatory_script',
     bookSalesAccess: String(profile.bookSalesAccess || 'locked_pending_triage'),
     sendSalesBookPdf: effectiveSendSalesBookPdf,
@@ -2412,11 +2623,20 @@ return [{
     aiUserPrompt,
     fallbackText,
     humanEscalationCall,
-    insideSalesOwnNumber: cfg.insideSalesOwnNumber || '',
-    // Dual-LLM passthrough
-    llmReplyText,
-    llmProvider,
-    llmModel,
+      insideSalesOwnNumber: cfg.insideSalesOwnNumber || '',
+      b2bUrl: safeB2BUrlForMessage(),
+      b2bDisplayLabel: cfg.b2b.displayLabel,
+      authorizedLinks: safeB2BUrlForMessage() ? [safeB2BUrlForMessage()] : [],
+      orderChoiceSelection: String(profile.orderChoiceSelection || ''),
+      b2bLinkSentAt: String(profile.b2bLinkSentAt || ''),
+      b2bConsentGrantedAt: String(profile.b2bConsentGrantedAt || ''),
+      companyCnpj: String(profile.companyCnpj || ''),
+      lastCnpj: String(profile.lastCnpj || ''),
+      lastReplyText: String(profile.lastReplyText || ''),
+      // Dual-LLM passthrough
+      llmReplyText,
+      llmProvider,
+      llmModel,
     llmLatencyMs,
     llmStructuredData,
     llmLeadScore

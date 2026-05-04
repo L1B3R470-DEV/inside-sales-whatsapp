@@ -30,7 +30,7 @@ def build_asset():
     sales_book = manifest.get('salesBook') if isinstance(manifest.get('salesBook'), dict) else {}
     book_file_name = str(sales_book.get('fileName') or BOOK_FILE.name).strip() or BOOK_FILE.name
     book_file = BOOK_FILE.parent / book_file_name
-    caption = str(sales_book.get('caption') or 'BOOK DE VENDAS | Colecao Classe Couro').strip()
+    caption = str(sales_book.get('caption') or 'BOOK DE VENDAS | Colecao Classe').strip()
     version = str(sales_book.get('version') or '').strip()
     if not book_file.exists():
         raise FileNotFoundError(f'Sales book not found: {book_file}')

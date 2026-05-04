@@ -8,9 +8,9 @@ from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
-N8N_DB = '/data/database.sqlite'
-CRM_DB = '/work/crm_operacional.sqlite'
-ENV_FILE = '/work/.env'
+N8N_DB = os.getenv('N8N_DB', '/data/database.sqlite')
+CRM_DB = os.getenv('CRM_DB', '/work/crm_operacional.sqlite')
+ENV_FILE = os.getenv('ENV_FILE', '/work/.env')
 WORKFLOW_ID = 'zN3heKJVLO8w4dG6'
 
 SCOPES = [

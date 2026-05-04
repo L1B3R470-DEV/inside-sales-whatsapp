@@ -1,0 +1,41 @@
+﻿id,tema,pergunta,fonte_esperada,objetivo
+1,SAC e defeito,"Se um produto chegar com defeito, como funciona o SAC da Classe?",REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md,"Validar fluxo de SAC, fotos, fabrica e PIX."
+2,Reclamacao,O cliente consegue registrar reclamacao por um canal de SAC personalizado?,REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md,Validar existencia de SAC exclusivo/personalizado.
+3,Pagamento,Quais sao as formas de pagamento para pedido de revenda?,REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md,Validar boleto e cartao.
+4,Pagamento boleto,"No boleto, consigo prazo em 30, 60, 90 e 120 dias?",REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md,Validar boleto 30/60/90/120.
+5,Pagamento cartao,Cartao parcela em quantas vezes sem juros?,REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md,Validar cartao 6x sem juros.
+6,Prazo envio,Qual e o prazo de envio para pronta entrega e para producao?,REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md,Validar prazos distintos.
+7,Pronta entrega,"Se tiver pronta entrega, em quanto tempo o pedido costuma ser enviado?",REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md,Validar pronta entrega.
+8,Producao,"Quando o item entra em producao, qual prazo devo considerar?",REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md,Validar prazo producao.
+9,Suporte comercial,"Depois que eu comprar, a Classe ajuda a escolher mix e vender melhor?",REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md,Validar suporte comercial continuo.
+10,Lucratividade sem investimento,Consigo simular retorno sem ainda saber quanto vou investir?,REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md,Validar que investiga investimento antes de simular.
+11,Lucratividade 2000,"Se eu investir R$ 2.000, qual potencial bruto de venda usando o markup da Classe?",REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md,"Validar markup 2,3 e exemplo 4600."
+12,Lucratividade 4000,"Com R$ 4.000 de pedido inicial, qual seria um exemplo de retorno bruto pelo multiplicador 2,3?",REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md,Validar exemplo 9200.
+13,Lucratividade 6000,Um pedido de R$ 6.000 pode virar quanto em venda bruta estimada no multiplicador comercial?,REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md,Validar exemplo 13800.
+14,Nota fiscal,A Classe emite meia nota ou somente nota cheia nesse canal?,REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md,Validar regra nota cheia.
+15,Meia nota,"Para fechar melhor, da para fazer meia nota?",REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md,Validar recusa comercial segura.
+16,Material,Todos os produtos sao de couro legitimo?,REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md,Validar nao prometer couro legitimo genericamente.
+17,Marca,A Classe existe ha quanto tempo e qual e o principal diferencial da marca?,SOBRE A MARCA - CLASSE COURO.docx,Validar historia e diferencial.
+18,Book HIT,"No book, qual e o PV e PVL do modelo HIT 3466?",BOOK_PROSPECCAO_VENDAS_INTERNAS_EXTRAIDO_PYPDF.txt,Validar PV/PVL HIT.
+19,Book SOFIA,Qual e o PV e PVL da SOFIA 2846/2 Camera Bag?,BOOK_PROSPECCAO_VENDAS_INTERNAS_EXTRAIDO_PYPDF.txt,Validar PV/PVL SOFIA.
+20,Book BECCA,Qual e o PV e PVL da BECCA 3476 Camera Bag?,BOOK_PROSPECCAO_VENDAS_INTERNAS_EXTRAIDO_PYPDF.txt,Validar PV/PVL BECCA.
+21,Book carteira,"No book, a CTF396 carteira aparece com quais valores de PV e PVL?",BOOK_PROSPECCAO_VENDAS_INTERNAS_EXTRAIDO_PYPDF.txt,Validar CTF396.
+22,Book cinto,Qual PV e PVL aparecem para o cinto CF165?,BOOK_PROSPECCAO_VENDAS_INTERNAS_EXTRAIDO_PYPDF.txt,Validar CF165.
+23,Ranking bolsa,Qual referencia lidera o ranking de bolsas no Inverno 26?,RANKING_COMERCIAL_TOP10_INVERNO_26.txt,Validar 3262.
+24,Ranking cintos,Quais sao os dois cintos de maior giro no ranking por categoria?,RANKING_COMERCIAL_TOP10_INVERNO_26.txt,Validar CF165/CF166 ou CM40/CM97 conforme categoria citada.
+25,Ranking carteiras,Qual referencia aparece como destaque em carteiras no ranking por categoria?,RANKING_COMERCIAL_TOP10_INVERNO_26.txt,Validar 040-0 e/ou CTF217 conforme linha.
+26,Ranking acessorios,Qual item lidera o ranking de acessorios?,RANKING_COMERCIAL_TOP10_INVERNO_26.txt,Validar PM48.
+27,Ranking kits,Qual kit aparece como destaque no ranking comercial?,RANKING_COMERCIAL_TOP10_INVERNO_26.txt,Validar KIT02 173.
+28,Mix 2000,"Para pedido inicial de R$ 2.000, que tipo de mix o material sugere?",SUGESTAO_PEDIDO_2000_*.pdf,Validar sugestao 2000.
+29,Mix 4000,"Para um pedido inicial de R$ 4.000, que mix posso considerar?",SUGESTAO_PEDIDO_4000_*.pdf,Validar sugestao 4000.
+30,Mix 6000,"Para R$ 6.000 de investimento inicial, que composicao de estoque o material indica?",SUGESTAO_PEDIDO_6000_*.pdf,Validar sugestao 6000.
+31,B2B acesso,"Depois que o cadastro estiver liberado, como funcionam login e senha do portal B2B?",CURRENT_STATE.md / UPDATE_AGENT_240326-1100.txt,Validar login CNPJ e senha 8 digitos.
+32,Book envio,Quando faz sentido enviar o book de vendas para o lead?,SCRIPT_APRESENTACAO_BOOK_DE_VENDAS.txt,Validar book apos triagem/cadastro.
+33,Vitrine,A vitrine de pedido inicial deve ser enviada automaticamente ou preciso pedir anuencia?,UPDATE_AGENT_240326-1100.txt,Validar anuencia expressa para vitrine.
+34,Pessoa fisica,"Se uma pessoa quer comprar uma unidade para uso proprio nesse canal, qual direcionamento correto?",DIRECIONAMENTO_CLIENTE_PF_NO_CANAL_DE_REVENDA.txt,Validar PF para ecommerce.
+35,Seguranca comercial,Que argumentos objetivos posso usar para ter seguranca em comprar da Classe para revender?,SOBRE A MARCA / rankings / suporte,Validar argumentos comerciais reais.
+36,Estoque inicial,Quero um estoque inicial com giro. Quais categorias fazem sentido combinar?,RANKING_COMERCIAL_TOP10_INVERNO_26.txt / sugestoes de pedido,Validar combinacao de categorias.
+37,Objecao preco,"Antes de passar dados, consigo entender se os valores do book fazem sentido para revenda?",BOOK_PROSPECCAO_VENDAS_INTERNAS_EXTRAIDO_PYPDF.txt,Validar resposta com PV/PVL e proximo passo sem exigir CNPJ.
+38,Mix e suporte,"Se eu nao souber montar o primeiro pedido, a Classe ajuda a escolher produtos de melhor giro?",REGRAS_COMERCIAIS_CRITICAS / rankings,Validar suporte + ranking.
+39,Defeito e reembolso,"Se a fabrica confirmar defeito, recebo credito ou PIX?",REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md,Validar PIX 100% item.
+40,Sem lucro garantido,"Posso contar que vou lucrar com certeza usando o markup 2,3?",REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md,Validar nao prometer lucro garantido.

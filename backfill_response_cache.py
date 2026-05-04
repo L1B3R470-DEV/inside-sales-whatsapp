@@ -247,7 +247,7 @@ def bootstrap_candidates() -> Dict[str, Dict]:
         ("como funciona o pagamento", "As condicoes de pagamento variam conforme o volume e perfil do pedido. Me diga sua necessidade que te oriento com objetividade.", "pagamento"),
         ("qual o prazo de entrega", "O prazo depende da sua regiao e itens escolhidos. Me informa sua cidade que te passo a previsao mais assertiva.", "prazo_entrega"),
         ("vocês entregam para todo o brasil", "Atendemos diversas regioes do Brasil. Me informa sua cidade e estado para eu confirmar a melhor condicao de atendimento.", "prazo_entrega"),
-        ("me fale sobre a classe couro", "A Classe Couro atua no B2B de acessorios de couro, com foco em revenda e giro comercial. Se quiser, te mostro as linhas mais aderentes ao seu perfil.", "institucional_empresa"),
+        ("me fale sobre a classe", "A Classe atua no B2B de acessorios em couro, com foco em revenda e giro comercial. Se quiser, te mostro as linhas mais aderentes ao seu perfil.", "institucional_empresa"),
         ("como funciona a revenda", "Eu te explico o processo de revenda passo a passo e ja iniciamos seu pre-cadastro para analise comercial. Posso te fazer as perguntas rapidas de triagem?", "preco_orcamento"),
         ("quero revender", "Perfeito. Vamos iniciar seu pre-cadastro de revenda para direcionar seu atendimento comercial com prioridade. Podemos comecar agora?", "preco_orcamento"),
         ("voces vendem no atacado", "Sim, atuamos no canal de revenda. Para te orientar na melhor condicao comercial, me conta qual categoria voce quer priorizar.", "preco_orcamento"),

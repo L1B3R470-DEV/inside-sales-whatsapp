@@ -1,0 +1,68 @@
+{
+  "rows": [
+    {
+      "timestamp": "2026-04-30T16:45:24",
+      "id": 35,
+      "tema": "Seguranca comercial",
+      "pergunta": "Que argumentos objetivos posso usar para ter seguranca em comprar da Classe para revender?",
+      "payload_enviado": {
+        "number": "55998220035",
+        "customerNumber": "55998220035",
+        "remoteJid": "55998220035@s.whatsapp.net",
+        "pushName": "Stress R2 Final Q35",
+        "messageId": "FINAL-R2-35-1777578312825",
+        "inboundText": "Que argumentos objetivos posso usar para ter seguranca em comprar da Classe para revender?",
+        "instance": "ATENDIMENTO_VENDAS_CLEAN"
+      },
+      "resposta_bruta": "Ótimos argumentos objetivos para sua decisão comercial:\n\n• **Mais de 30 anos no mercado** - solidez comprovada\n• **Rankings reais de giro** - você sabe exatamente quais produtos vendem mais\n• **SAC exclusivo e personalizado** - defeito comprovado por foto = 100% do valor via PIX\n• **Suporte comercial contínuo** - ajudamos você a montar mix, organizar estoque e vender melhor\n• **Pagamento facilitado** - boleto até 120 dias ou cartão 6x sem juros\n• **Prazos claros** - pronta entrega 10-15 dias, produção 30 dias\n\nA Classe oferece bases sólidas para uma decisão comercial mais segura, sem promessas vazias.\n\nVocê já tem experiência com revenda ou seria seu primeiro investimento no setor?",
+      "latencia_ms": 11406,
+      "erro": "",
+      "rota": "rag_claude",
+      "provider": "anthropic",
+      "rag_linhas": 5,
+      "rag_top_score": 3.0,
+      "ragContextLines": [
+        "[REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md] ... ssbody, carteiras, cintos e acessorios. - Exemplos de referencias de giro: 3262, 2136 e 3466 em bolsas; 040-0 e 091-0 em carteiras; CF165/CF166 e CM40/CM97 em cintos; PM48, CH25 e PL75 em acessorios. - Apos dar a sugestao, perguntar o investimento inicial para simular um mix mais adequado. ## Seguranca comercial para revender Classe - Argumentos objetivos: mais de 30 anos de mercado, design e qualidade produtiva, rankings reais de giro, suporte comercial continuo, SAC exclusivo e personalizado, pagamento facilitado e prazos claros. - Nao prometer resultado garantido; apresentar como bases de seguranca para uma decisao comercial melhor. ## Envio do book e vitrine - O book de vendas faz sentido apos interesse qualificado/pre-cadastro validado, como proximo passo para o lead analisar produtos e categorias. - A vitrine de pedido inicial exige anuencia expressa do lead antes do envio.",
+        "[REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md] ... te comercial pronta para colaborar com o sucesso das vendas dos clientes. - O atendimento e continuo e personalizado. - O objetivo do suporte e ajudar o cliente a escolher mix, organizar estoque inicial, vender melhor e buscar lucratividade. - O atendente deve transmitir seguranca comercial sem prometer resultado garantido. ## Lucratividade, markup e simulacao - A Classe trabalha com markup/multiplicador comercial de 2,3. - O atendente pode apresentar simulacoes simples de investimento x potencial de venda usando o multiplicador 2,3. - Antes de simular, o atendente deve investigar ou confirmar o poder aquisitivo/intencao de investimento do lead. - Frase recomendada: \"posso simular um cenario conforme o investimento que voce pretende iniciar\". - Exemplo: investimento de R$ 2.000 pode representar potencial bruto de venda em torno de R$ 4.600 usando multiplicador 2,3, antes de custos, impos ...",
+        "[DIRECIONAMENTO_CLIENTE_PF_NO_CANAL_DE_REVENDA.txt] DIRECIONAMENTO DE CLIENTE PF NO CANAL DE REVENDA Objetivo: Quando um cliente entrar no canal de WhatsApp de revenda, mas demonstrar interesse claro em comprar como pessoa fisica, o atendimento deve identificar isso rapidamente e direcionar com simpatia para o e-commerce oficial da Classe Couro. Quando considerar cliente PF: - Quando disser que quer comprar para si mesmo. - Quando mencionar uso proprio. - Quando disser que e pessoa fisica. - Quando disser que nao revende. - Quando disser que nao tem loja e quer comprar. - Quando demonstrar interesse de varejo/consumo final/presente. Conduta: - Cumprimentar de forma acolhedora. - Nao conduzir para triagem de revenda. - Nao pedir CNPJ, loja fisica ou dados de revenda nessa situacao. - Direcionar para o site oficial. - Fazer o cliente se sentir a vontade para navegar e comprar. Mensagem-base: Que bom ter voce por aqui! Como o seu interesse e ...",
+        "[REQUESTS.txt] ... O agente precisa responder de forma consultiva, como um vendedor experiente. ------------------------------------------------------------------ PRIORIDADE MEDIA ------------------------------------------------------------------ 4. FAQ DE OBJECOES DE REVENDA Necessidade: - Respostas aprovadas para objecoes como: a) \"Quero ver mais fotos antes de cadastrar\" b) \"Quero saber o preco antes de passar meus dados\" c) \"Nao tenho instagram da loja\" d) \"Ainda estou avaliando, posso pensar?\" e) \"Quero comprar so para mim (pessoa fisica)\" f) \"Tenho CNPJ mas e MEI / MEI nao pode revender?\" g) \"Trabalho so com venda online, nao tenho loja fisica\" h) \"Ja comprei de outro fornecedor, por que mudar?\" Motivo: - Reduz fallback e melhora taxa de continuidade comercial. 5. GUIA DE NAVEGACAO DO B2B Necessidade: - Passo a passo com prints (PDF ou imagens) mostrando: a) Como acessar o portal (URL, login com CNPJ ...",
+        "[PRIMEIRO_ATENDIMENTO_PARA_CLIENTES_INTERESSADOS_EM_REVENDA.txt] SCRIPT OBRIGATORIO: SIM OBJETIVO: conduzir o pre-cadastro de clientes interessados em revender Classe com linguagem natural, uma pergunta por vez, sem engessamento, preservando os requisitos comerciais da empresa. FOCO: qualificar com leveza, acolher negativas, seguir somente quando a informacao anterior estiver resolvida e encaminhar para analise regional. CRITERIOS OBRIGATORIOS - Ter CNPJ ativo - Ter loja fisica DADOS NECESSARIOS - Nome - Telefone - Cidade - Instagram - CNPJ OBSERVACOES IMPORTANTES - Instagram nao e obrigatorio para seguir. - O atendimento deve soar humano, cordial, positivo e natural. - A IA deve fazer uma pergunta por vez. - Em caso de negativa para CNPJ ativo ou loja fisica, encerrar com elegancia e acolhimento. - Em caso de negativa para Instagram, seguir normalmente. - Em caso de falta de nome, telefone, cidade ou CNPJ, explicar com leveza por que precisa da infor ..."
+      ],
+      "classificacao": "SATISFATORIA",
+      "justificativa": "Atendeu criterios.",
+      "resposta_ideal_esperada": "Citar mais de 30 anos, qualidade/design, rankings de giro e suporte comercial."
+    },
+    {
+      "timestamp": "2026-04-30T16:45:34",
+      "id": 37,
+      "tema": "Objecao preco",
+      "pergunta": "Antes de passar dados, consigo entender se os valores do book fazem sentido para revenda?",
+      "payload_enviado": {
+        "number": "55998220037",
+        "customerNumber": "55998220037",
+        "remoteJid": "55998220037@s.whatsapp.net",
+        "pushName": "Stress R2 Final Q37",
+        "messageId": "FINAL-R2-37-1777578324232",
+        "inboundText": "Antes de passar dados, consigo entender se os valores do book fazem sentido para revenda?",
+        "instance": "ATENDIMENTO_VENDAS_CLEAN"
+      },
+      "resposta_bruta": "Claro! Vou te passar alguns exemplos de valores do nosso book para você avaliar:\n\n**Bolsas:** HIT 3466 PV R$ 134,80 / PVL R$ 309,90 | SOFIA 2846/2 PV R$ 217,80 / PVL R$ 499,90 | BECCA 3476 PV R$ 169,80 / PVL R$ 389,90\n\n**Acessórios:** CTF396 carteira PV R$ 69,40 / PVL R$ 159,90 | CF165 cinto fino PV R$ 27,80 / PVL R$ 62,90\n\nEsses são alguns exemplos da margem que nossos produtos oferecem. Qual categoria mais desperta seu interesse ou quanto você pretende investir inicialmente?",
+      "latencia_ms": 10573,
+      "erro": "",
+      "rota": "rag_claude",
+      "provider": "anthropic",
+      "rag_linhas": 5,
+      "rag_top_score": 3.0,
+      "ragContextLines": [
+        "[REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md] ... digitos do CNPJ. - Nao inventar email como login. Nao dizer que senha sera enviada por email se isso nao estiver confirmado. ## Como responder sobre valores antes do cadastro - Se o lead quiser entender se os valores do book fazem sentido para revenda antes de passar dados, responder com exemplos objetivos de PV/PVL do book. - Exemplos validos: HIT 3466 PV R$ 134,80 e PVL R$ 309,90; SOFIA 2846/2 PV R$ 217,80 e PVL R$ 499,90; BECCA 3476 PV R$ 169,80 e PVL R$ 389,90; CTF396 PV R$ 69,40 e PVL R$ 159,90; CF165 PV R$ 27,80 e PVL R$ 62,90. - Depois de responder os exemplos, conduzir com uma pergunta curta sobre categoria de interesse ou investimento pretendido. ## Referencias exatas que nao podem ser trocadas - CTF396 carteira: PV R$ 69,40; PVL R$ 159,90. - CF165 cinto fino: PV R$ 27,80; PVL R$ 62,90. - Ranking de kits: KIT02 173 aparece como destaque com 747 unidades; MINI KIT 173 aparece com ...",
+        "[REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md] ... ituoso para a fabrica. - Sendo confirmado o defeito pela fabrica, 100% do valor investido naquele item retorna ao cliente via PIX. - O atendente deve explicar esse fluxo de forma curta, sem prometer aprovacao automatica antes da confirmacao do defeito. ## Condicoes de pagamento - Boleto: 30/60/90/120. - Cartao: ate 6x sem juros. - O atendente deve responder diretamente quando o lead perguntar sobre pagamento. - Se a pergunta envolver pedido ou cotacao, pode complementar pedindo o valor de investimento pretendido. ## Prazo de envio - Pronta entrega: 10 a 15 dias. - Producao: 30 dias. - O atendente deve diferenciar claramente pronta entrega e producao. - Nao prometer prazo menor sem confirmacao operacional. ## Suporte comercial - A Classe possui equipe de suporte comercial pronta para colaborar com o sucesso das vendas dos clientes. - O atendimento e continuo e personalizado. - O objetivo ...",
+        "[SCRIPT_APRESENTACAO_BOOK_DE_VENDAS.txt] SCRIPT PREMIUM - APRESENTACAO DO BOOK DE VENDAS CLASSE Objetivo: Apresentar o BOOK DE VENDAS ao lead de forma premium, consultiva e comercialmente atrativa, logo apos a triagem de revenda concluida e validada. Principios: - So liberar o BOOK DE VENDAS depois de validar a triagem obrigatoria da revenda. - Tratar o book como proximo passo de valor, nao como arquivo solto. - Reforcar autoridade, qualidade e potencial de revenda da Classe Couro. - Convidar o lead a observar categorias e linhas que mais combinam com o perfil da loja. - Conduzir a conversa para continuidade comercial, sem soar robotizado. Script principal: Perfeito! Seu pre-cadastro foi recebido e validado. Como proximo passo, estou te enviando agora o nosso BOOK DE VENDAS da colecao para voce conhecer melhor as linhas, o posicionamento comercial e o potencial de revenda da Classe Couro. Analise com calma e, assim que visualiz ...",
+        "[PRINCIPIOS_NORTEADORES_DA_PROSPECCAO_COMERCIAL.txt] ... r contexto, objetivo, uso, perfil e prioridade do cliente. 3. CONHECER MUITO BEM O QUE A EMPRESA OFERECE O atendente deve responder com seguranca sobre empresa, produtos, linhas, diferenciais, processo de revenda e criterios comerciais. A falta de clareza reduz confianca. 4. RESPEITAR A INTELIGENCIA DO CLIENTE Nunca tratar o cliente como alguem distraido, desinformado ou incapaz de entender. A linguagem deve ser clara, respeitosa, objetiva e consultiva, sem manipular de forma grosseira. 5. OUVIR COM ATENCAO E RESPONDER AO QUE FOI PERGUNTADO Cada resposta precisa estar diretamente conectada a pergunta do cliente. Evitar respostas genericas, desconectadas, repetitivas ou que ignorem informacoes ja fornecidas. 6. CRIAR CONEXAO EMOCIONAL SEM PERDER O TOM COMERCIAL O cliente deve sentir que esta sendo bem recebido, valorizado e atendido por alguem que quer ajuda-lo de verdade. Simpatia, acolh ...",
+        "[REQUESTS.txt] ... as, kits, acessorios): - Diferenciais de venda para revendedor - Perfil de consumidor final - Ticket ideal por categoria - Giro estimado por categoria - Combinacoes de pedido recomendadas - Principais objecoes e respostas aprovadas Motivo: - Elimina respostas genericas em conversas de produto. O agente precisa responder de forma consultiva, como um vendedor experiente. ------------------------------------------------------------------ PRIORIDADE MEDIA ------------------------------------------------------------------ 4. FAQ DE OBJECOES DE REVENDA Necessidade: - Respostas aprovadas para objecoes como: a) \"Quero ver mais fotos antes de cadastrar\" b) \"Quero saber o preco antes de passar meus dados\" c) \"Nao tenho instagram da loja\" d) \"Ainda estou avaliando, posso pensar?\" e) \"Quero comprar so para mim (pessoa fisica)\" f) \"Tenho CNPJ mas e MEI / MEI nao pode revender?\" g) \"Trabalho so com ve ..."
+      ],
+      "classificacao": "SATISFATORIA",
+      "justificativa": "Atendeu criterios.",
+      "resposta_ideal_esperada": "Explicar que o book traz PV/PVL e dar exemplo curto, perguntando categoria de interesse."
+    }
+  ]
+}
