@@ -161,3 +161,20 @@ Execucao recorrente `monitor-de-memorias-e-correcoes-codex`:
 
 Pendencia residual:
 - as 600 interacoes historicas com `number` vazio e as 363 com `text` vazio nao foram alteradas; saneamento retroativo continua dependendo de politica aprovada e backup especifico.
+
+## Politica aplicada para backlog/KPIs e STRESS_CLIENT_SETOR em 2026-05-04 17:59 -03
+
+Execucao operacional apos decisao do usuario:
+- politica aprovada: fechar no `learning_backlog` apenas teste, duplicado, vazio, sem pergunta real, dado solto ou artefato sem valor comercial; manter aberto o que for pergunta real de lead, melhoria de resposta ou contexto comercial acionavel;
+- backup pontual antes da alteracao: `C:\AUTOMACAO\backups\crm_saneamento_politica_20260504_175900`;
+- `learning_backlog`: 64 abertos antes, 27 fechados por status auditaveis e 37 abertos restantes;
+- criadas tabelas de auditoria `learning_backlog_triage_audit` e `interaction_quality_flags` no CRM runtime;
+- historico preservado: nenhuma linha de `interactions` foi apagada ou sobrescrita;
+- 605 interacoes historicas com `number`/`text` vazio foram marcadas com `flag='exclude_from_kpi'`;
+- criada view `v_interactions_kpi_clean` para KPIs sem dados historicos vazios e view `v_learning_backlog_open_actionable` para backlog acionavel;
+- relatorio local gerado em `C:\AUTOMACAO\logs\crm_saneamento_politica_20260504_175941.json`;
+- `STRESS_CLIENT_SETOR` foi apenas desconectada por logout da Evolution API, sem remover a instancia; validado `STRESS_CLIENT_SETOR=close` e `ATENDIMENTO_VENDAS_CLEAN=open`.
+
+Pendencia residual:
+- os containers `*-legacy-20260504_134957` ainda nao devem ser removidos antes de 24-48h de estabilidade;
+- disco C e `n8n database.sqlite` seguem exigindo janela propria de manutencao.
