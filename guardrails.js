@@ -2235,7 +2235,9 @@ if (allowAi && !hasValidOpenAiKey) {
   blockReason = 'missing_key';
 }
 
-let profile = staticData.customerProfiles[recipientNumber] || {
+let profile = recipientNumber && staticData.customerProfiles[recipientNumber]
+  ? staticData.customerProfiles[recipientNumber]
+  : {
   number: recipientNumber,
   pushName: input.pushName || 'Cliente',
   customerName: '',
@@ -2311,17 +2313,23 @@ if (effectiveDetectedIntent === 'geral' && (productSignals.productFocus || produ
 }
 const openAiReasoningEffort = resolveReasoningEffort(effectiveDetectedIntent, inboundText, humanPriority);
 profile.lastIntent = effectiveDetectedIntent;
-staticData.customerProfiles[recipientNumber] = profile;
+if (recipientNumber) {
+  staticData.customerProfiles[recipientNumber] = profile;
+}
 
-if (!staticData.customerHistory[recipientNumber]) staticData.customerHistory[recipientNumber] = [];
-const history = staticData.customerHistory[recipientNumber];
-history.push({
-  role: 'customer',
-  text: inboundText,
-  timestamp: nowIso,
-  intent: effectiveDetectedIntent
-});
-while (history.length > 32) history.shift();
+const history = recipientNumber
+  ? (staticData.customerHistory[recipientNumber] || [])
+  : [];
+if (recipientNumber) {
+  staticData.customerHistory[recipientNumber] = history;
+  history.push({
+    role: 'customer',
+    text: inboundText,
+    timestamp: nowIso,
+    intent: effectiveDetectedIntent
+  });
+  while (history.length > 32) history.shift();
+}
 
 let mandatoryScriptReply = '';
 let sendSalesBookPdf = false;

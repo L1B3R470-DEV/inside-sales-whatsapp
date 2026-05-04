@@ -1,6 +1,6 @@
 # COLLAB STATE
 
-Atualizado em: 2026-05-01 03:08:00 -03:00
+Atualizado em: 2026-05-04 12:12:00 -03:00
 
 ## Estado atual
 
@@ -94,3 +94,14 @@ Execucao operacional solicitada para resolver worktree sujo:
 
 Proxima regra operacional:
 - antes de novo commit grande, executar `git diff --cached --check`, validadores de sintaxe e revisar se algum artefato de runtime/sessao entrou no stage.
+
+## Correcao Guardrails no_recipient em 2026-05-04
+
+Execucao recorrente `monitor-de-memorias-e-correcoes-codex`:
+- causa raiz confirmada para novas interacoes CRM com `number` vazio: o Code node `Guardrails` persistia `customerProfiles[recipientNumber]` e `customerHistory[recipientNumber]` mesmo quando `recipientNumber` era vazio apos `blockReason='no_recipient'`;
+- corrigido `guardrails.js` para gravar perfil/historico apenas quando houver `recipientNumber`;
+- workflow n8n ativo `zN3heKJVLO8w4dG6` atualizado no node `Guardrails` com backup local em `C:\AUTOMACAO\backups\n8n_guardrails_node_fix_20260504_120818`;
+- n8n reiniciado e validado com `/healthz 200`.
+
+Pendencia residual:
+- nao foi feita limpeza historica das 363 interacoes CRM antigas com texto vazio nem das entradas antigas com numero vazio; qualquer saneamento retroativo precisa de politica aprovada e backup especifico.
