@@ -152,7 +152,7 @@ Execucao recorrente `monitor-de-memorias-e-correcoes-codex`:
 Pendencia residual:
 - as entradas historicas com `number` vazio nao foram alteradas; saneamento retroativo continua dependendo de politica aprovada e backup especifico.
 
-## Bloqueio de history vazio no ciclo CRM em 2026-05-04 16:30 -03
+## Bloqueio de history vazio no ciclo CRM em 2026-05-04 16:05 -03
 
 Execucao recorrente `monitor-de-memorias-e-correcoes-codex`:
 - causa raiz residual: o `crm_cycle_engine.py` ja ignorava `customerProfiles` com chave vazia, mas ainda importava `customerHistory['']` para `interactions`;
