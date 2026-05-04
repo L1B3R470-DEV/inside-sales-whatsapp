@@ -105,3 +105,14 @@ Execucao recorrente `monitor-de-memorias-e-correcoes-codex`:
 
 Pendencia residual:
 - nao foi feita limpeza historica das 363 interacoes CRM antigas com texto vazio nem das entradas antigas com numero vazio; qualquer saneamento retroativo precisa de politica aprovada e backup especifico.
+
+## Correcao SQLite router em 2026-05-04
+
+Execucao recorrente `monitor-de-memorias-e-correcoes-codex`:
+- causa raiz de falha intermitente em `/health` e `/metrics`: `db()` reexecutava `PRAGMA journal_mode=WAL` em toda conexao SQLite; em janela de carga isso gerou `sqlite3.OperationalError: unable to open database file` e HTTP 500 temporario;
+- corrigido `router_service.py` para configurar WAL uma unica vez por processo com lock, aplicar `busy_timeout` antes e fechar conexao aberta quando uma tentativa falhar;
+- router reconstruido e recriado com `docker compose up -d --build router`;
+- validacao pos-deploy: `/health` 10/10 HTTP 200, `/metrics` 10/10 HTTP 200, container `router` healthy e sem novos `sqlite_db_open_retry`/`OperationalError` nos logs apos o restart.
+
+Pendencia residual:
+- disco C e banco SQLite do n8n continuam criticos; nao executar manutencao/compactacao sem janela e backup especifico.

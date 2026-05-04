@@ -66,6 +66,8 @@ ROOT_DIR = Path(__file__).resolve().parent
 ML_DIR = Path(os.getenv('ROUTER_ML_DIR', ROOT_DIR / 'CHATGPT_MACHINE_LEARNING'))
 DB_PATH = Path(os.getenv('ROUTER_DB_PATH', ROOT_DIR / 'router_runtime.sqlite'))
 CRM_PATH = Path(os.getenv('ROUTER_CRM_PATH', ROOT_DIR / 'crm_operacional.sqlite'))
+DB_INIT_LOCK = threading.Lock()
+DB_WAL_CONFIGURED = False
 QDRANT_PATH = Path(os.getenv('ROUTER_QDRANT_PATH', ROOT_DIR / 'rag_vector_store'))
 QDRANT_COLLECTION = os.getenv('ROUTER_QDRANT_COLLECTION', 'knowledge_chunks')
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY', '').strip()
@@ -1060,18 +1062,33 @@ def summarize_answered_slots(answered_slots: Dict) -> str:
 
 
 def db() -> sqlite3.Connection:
+    global DB_WAL_CONFIGURED
     last_error = None
     for attempt in range(4):
+        conn = None
         try:
             DB_PATH.parent.mkdir(parents=True, exist_ok=True)
             conn = sqlite3.connect(DB_PATH, timeout=30)
             conn.row_factory = sqlite3.Row
-            conn.execute('PRAGMA journal_mode=WAL')
-            conn.execute('PRAGMA synchronous=NORMAL')
             conn.execute('PRAGMA busy_timeout=30000')
+            if not DB_WAL_CONFIGURED:
+                with DB_INIT_LOCK:
+                    if not DB_WAL_CONFIGURED:
+                        conn.execute('PRAGMA journal_mode=WAL')
+                        DB_WAL_CONFIGURED = True
+            conn.execute('PRAGMA synchronous=NORMAL')
             return conn
         except sqlite3.OperationalError as exc:
+            if conn is not None:
+                conn.close()
             last_error = exc
+            log.warning(
+                'sqlite_db_open_retry',
+                attempt=attempt + 1,
+                maxAttempts=4,
+                dbPath=str(DB_PATH),
+                error=str(exc),
+            )
             if attempt >= 3:
                 break
             time.sleep(0.2 * (attempt + 1))
