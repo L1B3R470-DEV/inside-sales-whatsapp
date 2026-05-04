@@ -218,12 +218,20 @@ services:
 
 volumes:
   postgres_data:
+    external: true
+    name: projetoatendimentowhatsappinsidesales_postgres_data
   redis_data:
+    external: true
+    name: projetoatendimentowhatsappinsidesales_redis_data
   evolution_data:
+    external: true
+    name: projetoatendimentowhatsappinsidesales_evolution_data
   n8n_data:
     external: true
     name: ai_n8n_data
   minio_data:
+    external: true
+    name: projetoatendimentowhatsappinsidesales_minio_data
 
 networks:
   legacy_runtime:

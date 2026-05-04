@@ -116,3 +116,28 @@ Execucao recorrente `monitor-de-memorias-e-correcoes-codex`:
 
 Pendencia residual:
 - disco C e banco SQLite do n8n continuam criticos; nao executar manutencao/compactacao sem janela e backup especifico.
+
+## Saneamento Evolution/Compose em 2026-05-04 13:50 -03
+
+Execucao operacional:
+- ordem aplicada: auditar PC/Git/collab -> diagnosticar logs e schema -> corrigir `Media.fileName` -> consolidar Compose -> saneamento seguro de disco -> validar endpoints/logs/Git;
+- PC atual confirmado como PC CLS `100.113.13.27`; Git iniciou limpo em `main`/`origin/main`;
+- `Media_fileName_key` era um indice unico indevido para `public."Media"."fileName"`; WhatsApp permite repeticao de nome de arquivo por contato e `messageId` ja e unico;
+- backup PostgreSQL antes da alteracao: `C:\AUTOMACAO\backups\evolution_media_filename_fix_20260504_134815\evolution_pre_media_filename_fix_20260504_134815.sql`;
+- removido o indice unico `Media_fileName_key` e criado `Media_fileName_idx` nao unico; validado com insert duplicado em transacao e rollback;
+- `docker-compose.yml` passou a apontar Postgres, Redis, Evolution, MinIO e n8n para os volumes reais de producao como volumes externos;
+- containers legados foram apenas parados e renomeados com sufixo `legacy-20260504_134957`, sem apagar dados;
+- novos containers `postgres`, `redis`, `minio`, `evolution`, `n8n` e `n8n-autoheal` subiram pelo compose atual e agora todos apontam para `C:\Users\User\Desktop\CODEX_PROJECTS\PROJETO_ATENDIMENTO_WHATSAPP_INSIDE_SALES\docker-compose.yml`;
+- removidos apenas 4 volumes vazios do compose atual antigo, todos com 4 KB e 0 arquivos; cache Docker de build ficou sem reclaimable;
+- Evolution API validada com instancia `ATENDIMENTO_VENDAS_CLEAN` em estado `open`.
+
+Validacao:
+- `router /health`, `router /metrics`, `n8n /healthz` e Evolution `/` retornaram 200;
+- `Message` tem 20522 linhas e `Media` 758 linhas apos a transicao;
+- logs apos a correcao/consolidacao sem novo `Media_fileName_key`, sem Bad MAC/SessionError/decrypt e sem erro Postgres novo;
+- `docker compose ps` mostra todos os servicos principais no compose atual.
+
+Pendencia residual:
+- disco C segue critico (~9.54 GB livres) porque o gargalo real e o `ai_n8n_data` com cerca de 49 GB, especialmente `database.sqlite` de 48.3 GB; compactacao/VACUUM exige janela, backup e mais espaco livre.
+- os containers `*-legacy-20260504_134957` ficaram parados como rollback operacional; remover depois de uma janela estavel e decisao explicita.
+- os erros de query mal cotada desta rodada ficaram registrados no log do Postgres, sem alteracao de dados.
