@@ -141,3 +141,13 @@ Pendencia residual:
 - disco C segue critico (~9.54 GB livres) porque o gargalo real e o `ai_n8n_data` com cerca de 49 GB, especialmente `database.sqlite` de 48.3 GB; compactacao/VACUUM exige janela, backup e mais espaco livre.
 - os containers `*-legacy-20260504_134957` ficaram parados como rollback operacional; remover depois de uma janela estavel e decisao explicita.
 - os erros de query mal cotada desta rodada ficaram registrados no log do Postgres, sem alteracao de dados.
+
+## Bloqueio precoce no_recipient no router em 2026-05-04 14:10 -03
+
+Execucao recorrente `monitor-de-memorias-e-correcoes-codex`:
+- causa raiz residual: mensagens `@lid` sem mapeamento numerico ainda entravam em `route_message`, gerando `route_logs.number=''` antes do Guardrails bloquear o envio;
+- corrigido `router_service.py` para retornar `routeDecision='no_recipient'` antes de LLM/RAG/cache quando o numero nao for resolvido;
+- a resposta bloqueada preserva campos esperados pelo n8n/Guardrails e evita gravacao de `route_logs` sem numero.
+
+Pendencia residual:
+- as entradas historicas com `number` vazio nao foram alteradas; saneamento retroativo continua dependendo de politica aprovada e backup especifico.

@@ -3262,6 +3262,47 @@ def health():
     })
 
 
+def empty_route_decision(reason: str, blocked_flag: str = '') -> Dict:
+    out = {
+        'routeDecision': reason,
+        'cacheHit': False,
+        'cachedReplyText': '',
+        'routeIntent': '',
+        'messageComplexity': 'blocked',
+        'leadScore': 0,
+        'ragContextLines': [],
+        'ragContextSummary': '',
+        'ragTopScore': 0,
+        'conversationHistory': [],
+        'contextCarryover': {
+            'answeringOpenQuestion': False,
+            'carriedIntent': '',
+            'conversationTurns': 0,
+            'effectiveIntent': '',
+            'isContextCarry': False,
+            'maxLeadScore': 0,
+            'memoryLeadStage': '',
+            'pendingQuestion': '',
+        },
+        'leadMemory': {},
+        'memoryGuidance': [],
+        'audioTranscription': {
+            'ok': False,
+            'reason': reason,
+            'text': '',
+        },
+        'llmReplyText': '',
+        'llmProvider': '',
+        'llmModel': '',
+        'llmLatencyMs': 0,
+        'llmStructuredData': {},
+        'llmLeadScore': {},
+    }
+    if blocked_flag:
+        out[blocked_flag] = True
+    return out
+
+
 @app.post('/route')
 def route_endpoint():
     payload = request.get_json(force=True, silent=True) or {}
@@ -3270,43 +3311,26 @@ def route_endpoint():
         blocked_set = get_all_blocked_numbers()
         allowed_set = get_all_always_allowed_numbers()
         recipient_number = digits_only(resolved_payload.get('number') or resolved_payload.get('customerNumber'))
+        if not recipient_number:
+            log.warning(
+                'recipient_unresolved_route_blocked',
+                remoteJid=str(resolved_payload.get('remoteJid') or '')[:80],
+                messageId=str(resolved_payload.get('messageId') or '')[:80],
+                resolutionStatus=str(resolved_payload.get('resolutionStatus') or '')[:80],
+            )
+            return jsonify({
+                **resolved_payload,
+                **empty_route_decision('no_recipient', 'blockedByNoRecipient'),
+                'topology': topology_metadata(),
+                'routerOk': True,
+                'routerTestGateEnforced': ROUTER_ENFORCE_TEST_GATE,
+                'dynamicBlockedNumbers': list(blocked_set),
+                'dynamicAlwaysAllowedNumbers': list(allowed_set),
+            })
         if ROUTER_ENFORCE_TEST_GATE and allowed_set and recipient_number not in allowed_set:
             return jsonify({
                 **resolved_payload,
-                'routeDecision': 'test_gate_blocked',
-                'cacheHit': False,
-                'cachedReplyText': '',
-                'routeIntent': '',
-                'messageComplexity': 'blocked',
-                'leadScore': 0,
-                'ragContextLines': [],
-                'ragContextSummary': '',
-                'ragTopScore': 0,
-                'conversationHistory': [],
-                'contextCarryover': {
-                    'answeringOpenQuestion': False,
-                    'carriedIntent': '',
-                    'conversationTurns': 0,
-                    'effectiveIntent': '',
-                    'isContextCarry': False,
-                    'maxLeadScore': 0,
-                    'memoryLeadStage': '',
-                    'pendingQuestion': '',
-                },
-                'leadMemory': {},
-                'memoryGuidance': [],
-                'audioTranscription': {
-                    'ok': False,
-                    'reason': 'test_gate_blocked',
-                    'text': '',
-                },
-                'llmReplyText': '',
-                'llmProvider': '',
-                'llmModel': '',
-                'llmLatencyMs': 0,
-                'llmStructuredData': {},
-                'llmLeadScore': {},
-                'blockedByTestGate': True,
+                **empty_route_decision('test_gate_blocked', 'blockedByTestGate'),
                 'routerOk': True,
                 'dynamicBlockedNumbers': list(blocked_set),
                 'dynamicAlwaysAllowedNumbers': list(allowed_set),
