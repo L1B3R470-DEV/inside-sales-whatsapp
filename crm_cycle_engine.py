@@ -1588,6 +1588,10 @@ for number, p in profiles.items():
     )
 
 for number, events in history.items():
+    number = str(number or '').strip()
+    if not number:
+        continue
+
     for e in (events or []):
         text = str(e.get('text', '')).strip()
         ts = str(e.get('timestamp', now))
@@ -1600,7 +1604,7 @@ for number, events in history.items():
             ''',
             (
                 h,
-                str(number),
+                number,
                 direction,
                 text,
                 str(e.get('intent', '')),
