@@ -1,6 +1,6 @@
 # NEXT_ACTIONS
 
-Atualizado em: 2026-05-05 09:17:49 -03:00
+Atualizado em: 2026-05-05 10:19:06 -03:00
 
 1. Abrir nova conversa no Codex apontando para C:\Users\User\Desktop\CODEX_PROJECTS\PROJETO_ATENDIMENTO_WHATSAPP_INSIDE_SALES.
 2. Pedir ao agente para ler AGENT_CONTEXT.md, PROJECT_RULES.md, COLLAB_HANDOFF.md, CHANGELOG_COLLAB.md e NEXT_ACTIONS.md.
@@ -77,3 +77,19 @@ Concluido nesta rodada:
 Proxima pendencia real:
 1. Escanear o QR em `C:\AUTOMACAO\logs\ATENDIMENTO_VENDAS_CLEAN_QR_20260505_091900.png`.
 2. Apos o estado virar `open`, monitorar `route_logs`, Evolution `Message fromMe=true` e logs do router por pelo menos os primeiros eventos reais.
+
+## Laboratorio aprovado e implantado - 2026-05-05 10:19
+
+Concluido nesta rodada:
+- criado `docker-compose.lab.yml` para laboratorio isolado n8n/Evolution/RAG;
+- criado env-file local fora do Git em `C:\AUTOMACAO\secrets\inside_sales_lab.env`;
+- n8n lab 2.18.7 subiu em `http://localhost:15678` com PostgreSQL proprio e workflow `zN3heKJVLO8w4dG6` importado/ativo;
+- Evolution lab 2.3.7 subiu em `http://localhost:18080` com instancia `ATENDIMENTO_VENDAS_LAB` em `connecting`;
+- teste webhook lab com `556974009750` foi suprimido por `blocked_number_route_suppressed` e nao gerou envio produtivo;
+- benchmark RAG baseline gerado em `ANALISES/QDRANT_HYBRID_BENCHMARK.md`;
+- backup/export de seguranca criado em `C:\AUTOMACAO\backups\lab_upgrade_n8n_evolution_rag_20260505_094826`.
+
+Proxima pendencia real:
+1. Decidir janela de promocao produtiva do n8n/Evolution usando a branch `lab/n8n-evolution-rag-20260505` como base.
+2. Nao compactar nem copiar o SQLite produtivo do n8n de 48.3 GB enquanto o C: tiver apenas cerca de 10 GB livres.
+3. Criar colecao Qdrant paralela dense+sparse e comparar contra o baseline BM25/RRF antes de substituir recuperacao em producao.

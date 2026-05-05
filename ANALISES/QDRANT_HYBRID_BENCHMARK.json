@@ -1,0 +1,886 @@
+{
+  "db": "/runtime/router_runtime.sqlite",
+  "chunks": 23,
+  "queries": 12,
+  "elapsed_ms": 13.67,
+  "mode": "bm25_rrf_scaffold",
+  "note": "Scaffold pronto para adicionar dense Qdrant quando uma colecao paralela for criada.",
+  "results": [
+    {
+      "query": "para um pedido inicial de 2000 reais que tipo de mix o material sugere",
+      "latency_ms": 4.37,
+      "bm25_hits": [
+        {
+          "chunk_id": "fb642991-665b-ce71-7d24-f29fbbf73d68",
+          "file_name": "REQUESTS.txt",
+          "score": 12.927497105473517,
+          "snippet": "REQUESTS - AMPLIACAO DA BASE DE CONHECIMENTO DO ATENDENTE Atualizado em 25/03/2026 ------------------------------------------------------------------ PRIORIDADE ALTA ------------------------------------------------------"
+        },
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 11.48659426140501,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao "
+        },
+        {
+          "chunk_id": "5257400e-1bc3-2afa-3255-3ac3a9375ad5",
+          "file_name": "REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md",
+          "score": 11.138439460474,
+          "snippet": "# REGRAS COMERCIAIS CRITICAS - INSIDE SALES CLASSE Atualizado em: 2026-04-30 Uso: conhecimento obrigatorio para atendimento WhatsApp B2B Inside Sales da Classe. Premissa de markup: quando houver conflito entre \"2,3%\" e \""
+        },
+        {
+          "chunk_id": "93d6b723-a1b4-7551-8570-ae67c6d1736b",
+          "file_name": "UPDATE_AGENT_240326-1100.txt",
+          "score": 10.504080633473261,
+          "snippet": "1 - Analise completamente a conversa teste e corrija a quantidade excessiva de fallbacks, praticamente a conversa toda, informe o motivo e aplique a correção 2 - Após o envio do book de vendas, crie um contexto para pers"
+        },
+        {
+          "chunk_id": "4ee76731-ac9c-b99e-c841-763b78b91229",
+          "file_name": "SCRIPT_RAPIDO_REVENDA_CLASSE.txt",
+          "score": 6.264429948320608,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: qualificar interessados em revender Classe com uma pergunta por vez, de forma natural, acolhedora e assertiva. RESUMO RAPIDO - Primeiro validar CNPJ ativo - Depois validar loja fisica - "
+        }
+      ],
+      "hybrid_preview": [
+        {
+          "chunk_id": "fb642991-665b-ce71-7d24-f29fbbf73d68",
+          "file_name": "REQUESTS.txt",
+          "score": 12.927497105473517,
+          "snippet": "REQUESTS - AMPLIACAO DA BASE DE CONHECIMENTO DO ATENDENTE Atualizado em 25/03/2026 ------------------------------------------------------------------ PRIORIDADE ALTA ------------------------------------------------------",
+          "hybrid_score": 0.01639344262295082
+        },
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 11.48659426140501,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao ",
+          "hybrid_score": 0.016129032258064516
+        },
+        {
+          "chunk_id": "5257400e-1bc3-2afa-3255-3ac3a9375ad5",
+          "file_name": "REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md",
+          "score": 11.138439460474,
+          "snippet": "# REGRAS COMERCIAIS CRITICAS - INSIDE SALES CLASSE Atualizado em: 2026-04-30 Uso: conhecimento obrigatorio para atendimento WhatsApp B2B Inside Sales da Classe. Premissa de markup: quando houver conflito entre \"2,3%\" e \"",
+          "hybrid_score": 0.015873015873015872
+        },
+        {
+          "chunk_id": "93d6b723-a1b4-7551-8570-ae67c6d1736b",
+          "file_name": "UPDATE_AGENT_240326-1100.txt",
+          "score": 10.504080633473261,
+          "snippet": "1 - Analise completamente a conversa teste e corrija a quantidade excessiva de fallbacks, praticamente a conversa toda, informe o motivo e aplique a correção 2 - Após o envio do book de vendas, crie um contexto para pers",
+          "hybrid_score": 0.015625
+        },
+        {
+          "chunk_id": "4ee76731-ac9c-b99e-c841-763b78b91229",
+          "file_name": "SCRIPT_RAPIDO_REVENDA_CLASSE.txt",
+          "score": 6.264429948320608,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: qualificar interessados em revender Classe com uma pergunta por vez, de forma natural, acolhedora e assertiva. RESUMO RAPIDO - Primeiro validar CNPJ ativo - Depois validar loja fisica - ",
+          "hybrid_score": 0.015384615384615385
+        }
+      ]
+    },
+    {
+      "query": "imagem recebida",
+      "latency_ms": 0.7,
+      "bm25_hits": [
+        {
+          "chunk_id": "fb642991-665b-ce71-7d24-f29fbbf73d68",
+          "file_name": "REQUESTS.txt",
+          "score": 2.2788360943468766,
+          "snippet": "REQUESTS - AMPLIACAO DA BASE DE CONHECIMENTO DO ATENDENTE Atualizado em 25/03/2026 ------------------------------------------------------------------ PRIORIDADE ALTA ------------------------------------------------------"
+        },
+        {
+          "chunk_id": "93d6b723-a1b4-7551-8570-ae67c6d1736b",
+          "file_name": "UPDATE_AGENT_240326-1100.txt",
+          "score": 2.0794801267591883,
+          "snippet": "1 - Analise completamente a conversa teste e corrija a quantidade excessiva de fallbacks, praticamente a conversa toda, informe o motivo e aplique a correção 2 - Após o envio do book de vendas, crie um contexto para pers"
+        },
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 0.0,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao "
+        },
+        {
+          "chunk_id": "5257400e-1bc3-2afa-3255-3ac3a9375ad5",
+          "file_name": "REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md",
+          "score": 0.0,
+          "snippet": "# REGRAS COMERCIAIS CRITICAS - INSIDE SALES CLASSE Atualizado em: 2026-04-30 Uso: conhecimento obrigatorio para atendimento WhatsApp B2B Inside Sales da Classe. Premissa de markup: quando houver conflito entre \"2,3%\" e \""
+        },
+        {
+          "chunk_id": "ded81dd5-1273-0022-de30-f579c5271e74",
+          "file_name": "_AUTO_LISTA_DE_CONTATOS_IGNORADOS.txt",
+          "score": 0.0,
+          "snippet": "LISTA DE CONTATOS IGNORADOS Objetivo: Estes contatos devem ser ignorados pelo atendimento automatico do WhatsApp e nao devem receber resposta automatica. Total de contatos ativos: 0 Contatos ativos:"
+        }
+      ],
+      "hybrid_preview": [
+        {
+          "chunk_id": "fb642991-665b-ce71-7d24-f29fbbf73d68",
+          "file_name": "REQUESTS.txt",
+          "score": 2.2788360943468766,
+          "snippet": "REQUESTS - AMPLIACAO DA BASE DE CONHECIMENTO DO ATENDENTE Atualizado em 25/03/2026 ------------------------------------------------------------------ PRIORIDADE ALTA ------------------------------------------------------",
+          "hybrid_score": 0.01639344262295082
+        },
+        {
+          "chunk_id": "93d6b723-a1b4-7551-8570-ae67c6d1736b",
+          "file_name": "UPDATE_AGENT_240326-1100.txt",
+          "score": 2.0794801267591883,
+          "snippet": "1 - Analise completamente a conversa teste e corrija a quantidade excessiva de fallbacks, praticamente a conversa toda, informe o motivo e aplique a correção 2 - Após o envio do book de vendas, crie um contexto para pers",
+          "hybrid_score": 0.016129032258064516
+        },
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 0.0,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao ",
+          "hybrid_score": 0.015873015873015872
+        },
+        {
+          "chunk_id": "5257400e-1bc3-2afa-3255-3ac3a9375ad5",
+          "file_name": "REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md",
+          "score": 0.0,
+          "snippet": "# REGRAS COMERCIAIS CRITICAS - INSIDE SALES CLASSE Atualizado em: 2026-04-30 Uso: conhecimento obrigatorio para atendimento WhatsApp B2B Inside Sales da Classe. Premissa de markup: quando houver conflito entre \"2,3%\" e \"",
+          "hybrid_score": 0.015625
+        },
+        {
+          "chunk_id": "ded81dd5-1273-0022-de30-f579c5271e74",
+          "file_name": "_AUTO_LISTA_DE_CONTATOS_IGNORADOS.txt",
+          "score": 0.0,
+          "snippet": "LISTA DE CONTATOS IGNORADOS Objetivo: Estes contatos devem ser ignorados pelo atendimento automatico do WhatsApp e nao devem receber resposta automatica. Total de contatos ativos: 0 Contatos ativos:",
+          "hybrid_score": 0.015384615384615385
+        }
+      ]
+    },
+    {
+      "query": "quais cuidados permanentes devem ser lembrados sobre linguagem da classe",
+      "latency_ms": 0.7,
+      "bm25_hits": [
+        {
+          "chunk_id": "1bf0586e-638c-bdc5-3dbd-5d92ad899d31",
+          "file_name": "PRINCIPIOS_NORTEADORES_DA_PROSPECCAO_COMERCIAL.txt",
+          "score": 10.305368939213682,
+          "snippet": "PRINCIPIOS NORTEADORES DA PROSPECCAO COMERCIAL - CLASSE COURO OBJETIVO Fazer o atendente virtual compreender como conduzir um primeiro contato comercial de alta qualidade, com linguagem natural, simpatia, inteligencia co"
+        },
+        {
+          "chunk_id": "df6ac5b8-fb8b-afd9-2f4c-d3254d07ccd6",
+          "file_name": "SCRIPT_APRESENTACAO_BOOK_DE_VENDAS.txt",
+          "score": 7.1929145150803455,
+          "snippet": "SCRIPT PREMIUM - APRESENTACAO DO BOOK DE VENDAS CLASSE Objetivo: Apresentar o BOOK DE VENDAS ao lead de forma premium, consultiva e comercialmente atrativa, logo apos a triagem de revenda concluida e validada. Principios"
+        },
+        {
+          "chunk_id": "5257400e-1bc3-2afa-3255-3ac3a9375ad5",
+          "file_name": "REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md",
+          "score": 6.273790601036258,
+          "snippet": "# REGRAS COMERCIAIS CRITICAS - INSIDE SALES CLASSE Atualizado em: 2026-04-30 Uso: conhecimento obrigatorio para atendimento WhatsApp B2B Inside Sales da Classe. Premissa de markup: quando houver conflito entre \"2,3%\" e \""
+        },
+        {
+          "chunk_id": "ded81dd5-1273-0022-de30-f579c5271e74",
+          "file_name": "_AUTO_LISTA_DE_CONTATOS_IGNORADOS.txt",
+          "score": 5.467031724385169,
+          "snippet": "LISTA DE CONTATOS IGNORADOS Objetivo: Estes contatos devem ser ignorados pelo atendimento automatico do WhatsApp e nao devem receber resposta automatica. Total de contatos ativos: 0 Contatos ativos:"
+        },
+        {
+          "chunk_id": "de872e99-4df7-10ae-c4fa-120b0e583b01",
+          "file_name": "SOBRE A MARCA - CLASSE COURO.docx",
+          "score": 4.328509993927997,
+          "snippet": "SOBRE A MARCA A CLASSE combina o melhor do design com um alto nível de qualidade produtiva. Referência na fabricação de bolsas e acessórios, nossa marca está há mais de 30 anos no mercado, transformando design em desejo."
+        }
+      ],
+      "hybrid_preview": [
+        {
+          "chunk_id": "1bf0586e-638c-bdc5-3dbd-5d92ad899d31",
+          "file_name": "PRINCIPIOS_NORTEADORES_DA_PROSPECCAO_COMERCIAL.txt",
+          "score": 10.305368939213682,
+          "snippet": "PRINCIPIOS NORTEADORES DA PROSPECCAO COMERCIAL - CLASSE COURO OBJETIVO Fazer o atendente virtual compreender como conduzir um primeiro contato comercial de alta qualidade, com linguagem natural, simpatia, inteligencia co",
+          "hybrid_score": 0.01639344262295082
+        },
+        {
+          "chunk_id": "df6ac5b8-fb8b-afd9-2f4c-d3254d07ccd6",
+          "file_name": "SCRIPT_APRESENTACAO_BOOK_DE_VENDAS.txt",
+          "score": 7.1929145150803455,
+          "snippet": "SCRIPT PREMIUM - APRESENTACAO DO BOOK DE VENDAS CLASSE Objetivo: Apresentar o BOOK DE VENDAS ao lead de forma premium, consultiva e comercialmente atrativa, logo apos a triagem de revenda concluida e validada. Principios",
+          "hybrid_score": 0.016129032258064516
+        },
+        {
+          "chunk_id": "5257400e-1bc3-2afa-3255-3ac3a9375ad5",
+          "file_name": "REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md",
+          "score": 6.273790601036258,
+          "snippet": "# REGRAS COMERCIAIS CRITICAS - INSIDE SALES CLASSE Atualizado em: 2026-04-30 Uso: conhecimento obrigatorio para atendimento WhatsApp B2B Inside Sales da Classe. Premissa de markup: quando houver conflito entre \"2,3%\" e \"",
+          "hybrid_score": 0.015873015873015872
+        },
+        {
+          "chunk_id": "ded81dd5-1273-0022-de30-f579c5271e74",
+          "file_name": "_AUTO_LISTA_DE_CONTATOS_IGNORADOS.txt",
+          "score": 5.467031724385169,
+          "snippet": "LISTA DE CONTATOS IGNORADOS Objetivo: Estes contatos devem ser ignorados pelo atendimento automatico do WhatsApp e nao devem receber resposta automatica. Total de contatos ativos: 0 Contatos ativos:",
+          "hybrid_score": 0.015625
+        },
+        {
+          "chunk_id": "de872e99-4df7-10ae-c4fa-120b0e583b01",
+          "file_name": "SOBRE A MARCA - CLASSE COURO.docx",
+          "score": 4.328509993927997,
+          "snippet": "SOBRE A MARCA A CLASSE combina o melhor do design com um alto nível de qualidade produtiva. Referência na fabricação de bolsas e acessórios, nossa marca está há mais de 30 anos no mercado, transformando design em desejo.",
+          "hybrid_score": 0.015384615384615385
+        }
+      ]
+    },
+    {
+      "query": "sim",
+      "latency_ms": 0.53,
+      "bm25_hits": [
+        {
+          "chunk_id": "4ee76731-ac9c-b99e-c841-763b78b91229",
+          "file_name": "SCRIPT_RAPIDO_REVENDA_CLASSE.txt",
+          "score": 2.991880481738922,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: qualificar interessados em revender Classe com uma pergunta por vez, de forma natural, acolhedora e assertiva. RESUMO RAPIDO - Primeiro validar CNPJ ativo - Depois validar loja fisica - "
+        },
+        {
+          "chunk_id": "6402c6cc-e497-d93a-2834-39b465df1617",
+          "file_name": "PRIMEIRO_ATENDIMENTO_PARA_CLIENTES_INTERESSADOS_EM_REVENDA.txt",
+          "score": 2.1246440757114526,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: conduzir o pre-cadastro de clientes interessados em revender Classe com linguagem natural, uma pergunta por vez, sem engessamento, preservando os requisitos comerciais da empresa. FOCO: "
+        },
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 0.0,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao "
+        },
+        {
+          "chunk_id": "5257400e-1bc3-2afa-3255-3ac3a9375ad5",
+          "file_name": "REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md",
+          "score": 0.0,
+          "snippet": "# REGRAS COMERCIAIS CRITICAS - INSIDE SALES CLASSE Atualizado em: 2026-04-30 Uso: conhecimento obrigatorio para atendimento WhatsApp B2B Inside Sales da Classe. Premissa de markup: quando houver conflito entre \"2,3%\" e \""
+        },
+        {
+          "chunk_id": "ded81dd5-1273-0022-de30-f579c5271e74",
+          "file_name": "_AUTO_LISTA_DE_CONTATOS_IGNORADOS.txt",
+          "score": 0.0,
+          "snippet": "LISTA DE CONTATOS IGNORADOS Objetivo: Estes contatos devem ser ignorados pelo atendimento automatico do WhatsApp e nao devem receber resposta automatica. Total de contatos ativos: 0 Contatos ativos:"
+        }
+      ],
+      "hybrid_preview": [
+        {
+          "chunk_id": "4ee76731-ac9c-b99e-c841-763b78b91229",
+          "file_name": "SCRIPT_RAPIDO_REVENDA_CLASSE.txt",
+          "score": 2.991880481738922,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: qualificar interessados em revender Classe com uma pergunta por vez, de forma natural, acolhedora e assertiva. RESUMO RAPIDO - Primeiro validar CNPJ ativo - Depois validar loja fisica - ",
+          "hybrid_score": 0.01639344262295082
+        },
+        {
+          "chunk_id": "6402c6cc-e497-d93a-2834-39b465df1617",
+          "file_name": "PRIMEIRO_ATENDIMENTO_PARA_CLIENTES_INTERESSADOS_EM_REVENDA.txt",
+          "score": 2.1246440757114526,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: conduzir o pre-cadastro de clientes interessados em revender Classe com linguagem natural, uma pergunta por vez, sem engessamento, preservando os requisitos comerciais da empresa. FOCO: ",
+          "hybrid_score": 0.016129032258064516
+        },
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 0.0,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao ",
+          "hybrid_score": 0.015873015873015872
+        },
+        {
+          "chunk_id": "5257400e-1bc3-2afa-3255-3ac3a9375ad5",
+          "file_name": "REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md",
+          "score": 0.0,
+          "snippet": "# REGRAS COMERCIAIS CRITICAS - INSIDE SALES CLASSE Atualizado em: 2026-04-30 Uso: conhecimento obrigatorio para atendimento WhatsApp B2B Inside Sales da Classe. Premissa de markup: quando houver conflito entre \"2,3%\" e \"",
+          "hybrid_score": 0.015625
+        },
+        {
+          "chunk_id": "ded81dd5-1273-0022-de30-f579c5271e74",
+          "file_name": "_AUTO_LISTA_DE_CONTATOS_IGNORADOS.txt",
+          "score": 0.0,
+          "snippet": "LISTA DE CONTATOS IGNORADOS Objetivo: Estes contatos devem ser ignorados pelo atendimento automatico do WhatsApp e nao devem receber resposta automatica. Total de contatos ativos: 0 Contatos ativos:",
+          "hybrid_score": 0.015384615384615385
+        }
+      ]
+    },
+    {
+      "query": "bom dia",
+      "latency_ms": 1.17,
+      "bm25_hits": [
+        {
+          "chunk_id": "de872e99-4df7-10ae-c4fa-120b0e583b01",
+          "file_name": "SOBRE A MARCA - CLASSE COURO.docx",
+          "score": 5.289695108357092,
+          "snippet": "SOBRE A MARCA A CLASSE combina o melhor do design com um alto nível de qualidade produtiva. Referência na fabricação de bolsas e acessórios, nossa marca está há mais de 30 anos no mercado, transformando design em desejo."
+        },
+        {
+          "chunk_id": "c2896e2f-ebe0-fa88-300b-de803d15dc50",
+          "file_name": "DIRECIONAMENTO_CLIENTE_PF_NO_CANAL_DE_REVENDA.txt",
+          "score": 3.060277351872665,
+          "snippet": "DIRECIONAMENTO DE CLIENTE PF NO CANAL DE REVENDA Objetivo: Quando um cliente entrar no canal de WhatsApp de revenda, mas demonstrar interesse claro em comprar como pessoa fisica, o atendimento deve identificar isso rapid"
+        },
+        {
+          "chunk_id": "6402c6cc-e497-d93a-2834-39b465df1617",
+          "file_name": "PRIMEIRO_ATENDIMENTO_PARA_CLIENTES_INTERESSADOS_EM_REVENDA.txt",
+          "score": 2.1246440757114526,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: conduzir o pre-cadastro de clientes interessados em revender Classe com linguagem natural, uma pergunta por vez, sem engessamento, preservando os requisitos comerciais da empresa. FOCO: "
+        },
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 0.0,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao "
+        },
+        {
+          "chunk_id": "5257400e-1bc3-2afa-3255-3ac3a9375ad5",
+          "file_name": "REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md",
+          "score": 0.0,
+          "snippet": "# REGRAS COMERCIAIS CRITICAS - INSIDE SALES CLASSE Atualizado em: 2026-04-30 Uso: conhecimento obrigatorio para atendimento WhatsApp B2B Inside Sales da Classe. Premissa de markup: quando houver conflito entre \"2,3%\" e \""
+        }
+      ],
+      "hybrid_preview": [
+        {
+          "chunk_id": "de872e99-4df7-10ae-c4fa-120b0e583b01",
+          "file_name": "SOBRE A MARCA - CLASSE COURO.docx",
+          "score": 5.289695108357092,
+          "snippet": "SOBRE A MARCA A CLASSE combina o melhor do design com um alto nível de qualidade produtiva. Referência na fabricação de bolsas e acessórios, nossa marca está há mais de 30 anos no mercado, transformando design em desejo.",
+          "hybrid_score": 0.01639344262295082
+        },
+        {
+          "chunk_id": "c2896e2f-ebe0-fa88-300b-de803d15dc50",
+          "file_name": "DIRECIONAMENTO_CLIENTE_PF_NO_CANAL_DE_REVENDA.txt",
+          "score": 3.060277351872665,
+          "snippet": "DIRECIONAMENTO DE CLIENTE PF NO CANAL DE REVENDA Objetivo: Quando um cliente entrar no canal de WhatsApp de revenda, mas demonstrar interesse claro em comprar como pessoa fisica, o atendimento deve identificar isso rapid",
+          "hybrid_score": 0.016129032258064516
+        },
+        {
+          "chunk_id": "6402c6cc-e497-d93a-2834-39b465df1617",
+          "file_name": "PRIMEIRO_ATENDIMENTO_PARA_CLIENTES_INTERESSADOS_EM_REVENDA.txt",
+          "score": 2.1246440757114526,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: conduzir o pre-cadastro de clientes interessados em revender Classe com linguagem natural, uma pergunta por vez, sem engessamento, preservando os requisitos comerciais da empresa. FOCO: ",
+          "hybrid_score": 0.015873015873015872
+        },
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 0.0,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao ",
+          "hybrid_score": 0.015625
+        },
+        {
+          "chunk_id": "5257400e-1bc3-2afa-3255-3ac3a9375ad5",
+          "file_name": "REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md",
+          "score": 0.0,
+          "snippet": "# REGRAS COMERCIAIS CRITICAS - INSIDE SALES CLASSE Atualizado em: 2026-04-30 Uso: conhecimento obrigatorio para atendimento WhatsApp B2B Inside Sales da Classe. Premissa de markup: quando houver conflito entre \"2,3%\" e \"",
+          "hybrid_score": 0.015384615384615385
+        }
+      ]
+    },
+    {
+      "query": "monte uma resposta curta sugerindo produtos de giro sem citar cidade e sem usar genero nos produtos",
+      "latency_ms": 0.96,
+      "bm25_hits": [
+        {
+          "chunk_id": "5257400e-1bc3-2afa-3255-3ac3a9375ad5",
+          "file_name": "REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md",
+          "score": 15.966097913067756,
+          "snippet": "# REGRAS COMERCIAIS CRITICAS - INSIDE SALES CLASSE Atualizado em: 2026-04-30 Uso: conhecimento obrigatorio para atendimento WhatsApp B2B Inside Sales da Classe. Premissa de markup: quando houver conflito entre \"2,3%\" e \""
+        },
+        {
+          "chunk_id": "1bf0586e-638c-bdc5-3dbd-5d92ad899d31",
+          "file_name": "PRINCIPIOS_NORTEADORES_DA_PROSPECCAO_COMERCIAL.txt",
+          "score": 15.93192182462916,
+          "snippet": "PRINCIPIOS NORTEADORES DA PROSPECCAO COMERCIAL - CLASSE COURO OBJETIVO Fazer o atendente virtual compreender como conduzir um primeiro contato comercial de alta qualidade, com linguagem natural, simpatia, inteligencia co"
+        },
+        {
+          "chunk_id": "6402c6cc-e497-d93a-2834-39b465df1617",
+          "file_name": "PRIMEIRO_ATENDIMENTO_PARA_CLIENTES_INTERESSADOS_EM_REVENDA.txt",
+          "score": 15.17282359685431,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: conduzir o pre-cadastro de clientes interessados em revender Classe com linguagem natural, uma pergunta por vez, sem engessamento, preservando os requisitos comerciais da empresa. FOCO: "
+        },
+        {
+          "chunk_id": "4ee76731-ac9c-b99e-c841-763b78b91229",
+          "file_name": "SCRIPT_RAPIDO_REVENDA_CLASSE.txt",
+          "score": 13.3112800694076,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: qualificar interessados em revender Classe com uma pergunta por vez, de forma natural, acolhedora e assertiva. RESUMO RAPIDO - Primeiro validar CNPJ ativo - Depois validar loja fisica - "
+        },
+        {
+          "chunk_id": "fb642991-665b-ce71-7d24-f29fbbf73d68",
+          "file_name": "REQUESTS.txt",
+          "score": 10.595178073547896,
+          "snippet": "REQUESTS - AMPLIACAO DA BASE DE CONHECIMENTO DO ATENDENTE Atualizado em 25/03/2026 ------------------------------------------------------------------ PRIORIDADE ALTA ------------------------------------------------------"
+        }
+      ],
+      "hybrid_preview": [
+        {
+          "chunk_id": "5257400e-1bc3-2afa-3255-3ac3a9375ad5",
+          "file_name": "REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md",
+          "score": 15.966097913067756,
+          "snippet": "# REGRAS COMERCIAIS CRITICAS - INSIDE SALES CLASSE Atualizado em: 2026-04-30 Uso: conhecimento obrigatorio para atendimento WhatsApp B2B Inside Sales da Classe. Premissa de markup: quando houver conflito entre \"2,3%\" e \"",
+          "hybrid_score": 0.01639344262295082
+        },
+        {
+          "chunk_id": "1bf0586e-638c-bdc5-3dbd-5d92ad899d31",
+          "file_name": "PRINCIPIOS_NORTEADORES_DA_PROSPECCAO_COMERCIAL.txt",
+          "score": 15.93192182462916,
+          "snippet": "PRINCIPIOS NORTEADORES DA PROSPECCAO COMERCIAL - CLASSE COURO OBJETIVO Fazer o atendente virtual compreender como conduzir um primeiro contato comercial de alta qualidade, com linguagem natural, simpatia, inteligencia co",
+          "hybrid_score": 0.016129032258064516
+        },
+        {
+          "chunk_id": "6402c6cc-e497-d93a-2834-39b465df1617",
+          "file_name": "PRIMEIRO_ATENDIMENTO_PARA_CLIENTES_INTERESSADOS_EM_REVENDA.txt",
+          "score": 15.17282359685431,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: conduzir o pre-cadastro de clientes interessados em revender Classe com linguagem natural, uma pergunta por vez, sem engessamento, preservando os requisitos comerciais da empresa. FOCO: ",
+          "hybrid_score": 0.015873015873015872
+        },
+        {
+          "chunk_id": "4ee76731-ac9c-b99e-c841-763b78b91229",
+          "file_name": "SCRIPT_RAPIDO_REVENDA_CLASSE.txt",
+          "score": 13.3112800694076,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: qualificar interessados em revender Classe com uma pergunta por vez, de forma natural, acolhedora e assertiva. RESUMO RAPIDO - Primeiro validar CNPJ ativo - Depois validar loja fisica - ",
+          "hybrid_score": 0.015625
+        },
+        {
+          "chunk_id": "fb642991-665b-ce71-7d24-f29fbbf73d68",
+          "file_name": "REQUESTS.txt",
+          "score": 10.595178073547896,
+          "snippet": "REQUESTS - AMPLIACAO DA BASE DE CONHECIMENTO DO ATENDENTE Atualizado em 25/03/2026 ------------------------------------------------------------------ PRIORIDADE ALTA ------------------------------------------------------",
+          "hybrid_score": 0.015384615384615385
+        }
+      ]
+    },
+    {
+      "query": "qual referencia aparece como destaque em kits masculinos no ranking por categoria",
+      "latency_ms": 0.99,
+      "bm25_hits": [
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 17.550747335716213,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao "
+        },
+        {
+          "chunk_id": "fb642991-665b-ce71-7d24-f29fbbf73d68",
+          "file_name": "REQUESTS.txt",
+          "score": 10.298111246445625,
+          "snippet": "REQUESTS - AMPLIACAO DA BASE DE CONHECIMENTO DO ATENDENTE Atualizado em 25/03/2026 ------------------------------------------------------------------ PRIORIDADE ALTA ------------------------------------------------------"
+        },
+        {
+          "chunk_id": "5d70b793-7b9a-8b94-2448-c2a07bc9a25d",
+          "file_name": "RANKING_COMERCIAL_TOP10_INVERNO_26.txt",
+          "score": 9.102956141022462,
+          "snippet": "RANKING COMERCIAL TOP 10 POR CATEGORIA Fonte: RANK GERAL!N:N (QTD TOTAL) Uso sugerido: consulta rapida para atendimento comercial sobre produtos com maior giro. BOLSAS FEMININAS 1. 3262 | CROSSBODY - 8729 2. 3594 | CROSS"
+        },
+        {
+          "chunk_id": "98f991f0-97c2-554e-0338-23ead1ad31e7",
+          "file_name": "RANKING_PRODUTOS_INVERNO_26_POR_CATEGORIA.txt",
+          "score": 7.325753998643853,
+          "snippet": "RANKING DE REFERENCIAS POR CATEGORIA Fonte: RANK GERAL!N:N (QTD TOTAL) BOLSAS FEMININAS 1. 3262 - 8729 2. 3594 - 3494 3. 2136 - 3285 4. 3532 - 3140 5. 2150 - 2704 6. 3606 - 2640 7. 3540 - 2428 8. 3036-2 - 2325 9. 3151 - "
+        },
+        {
+          "chunk_id": "6402c6cc-e497-d93a-2834-39b465df1617",
+          "file_name": "PRIMEIRO_ATENDIMENTO_PARA_CLIENTES_INTERESSADOS_EM_REVENDA.txt",
+          "score": 6.830903851521559,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: conduzir o pre-cadastro de clientes interessados em revender Classe com linguagem natural, uma pergunta por vez, sem engessamento, preservando os requisitos comerciais da empresa. FOCO: "
+        }
+      ],
+      "hybrid_preview": [
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 17.550747335716213,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao ",
+          "hybrid_score": 0.01639344262295082
+        },
+        {
+          "chunk_id": "fb642991-665b-ce71-7d24-f29fbbf73d68",
+          "file_name": "REQUESTS.txt",
+          "score": 10.298111246445625,
+          "snippet": "REQUESTS - AMPLIACAO DA BASE DE CONHECIMENTO DO ATENDENTE Atualizado em 25/03/2026 ------------------------------------------------------------------ PRIORIDADE ALTA ------------------------------------------------------",
+          "hybrid_score": 0.016129032258064516
+        },
+        {
+          "chunk_id": "5d70b793-7b9a-8b94-2448-c2a07bc9a25d",
+          "file_name": "RANKING_COMERCIAL_TOP10_INVERNO_26.txt",
+          "score": 9.102956141022462,
+          "snippet": "RANKING COMERCIAL TOP 10 POR CATEGORIA Fonte: RANK GERAL!N:N (QTD TOTAL) Uso sugerido: consulta rapida para atendimento comercial sobre produtos com maior giro. BOLSAS FEMININAS 1. 3262 | CROSSBODY - 8729 2. 3594 | CROSS",
+          "hybrid_score": 0.015873015873015872
+        },
+        {
+          "chunk_id": "98f991f0-97c2-554e-0338-23ead1ad31e7",
+          "file_name": "RANKING_PRODUTOS_INVERNO_26_POR_CATEGORIA.txt",
+          "score": 7.325753998643853,
+          "snippet": "RANKING DE REFERENCIAS POR CATEGORIA Fonte: RANK GERAL!N:N (QTD TOTAL) BOLSAS FEMININAS 1. 3262 - 8729 2. 3594 - 3494 3. 2136 - 3285 4. 3532 - 3140 5. 2150 - 2704 6. 3606 - 2640 7. 3540 - 2428 8. 3036-2 - 2325 9. 3151 - ",
+          "hybrid_score": 0.015625
+        },
+        {
+          "chunk_id": "6402c6cc-e497-d93a-2834-39b465df1617",
+          "file_name": "PRIMEIRO_ATENDIMENTO_PARA_CLIENTES_INTERESSADOS_EM_REVENDA.txt",
+          "score": 6.830903851521559,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: conduzir o pre-cadastro de clientes interessados em revender Classe com linguagem natural, uma pergunta por vez, sem engessamento, preservando os requisitos comerciais da empresa. FOCO: ",
+          "hybrid_score": 0.015384615384615385
+        }
+      ]
+    },
+    {
+      "query": "qual referencia aparece como destaque em cintos masculinos no ranking por categoria",
+      "latency_ms": 0.92,
+      "bm25_hits": [
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 18.176868887298777,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao "
+        },
+        {
+          "chunk_id": "fb642991-665b-ce71-7d24-f29fbbf73d68",
+          "file_name": "REQUESTS.txt",
+          "score": 10.298111246445625,
+          "snippet": "REQUESTS - AMPLIACAO DA BASE DE CONHECIMENTO DO ATENDENTE Atualizado em 25/03/2026 ------------------------------------------------------------------ PRIORIDADE ALTA ------------------------------------------------------"
+        },
+        {
+          "chunk_id": "5d70b793-7b9a-8b94-2448-c2a07bc9a25d",
+          "file_name": "RANKING_COMERCIAL_TOP10_INVERNO_26.txt",
+          "score": 9.102956141022462,
+          "snippet": "RANKING COMERCIAL TOP 10 POR CATEGORIA Fonte: RANK GERAL!N:N (QTD TOTAL) Uso sugerido: consulta rapida para atendimento comercial sobre produtos com maior giro. BOLSAS FEMININAS 1. 3262 | CROSSBODY - 8729 2. 3594 | CROSS"
+        },
+        {
+          "chunk_id": "98f991f0-97c2-554e-0338-23ead1ad31e7",
+          "file_name": "RANKING_PRODUTOS_INVERNO_26_POR_CATEGORIA.txt",
+          "score": 7.945979513289393,
+          "snippet": "RANKING DE REFERENCIAS POR CATEGORIA Fonte: RANK GERAL!N:N (QTD TOTAL) BOLSAS FEMININAS 1. 3262 - 8729 2. 3594 - 3494 3. 2136 - 3285 4. 3532 - 3140 5. 2150 - 2704 6. 3606 - 2640 7. 3540 - 2428 8. 3036-2 - 2325 9. 3151 - "
+        },
+        {
+          "chunk_id": "6402c6cc-e497-d93a-2834-39b465df1617",
+          "file_name": "PRIMEIRO_ATENDIMENTO_PARA_CLIENTES_INTERESSADOS_EM_REVENDA.txt",
+          "score": 6.830903851521559,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: conduzir o pre-cadastro de clientes interessados em revender Classe com linguagem natural, uma pergunta por vez, sem engessamento, preservando os requisitos comerciais da empresa. FOCO: "
+        }
+      ],
+      "hybrid_preview": [
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 18.176868887298777,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao ",
+          "hybrid_score": 0.01639344262295082
+        },
+        {
+          "chunk_id": "fb642991-665b-ce71-7d24-f29fbbf73d68",
+          "file_name": "REQUESTS.txt",
+          "score": 10.298111246445625,
+          "snippet": "REQUESTS - AMPLIACAO DA BASE DE CONHECIMENTO DO ATENDENTE Atualizado em 25/03/2026 ------------------------------------------------------------------ PRIORIDADE ALTA ------------------------------------------------------",
+          "hybrid_score": 0.016129032258064516
+        },
+        {
+          "chunk_id": "5d70b793-7b9a-8b94-2448-c2a07bc9a25d",
+          "file_name": "RANKING_COMERCIAL_TOP10_INVERNO_26.txt",
+          "score": 9.102956141022462,
+          "snippet": "RANKING COMERCIAL TOP 10 POR CATEGORIA Fonte: RANK GERAL!N:N (QTD TOTAL) Uso sugerido: consulta rapida para atendimento comercial sobre produtos com maior giro. BOLSAS FEMININAS 1. 3262 | CROSSBODY - 8729 2. 3594 | CROSS",
+          "hybrid_score": 0.015873015873015872
+        },
+        {
+          "chunk_id": "98f991f0-97c2-554e-0338-23ead1ad31e7",
+          "file_name": "RANKING_PRODUTOS_INVERNO_26_POR_CATEGORIA.txt",
+          "score": 7.945979513289393,
+          "snippet": "RANKING DE REFERENCIAS POR CATEGORIA Fonte: RANK GERAL!N:N (QTD TOTAL) BOLSAS FEMININAS 1. 3262 - 8729 2. 3594 - 3494 3. 2136 - 3285 4. 3532 - 3140 5. 2150 - 2704 6. 3606 - 2640 7. 3540 - 2428 8. 3036-2 - 2325 9. 3151 - ",
+          "hybrid_score": 0.015625
+        },
+        {
+          "chunk_id": "6402c6cc-e497-d93a-2834-39b465df1617",
+          "file_name": "PRIMEIRO_ATENDIMENTO_PARA_CLIENTES_INTERESSADOS_EM_REVENDA.txt",
+          "score": 6.830903851521559,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: conduzir o pre-cadastro de clientes interessados em revender Classe com linguagem natural, uma pergunta por vez, sem engessamento, preservando os requisitos comerciais da empresa. FOCO: ",
+          "hybrid_score": 0.015384615384615385
+        }
+      ]
+    },
+    {
+      "query": "qual referencia aparece como destaque em carteiras masculinas no ranking por categoria",
+      "latency_ms": 0.91,
+      "bm25_hits": [
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 18.50721011019861,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao "
+        },
+        {
+          "chunk_id": "fb642991-665b-ce71-7d24-f29fbbf73d68",
+          "file_name": "REQUESTS.txt",
+          "score": 10.298111246445625,
+          "snippet": "REQUESTS - AMPLIACAO DA BASE DE CONHECIMENTO DO ATENDENTE Atualizado em 25/03/2026 ------------------------------------------------------------------ PRIORIDADE ALTA ------------------------------------------------------"
+        },
+        {
+          "chunk_id": "5d70b793-7b9a-8b94-2448-c2a07bc9a25d",
+          "file_name": "RANKING_COMERCIAL_TOP10_INVERNO_26.txt",
+          "score": 8.586676390961966,
+          "snippet": "RANKING COMERCIAL TOP 10 POR CATEGORIA Fonte: RANK GERAL!N:N (QTD TOTAL) Uso sugerido: consulta rapida para atendimento comercial sobre produtos com maior giro. BOLSAS FEMININAS 1. 3262 | CROSSBODY - 8729 2. 3594 | CROSS"
+        },
+        {
+          "chunk_id": "98f991f0-97c2-554e-0338-23ead1ad31e7",
+          "file_name": "RANKING_PRODUTOS_INVERNO_26_POR_CATEGORIA.txt",
+          "score": 7.035835557773368,
+          "snippet": "RANKING DE REFERENCIAS POR CATEGORIA Fonte: RANK GERAL!N:N (QTD TOTAL) BOLSAS FEMININAS 1. 3262 - 8729 2. 3594 - 3494 3. 2136 - 3285 4. 3532 - 3140 5. 2150 - 2704 6. 3606 - 2640 7. 3540 - 2428 8. 3036-2 - 2325 9. 3151 - "
+        },
+        {
+          "chunk_id": "6402c6cc-e497-d93a-2834-39b465df1617",
+          "file_name": "PRIMEIRO_ATENDIMENTO_PARA_CLIENTES_INTERESSADOS_EM_REVENDA.txt",
+          "score": 6.830903851521559,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: conduzir o pre-cadastro de clientes interessados em revender Classe com linguagem natural, uma pergunta por vez, sem engessamento, preservando os requisitos comerciais da empresa. FOCO: "
+        }
+      ],
+      "hybrid_preview": [
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 18.50721011019861,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao ",
+          "hybrid_score": 0.01639344262295082
+        },
+        {
+          "chunk_id": "fb642991-665b-ce71-7d24-f29fbbf73d68",
+          "file_name": "REQUESTS.txt",
+          "score": 10.298111246445625,
+          "snippet": "REQUESTS - AMPLIACAO DA BASE DE CONHECIMENTO DO ATENDENTE Atualizado em 25/03/2026 ------------------------------------------------------------------ PRIORIDADE ALTA ------------------------------------------------------",
+          "hybrid_score": 0.016129032258064516
+        },
+        {
+          "chunk_id": "5d70b793-7b9a-8b94-2448-c2a07bc9a25d",
+          "file_name": "RANKING_COMERCIAL_TOP10_INVERNO_26.txt",
+          "score": 8.586676390961966,
+          "snippet": "RANKING COMERCIAL TOP 10 POR CATEGORIA Fonte: RANK GERAL!N:N (QTD TOTAL) Uso sugerido: consulta rapida para atendimento comercial sobre produtos com maior giro. BOLSAS FEMININAS 1. 3262 | CROSSBODY - 8729 2. 3594 | CROSS",
+          "hybrid_score": 0.015873015873015872
+        },
+        {
+          "chunk_id": "98f991f0-97c2-554e-0338-23ead1ad31e7",
+          "file_name": "RANKING_PRODUTOS_INVERNO_26_POR_CATEGORIA.txt",
+          "score": 7.035835557773368,
+          "snippet": "RANKING DE REFERENCIAS POR CATEGORIA Fonte: RANK GERAL!N:N (QTD TOTAL) BOLSAS FEMININAS 1. 3262 - 8729 2. 3594 - 3494 3. 2136 - 3285 4. 3532 - 3140 5. 2150 - 2704 6. 3606 - 2640 7. 3540 - 2428 8. 3036-2 - 2325 9. 3151 - ",
+          "hybrid_score": 0.015625
+        },
+        {
+          "chunk_id": "6402c6cc-e497-d93a-2834-39b465df1617",
+          "file_name": "PRIMEIRO_ATENDIMENTO_PARA_CLIENTES_INTERESSADOS_EM_REVENDA.txt",
+          "score": 6.830903851521559,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: conduzir o pre-cadastro de clientes interessados em revender Classe com linguagem natural, uma pergunta por vez, sem engessamento, preservando os requisitos comerciais da empresa. FOCO: ",
+          "hybrid_score": 0.015384615384615385
+        }
+      ]
+    },
+    {
+      "query": "quais exemplos de itens sociais aparecem no ranking top 10",
+      "latency_ms": 0.79,
+      "bm25_hits": [
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 9.90966593872868,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao "
+        },
+        {
+          "chunk_id": "df6ac5b8-fb8b-afd9-2f4c-d3254d07ccd6",
+          "file_name": "SCRIPT_APRESENTACAO_BOOK_DE_VENDAS.txt",
+          "score": 6.435669981620092,
+          "snippet": "SCRIPT PREMIUM - APRESENTACAO DO BOOK DE VENDAS CLASSE Objetivo: Apresentar o BOOK DE VENDAS ao lead de forma premium, consultiva e comercialmente atrativa, logo apos a triagem de revenda concluida e validada. Principios"
+        },
+        {
+          "chunk_id": "5d70b793-7b9a-8b94-2448-c2a07bc9a25d",
+          "file_name": "RANKING_COMERCIAL_TOP10_INVERNO_26.txt",
+          "score": 4.841951260978018,
+          "snippet": "RANKING COMERCIAL TOP 10 POR CATEGORIA Fonte: RANK GERAL!N:N (QTD TOTAL) Uso sugerido: consulta rapida para atendimento comercial sobre produtos com maior giro. BOLSAS FEMININAS 1. 3262 | CROSSBODY - 8729 2. 3594 | CROSS"
+        },
+        {
+          "chunk_id": "5257400e-1bc3-2afa-3255-3ac3a9375ad5",
+          "file_name": "REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md",
+          "score": 4.191734866967259,
+          "snippet": "# REGRAS COMERCIAIS CRITICAS - INSIDE SALES CLASSE Atualizado em: 2026-04-30 Uso: conhecimento obrigatorio para atendimento WhatsApp B2B Inside Sales da Classe. Premissa de markup: quando houver conflito entre \"2,3%\" e \""
+        },
+        {
+          "chunk_id": "fb642991-665b-ce71-7d24-f29fbbf73d68",
+          "file_name": "REQUESTS.txt",
+          "score": 3.7623876304457706,
+          "snippet": "REQUESTS - AMPLIACAO DA BASE DE CONHECIMENTO DO ATENDENTE Atualizado em 25/03/2026 ------------------------------------------------------------------ PRIORIDADE ALTA ------------------------------------------------------"
+        }
+      ],
+      "hybrid_preview": [
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 9.90966593872868,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao ",
+          "hybrid_score": 0.01639344262295082
+        },
+        {
+          "chunk_id": "df6ac5b8-fb8b-afd9-2f4c-d3254d07ccd6",
+          "file_name": "SCRIPT_APRESENTACAO_BOOK_DE_VENDAS.txt",
+          "score": 6.435669981620092,
+          "snippet": "SCRIPT PREMIUM - APRESENTACAO DO BOOK DE VENDAS CLASSE Objetivo: Apresentar o BOOK DE VENDAS ao lead de forma premium, consultiva e comercialmente atrativa, logo apos a triagem de revenda concluida e validada. Principios",
+          "hybrid_score": 0.016129032258064516
+        },
+        {
+          "chunk_id": "5d70b793-7b9a-8b94-2448-c2a07bc9a25d",
+          "file_name": "RANKING_COMERCIAL_TOP10_INVERNO_26.txt",
+          "score": 4.841951260978018,
+          "snippet": "RANKING COMERCIAL TOP 10 POR CATEGORIA Fonte: RANK GERAL!N:N (QTD TOTAL) Uso sugerido: consulta rapida para atendimento comercial sobre produtos com maior giro. BOLSAS FEMININAS 1. 3262 | CROSSBODY - 8729 2. 3594 | CROSS",
+          "hybrid_score": 0.015873015873015872
+        },
+        {
+          "chunk_id": "5257400e-1bc3-2afa-3255-3ac3a9375ad5",
+          "file_name": "REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md",
+          "score": 4.191734866967259,
+          "snippet": "# REGRAS COMERCIAIS CRITICAS - INSIDE SALES CLASSE Atualizado em: 2026-04-30 Uso: conhecimento obrigatorio para atendimento WhatsApp B2B Inside Sales da Classe. Premissa de markup: quando houver conflito entre \"2,3%\" e \"",
+          "hybrid_score": 0.015625
+        },
+        {
+          "chunk_id": "fb642991-665b-ce71-7d24-f29fbbf73d68",
+          "file_name": "REQUESTS.txt",
+          "score": 3.7623876304457706,
+          "snippet": "REQUESTS - AMPLIACAO DA BASE DE CONHECIMENTO DO ATENDENTE Atualizado em 25/03/2026 ------------------------------------------------------------------ PRIORIDADE ALTA ------------------------------------------------------",
+          "hybrid_score": 0.015384615384615385
+        }
+      ]
+    },
+    {
+      "query": "qual produto lidera em acessorios segundo o ranking comercial top 10",
+      "latency_ms": 0.81,
+      "bm25_hits": [
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 14.041654727559436,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao "
+        },
+        {
+          "chunk_id": "fb642991-665b-ce71-7d24-f29fbbf73d68",
+          "file_name": "REQUESTS.txt",
+          "score": 7.672875689844047,
+          "snippet": "REQUESTS - AMPLIACAO DA BASE DE CONHECIMENTO DO ATENDENTE Atualizado em 25/03/2026 ------------------------------------------------------------------ PRIORIDADE ALTA ------------------------------------------------------"
+        },
+        {
+          "chunk_id": "4ee76731-ac9c-b99e-c841-763b78b91229",
+          "file_name": "SCRIPT_RAPIDO_REVENDA_CLASSE.txt",
+          "score": 7.037040782441257,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: qualificar interessados em revender Classe com uma pergunta por vez, de forma natural, acolhedora e assertiva. RESUMO RAPIDO - Primeiro validar CNPJ ativo - Depois validar loja fisica - "
+        },
+        {
+          "chunk_id": "5d70b793-7b9a-8b94-2448-c2a07bc9a25d",
+          "file_name": "RANKING_COMERCIAL_TOP10_INVERNO_26.txt",
+          "score": 6.8398519061051015,
+          "snippet": "RANKING COMERCIAL TOP 10 POR CATEGORIA Fonte: RANK GERAL!N:N (QTD TOTAL) Uso sugerido: consulta rapida para atendimento comercial sobre produtos com maior giro. BOLSAS FEMININAS 1. 3262 | CROSSBODY - 8729 2. 3594 | CROSS"
+        },
+        {
+          "chunk_id": "5257400e-1bc3-2afa-3255-3ac3a9375ad5",
+          "file_name": "REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md",
+          "score": 5.710762813529406,
+          "snippet": "# REGRAS COMERCIAIS CRITICAS - INSIDE SALES CLASSE Atualizado em: 2026-04-30 Uso: conhecimento obrigatorio para atendimento WhatsApp B2B Inside Sales da Classe. Premissa de markup: quando houver conflito entre \"2,3%\" e \""
+        }
+      ],
+      "hybrid_preview": [
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 14.041654727559436,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao ",
+          "hybrid_score": 0.01639344262295082
+        },
+        {
+          "chunk_id": "fb642991-665b-ce71-7d24-f29fbbf73d68",
+          "file_name": "REQUESTS.txt",
+          "score": 7.672875689844047,
+          "snippet": "REQUESTS - AMPLIACAO DA BASE DE CONHECIMENTO DO ATENDENTE Atualizado em 25/03/2026 ------------------------------------------------------------------ PRIORIDADE ALTA ------------------------------------------------------",
+          "hybrid_score": 0.016129032258064516
+        },
+        {
+          "chunk_id": "4ee76731-ac9c-b99e-c841-763b78b91229",
+          "file_name": "SCRIPT_RAPIDO_REVENDA_CLASSE.txt",
+          "score": 7.037040782441257,
+          "snippet": "SCRIPT OBRIGATORIO: SIM OBJETIVO: qualificar interessados em revender Classe com uma pergunta por vez, de forma natural, acolhedora e assertiva. RESUMO RAPIDO - Primeiro validar CNPJ ativo - Depois validar loja fisica - ",
+          "hybrid_score": 0.015873015873015872
+        },
+        {
+          "chunk_id": "5d70b793-7b9a-8b94-2448-c2a07bc9a25d",
+          "file_name": "RANKING_COMERCIAL_TOP10_INVERNO_26.txt",
+          "score": 6.8398519061051015,
+          "snippet": "RANKING COMERCIAL TOP 10 POR CATEGORIA Fonte: RANK GERAL!N:N (QTD TOTAL) Uso sugerido: consulta rapida para atendimento comercial sobre produtos com maior giro. BOLSAS FEMININAS 1. 3262 | CROSSBODY - 8729 2. 3594 | CROSS",
+          "hybrid_score": 0.015625
+        },
+        {
+          "chunk_id": "5257400e-1bc3-2afa-3255-3ac3a9375ad5",
+          "file_name": "REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md",
+          "score": 5.710762813529406,
+          "snippet": "# REGRAS COMERCIAIS CRITICAS - INSIDE SALES CLASSE Atualizado em: 2026-04-30 Uso: conhecimento obrigatorio para atendimento WhatsApp B2B Inside Sales da Classe. Premissa de markup: quando houver conflito entre \"2,3%\" e \"",
+          "hybrid_score": 0.015384615384615385
+        }
+      ]
+    },
+    {
+      "query": "quais itens aparecem como fortes em acessorios no ranking comercial",
+      "latency_ms": 0.78,
+      "bm25_hits": [
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 9.61729268309117,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao "
+        },
+        {
+          "chunk_id": "df6ac5b8-fb8b-afd9-2f4c-d3254d07ccd6",
+          "file_name": "SCRIPT_APRESENTACAO_BOOK_DE_VENDAS.txt",
+          "score": 8.085638722589525,
+          "snippet": "SCRIPT PREMIUM - APRESENTACAO DO BOOK DE VENDAS CLASSE Objetivo: Apresentar o BOOK DE VENDAS ao lead de forma premium, consultiva e comercialmente atrativa, logo apos a triagem de revenda concluida e validada. Principios"
+        },
+        {
+          "chunk_id": "5257400e-1bc3-2afa-3255-3ac3a9375ad5",
+          "file_name": "REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md",
+          "score": 7.930504517320224,
+          "snippet": "# REGRAS COMERCIAIS CRITICAS - INSIDE SALES CLASSE Atualizado em: 2026-04-30 Uso: conhecimento obrigatorio para atendimento WhatsApp B2B Inside Sales da Classe. Premissa de markup: quando houver conflito entre \"2,3%\" e \""
+        },
+        {
+          "chunk_id": "1bf0586e-638c-bdc5-3dbd-5d92ad899d31",
+          "file_name": "PRINCIPIOS_NORTEADORES_DA_PROSPECCAO_COMERCIAL.txt",
+          "score": 5.4030480560566785,
+          "snippet": "PRINCIPIOS NORTEADORES DA PROSPECCAO COMERCIAL - CLASSE COURO OBJETIVO Fazer o atendente virtual compreender como conduzir um primeiro contato comercial de alta qualidade, com linguagem natural, simpatia, inteligencia co"
+        },
+        {
+          "chunk_id": "fb642991-665b-ce71-7d24-f29fbbf73d68",
+          "file_name": "REQUESTS.txt",
+          "score": 5.364310097021878,
+          "snippet": "REQUESTS - AMPLIACAO DA BASE DE CONHECIMENTO DO ATENDENTE Atualizado em 25/03/2026 ------------------------------------------------------------------ PRIORIDADE ALTA ------------------------------------------------------"
+        }
+      ],
+      "hybrid_preview": [
+        {
+          "chunk_id": "1e83009e-3bb3-cda9-d975-3e8cfdf3add9",
+          "file_name": "REGRAS_COMERCIAIS_COMPLEMENTARES_RODADA2_CLASSE.md",
+          "score": 9.61729268309117,
+          "snippet": "# REGRAS COMERCIAIS COMPLEMENTARES - RODADA 2 - CLASSE Uso: complemento objetivo para respostas comerciais do WhatsApp Inside Sales. ## Portal B2B apos cadastro liberado - Quando o cadastro estiver liberado, o acesso ao ",
+          "hybrid_score": 0.01639344262295082
+        },
+        {
+          "chunk_id": "df6ac5b8-fb8b-afd9-2f4c-d3254d07ccd6",
+          "file_name": "SCRIPT_APRESENTACAO_BOOK_DE_VENDAS.txt",
+          "score": 8.085638722589525,
+          "snippet": "SCRIPT PREMIUM - APRESENTACAO DO BOOK DE VENDAS CLASSE Objetivo: Apresentar o BOOK DE VENDAS ao lead de forma premium, consultiva e comercialmente atrativa, logo apos a triagem de revenda concluida e validada. Principios",
+          "hybrid_score": 0.016129032258064516
+        },
+        {
+          "chunk_id": "5257400e-1bc3-2afa-3255-3ac3a9375ad5",
+          "file_name": "REGRAS_COMERCIAIS_CRITICAS_INSIDE_SALES_CLASSE.md",
+          "score": 7.930504517320224,
+          "snippet": "# REGRAS COMERCIAIS CRITICAS - INSIDE SALES CLASSE Atualizado em: 2026-04-30 Uso: conhecimento obrigatorio para atendimento WhatsApp B2B Inside Sales da Classe. Premissa de markup: quando houver conflito entre \"2,3%\" e \"",
+          "hybrid_score": 0.015873015873015872
+        },
+        {
+          "chunk_id": "1bf0586e-638c-bdc5-3dbd-5d92ad899d31",
+          "file_name": "PRINCIPIOS_NORTEADORES_DA_PROSPECCAO_COMERCIAL.txt",
+          "score": 5.4030480560566785,
+          "snippet": "PRINCIPIOS NORTEADORES DA PROSPECCAO COMERCIAL - CLASSE COURO OBJETIVO Fazer o atendente virtual compreender como conduzir um primeiro contato comercial de alta qualidade, com linguagem natural, simpatia, inteligencia co",
+          "hybrid_score": 0.015625
+        },
+        {
+          "chunk_id": "fb642991-665b-ce71-7d24-f29fbbf73d68",
+          "file_name": "REQUESTS.txt",
+          "score": 5.364310097021878,
+          "snippet": "REQUESTS - AMPLIACAO DA BASE DE CONHECIMENTO DO ATENDENTE Atualizado em 25/03/2026 ------------------------------------------------------------------ PRIORIDADE ALTA ------------------------------------------------------",
+          "hybrid_score": 0.015384615384615385
+        }
+      ]
+    }
+  ]
+}

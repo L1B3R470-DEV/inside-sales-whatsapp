@@ -1,6 +1,6 @@
 # COLLAB STATE
 
-Atualizado em: 2026-05-04 12:12:00 -03:00
+Atualizado em: 2026-05-05 10:19:06 -03:00
 
 ## Estado atual
 
@@ -295,3 +295,34 @@ Retomada:
 
 Pendencia humana:
 - ler o QR em `C:\AUTOMACAO\logs\ATENDIMENTO_VENDAS_CLEAN_QR_20260505_091900.png` para concluir a reconexao da instancia.
+
+## Laboratorio n8n/Evolution/RAG em 2026-05-05 10:19 -03
+
+Solicitacao:
+- Rodrigo aprovou a implantacao das melhorias apontadas pelo radar: n8n 2.18.7, Evolution 2.3.7 e benchmark RAG/Qdrant hybrid.
+
+Escopo implantado:
+- branch operacional: `lab/n8n-evolution-rag-20260505`;
+- backup/export antes da implantacao: `C:\AUTOMACAO\backups\lab_upgrade_n8n_evolution_rag_20260505_094826`;
+- stack de laboratorio isolada criada em `docker-compose.lab.yml`, sem substituir os containers produtivos;
+- segredos do laboratorio mantidos fora do Git em `C:\AUTOMACAO\secrets\inside_sales_lab.env`;
+- n8n lab publicado em `http://localhost:15678`, imagem `docker.n8n.io/n8nio/n8n:2.18.7`, usando PostgreSQL proprio em vez de SQLite;
+- Evolution lab publicado em `http://localhost:18080`, imagem `evoapicloud/evolution-api:v2.3.7`, com PostgreSQL/Redis/MinIO proprios;
+- workflow principal `zN3heKJVLO8w4dG6` importado no n8n lab e validado como ativo;
+- instancia lab `ATENDIMENTO_VENDAS_LAB` criada em estado `connecting`, com QR/pairing gerados apenas para laboratorio;
+- benchmark RAG baseline BM25/RRF gerado em `ANALISES/QDRANT_HYBRID_BENCHMARK.md` e `ANALISES/QDRANT_HYBRID_BENCHMARK.json`.
+
+Validacao:
+- `docker compose -f docker-compose.lab.yml --env-file .env --env-file C:\AUTOMACAO\secrets\inside_sales_lab.env config -q` OK;
+- `n8n-lab` respondeu `/healthz` e `n8n --version` retornou `2.18.7`;
+- `n8n-lab-postgres` contem 1 workflow importado e nao ha `database.sqlite` no volume do n8n lab;
+- Evolution lab respondeu HTTP 200 com versao `2.3.7`;
+- teste webhook lab para o numero bloqueado `556974009750` iniciou o workflow e foi suprimido no router por `blocked_number_route_suppressed`;
+- producao ficou sem envio Evolution `fromMe=true` desde a desconexao original;
+- router produtivo, n8n produtivo e Evolution produtiva seguiram respondendo health/root.
+
+Pendencias:
+- promover n8n/Evolution para producao exige janela controlada, rollback e decisao operacional explicita de troca dos containers vivos;
+- `ATENDIMENTO_VENDAS_CLEAN` produtiva segue aguardando QR/estado `open`;
+- o SQLite produtivo do n8n de aproximadamente 48.3 GB nao foi copiado nem compactado por falta de espaco seguro no C:;
+- o proximo passo tecnico recomendado e comparar uma colecao Qdrant paralela dense+sparse contra o baseline BM25/RRF gerado.
