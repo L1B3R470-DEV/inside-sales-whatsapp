@@ -1,6 +1,6 @@
 # NEXT_ACTIONS
 
-Atualizado em: 2026-05-05 08:54:15 -03:00
+Atualizado em: 2026-05-05 08:59:54 -03:00
 
 1. Abrir nova conversa no Codex apontando para C:\Users\User\Desktop\CODEX_PROJECTS\PROJETO_ATENDIMENTO_WHATSAPP_INSIDE_SALES.
 2. Pedir ao agente para ler AGENT_CONTEXT.md, PROJECT_RULES.md, COLLAB_HANDOFF.md, CHANGELOG_COLLAB.md e NEXT_ACTIONS.md.
@@ -50,3 +50,16 @@ Concluido nesta rodada:
 
 Proxima pendencia real:
 1. Monitorar proximas mensagens de contatos encerrados; qualquer novo route_log `claude_direct` para label `ENCERRADO` deve ser tratado como regressao critica.
+
+## Contencao emergencial - 2026-05-05 08:59
+
+Concluido nesta rodada:
+- usuario desconectou `ATENDIMENTO_VENDAS_CLEAN` para impedir novos eventos nocivos;
+- confirmado no PostgreSQL da Evolution: `ATENDIMENTO_VENDAS_CLEAN=close` desde `2026-05-05 11:46:31.326`;
+- workflow principal `zN3heKJVLO8w4dG6` foi desativado no n8n e o container `n8n` foi reiniciado;
+- validado que o webhook `http://localhost:5678/webhook/evolution-inbound` retorna 404;
+- validado 0 mensagens Evolution de envio desde a desconexao e 0 `route_logs` desde a desativacao do workflow.
+
+Proxima pendencia real:
+1. Manter `ATENDIMENTO_VENDAS_CLEAN` desconectada e `zN3heKJVLO8w4dG6` inativo ate uma retomada operacional deliberada.
+2. Na retomada: confirmar bloqueio `ENCERRADO`, reconectar a instancia, ativar o workflow e executar teste controlado antes de liberar trafego real.

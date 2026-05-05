@@ -235,3 +235,31 @@ Validacao:
 
 Pendencia residual:
 - nenhuma pendencia tecnica para o bloqueio `ENCERRADO`; ele agora independe de evento de label no webhook.
+
+## Contencao emergencial apos desconexao da instancia em 2026-05-05 08:59 -03
+
+Incidente:
+- o usuario precisou desconectar a instancia principal para impedir novos eventos nocivos enquanto o risco comercial era contido.
+
+Estado confirmado:
+- PC atual: PC CLS `100.113.13.27`, host `INTELIGENCIA-G1`;
+- `ATENDIMENTO_VENDAS_CLEAN` ficou com `connectionStatus=close` desde `2026-05-05 11:46:31.326`;
+- `STRESS_CLIENT_SETOR` ficou em `connecting`, mas nao e a instancia principal de atendimento;
+- o workflow principal `zN3heKJVLO8w4dG6` ainda estava ativo logo apos a desconexao da instancia.
+
+Correcao de contencao aplicada:
+- workflow n8n `zN3heKJVLO8w4dG6` desativado com `n8n update:workflow --id=zN3heKJVLO8w4dG6 --active=false`;
+- container `n8n` reiniciado para garantir descarregamento do webhook ativo;
+- n8n voltou `healthy`.
+
+Validacao:
+- `n8n list:workflow --active=true` nao lista o workflow principal;
+- `n8n list:workflow --active=false` lista `zN3heKJVLO8w4dG6|WhatsApp AI Auto Reply (Evolution + OpenAI + Claude + Openclaw)`;
+- POST controlado para `http://localhost:5678/webhook/evolution-inbound` retorna 404, confirmando webhook principal indisponivel;
+- Evolution PostgreSQL mostra 0 mensagens com status de envio desde `2026-05-05 11:46:31`;
+- `router_runtime.sqlite` mostra 0 `route_logs` desde `2026-05-05T11:56:24`;
+- containers `n8n` e `router` estao `healthy`, `evolution` esta `running`.
+
+Status operacional:
+- atendimento automatico esta em trava de seguranca: instancia principal desconectada e workflow principal inativo;
+- nao reativar a instancia/workflow sem uma acao deliberada de retomada e conferencia da etiqueta `ENCERRADO`.
