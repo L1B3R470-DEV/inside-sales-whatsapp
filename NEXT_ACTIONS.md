@@ -1,6 +1,6 @@
 # NEXT_ACTIONS
 
-Atualizado em: 2026-05-05 08:59:54 -03:00
+Atualizado em: 2026-05-05 09:17:49 -03:00
 
 1. Abrir nova conversa no Codex apontando para C:\Users\User\Desktop\CODEX_PROJECTS\PROJETO_ATENDIMENTO_WHATSAPP_INSIDE_SALES.
 2. Pedir ao agente para ler AGENT_CONTEXT.md, PROJECT_RULES.md, COLLAB_HANDOFF.md, CHANGELOG_COLLAB.md e NEXT_ACTIONS.md.
@@ -63,3 +63,17 @@ Concluido nesta rodada:
 Proxima pendencia real:
 1. Manter `ATENDIMENTO_VENDAS_CLEAN` desconectada e `zN3heKJVLO8w4dG6` inativo ate uma retomada operacional deliberada.
 2. Na retomada: confirmar bloqueio `ENCERRADO`, reconectar a instancia, ativar o workflow e executar teste controlado antes de liberar trafego real.
+
+## Retomada controlada - 2026-05-05 09:17
+
+Concluido nesta rodada:
+- `556974009750` bloqueado no router runtime (`blocked_numbers`), no corte antecipado de `/route`, no `guardrails.js` fonte e no `staticData.ignoredContacts` do workflow ativo;
+- workflow principal `zN3heKJVLO8w4dG6` reativado e validado como ativo;
+- teste direto no router para `556974009750` retornou `blocked_number`, `sendEligible=false`, `llmReplyText=""`;
+- teste via webhook n8n com `556974009750` iniciou o workflow e foi suprimido por `blocked_number_route_suppressed`;
+- validado 0 envios Evolution `fromMe=true` desde a desconexao;
+- QR gerado para reconectar `ATENDIMENTO_VENDAS_CLEAN`.
+
+Proxima pendencia real:
+1. Escanear o QR em `C:\AUTOMACAO\logs\ATENDIMENTO_VENDAS_CLEAN_QR_20260505_091900.png`.
+2. Apos o estado virar `open`, monitorar `route_logs`, Evolution `Message fromMe=true` e logs do router por pelo menos os primeiros eventos reais.

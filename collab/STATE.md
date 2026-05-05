@@ -263,3 +263,35 @@ Validacao:
 Status operacional:
 - atendimento automatico esta em trava de seguranca: instancia principal desconectada e workflow principal inativo;
 - nao reativar a instancia/workflow sem uma acao deliberada de retomada e conferencia da etiqueta `ENCERRADO`.
+
+## Retomada controlada com bloqueio manual do lead 556974009750 em 2026-05-05 09:17 -03
+
+Solicitacao:
+- retomar de forma controlada com teste;
+- adicionar `556974009750` a lista de bloqueio de envio/resposta para impedir interferencia na negociacao quase fechada.
+
+Correcao aplicada:
+- `556974009750` inserido em `router_runtime.sqlite.blocked_numbers` com motivo `bloqueio_manual_negociacao_quase_fechada_2026-05-05`;
+- `router_service.py` passou a cortar numeros em `blocked_numbers` diretamente no endpoint `/route`, antes de RAG/LLM/log de rota;
+- `guardrails.js` fonte recebeu `556974009750` em `cfg.blockedNumbers`;
+- `workflow_entity.staticData.ignoredContacts.numbers` do workflow `zN3heKJVLO8w4dG6` recebeu `556974009750` como camada adicional no runtime n8n;
+- backup antes da alteracao: `C:\AUTOMACAO\backups\controlled_resume_block_556974009750_20260505_090905`.
+
+Validacao de bloqueio:
+- `python -m py_compile router_service.py` OK;
+- `node --check guardrails.js` OK;
+- `docker compose config -q` OK;
+- router rebuildado e `healthy`;
+- chamada direta para `/route` com `556974009750` retornou `routeDecision=blocked_number`, `sendEligible=false`, `blockReason=blocked_number`, `llmReplyText=""`;
+- teste por webhook n8n ativo com `556974009750` iniciou workflow, mas o router registrou `blocked_number_route_suppressed`;
+- 0 novos `route_logs` para as mensagens sintéticas de bloqueio;
+- 0 mensagens Evolution `fromMe=true` desde a desconexao de `2026-05-05 11:46:31`.
+
+Retomada:
+- workflow n8n principal `zN3heKJVLO8w4dG6` voltou a ficar ativo e listado por `n8n list:workflow --active=true --onlyId`;
+- webhook `http://localhost:5678/webhook/evolution-inbound` voltou a iniciar o workflow;
+- Evolution `/instance/connect/ATENDIMENTO_VENDAS_CLEAN` gerou QR code;
+- estado atual da instancia principal: `connecting`, aguardando leitura do QR no WhatsApp.
+
+Pendencia humana:
+- ler o QR em `C:\AUTOMACAO\logs\ATENDIMENTO_VENDAS_CLEAN_QR_20260505_091900.png` para concluir a reconexao da instancia.

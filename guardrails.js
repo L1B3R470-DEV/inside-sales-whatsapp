@@ -30,6 +30,7 @@ const cfg = {
   testModeSilentDrop: true,
   // Safety denylist for accidental recipients. Extend/adjust as needed.
   blockedNumbers: [
+    '556974009750',
     '557599991111',
     '553498066683', '556282755369', '557182157263', '557581495845',
     '557581534233', '557581542771', '557581960700', '557588270211',

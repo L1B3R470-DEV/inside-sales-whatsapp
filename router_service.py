@@ -3443,6 +3443,25 @@ def route_endpoint():
                 'dynamicBlockedNumbers': list(blocked_set),
                 'dynamicAlwaysAllowedNumbers': list(allowed_set),
             })
+        if recipient_number in blocked_set:
+            log.warning(
+                'blocked_number_route_suppressed',
+                number=recipient_number[:20],
+                remoteJid=str(resolved_payload.get('remoteJid') or '')[:80],
+                messageId=str(resolved_payload.get('messageId') or '')[:80],
+            )
+            return jsonify({
+                **resolved_payload,
+                **empty_route_decision('blocked_number', 'blockedByNumber'),
+                'topology': topology_metadata(),
+                'routerOk': True,
+                'routerTestGateEnforced': ROUTER_ENFORCE_TEST_GATE,
+                'dynamicBlockedNumbers': list(blocked_set),
+                'dynamicAlwaysAllowedNumbers': list(allowed_set),
+                'sendEligible': False,
+                'sendEligibilityReason': 'blocked_number',
+                'blockReason': 'blocked_number',
+            })
         if ROUTER_ENFORCE_TEST_GATE and allowed_set and recipient_number not in allowed_set:
             return jsonify({
                 **resolved_payload,
