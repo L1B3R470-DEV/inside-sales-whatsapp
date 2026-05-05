@@ -1,6 +1,6 @@
 # NEXT_ACTIONS
 
-Atualizado em: 2026-05-05 08:40:25 -03:00
+Atualizado em: 2026-05-05 08:54:15 -03:00
 
 1. Abrir nova conversa no Codex apontando para C:\Users\User\Desktop\CODEX_PROJECTS\PROJETO_ATENDIMENTO_WHATSAPP_INSIDE_SALES.
 2. Pedir ao agente para ler AGENT_CONTEXT.md, PROJECT_RULES.md, COLLAB_HANDOFF.md, CHANGELOG_COLLAB.md e NEXT_ACTIONS.md.
@@ -40,3 +40,13 @@ Concluido nesta rodada:
 
 Proxima pendencia real:
 1. Planejar janela com backup e espaco suficiente para compactar/migrar `ai_n8n_data`; nao executar `VACUUM` com ~10 GB livres para um SQLite de ~48.3 GB.
+
+## Atualizacao operacional - 2026-05-05 08:54
+
+Concluido nesta rodada:
+- bloqueio `ENCERRADO` deixou de depender do payload do webhook e passou a consultar `Chat.labels` diretamente no PostgreSQL da Evolution;
+- validado no caso real `49723356479543@lid` / `556974009750`: label `21=ENCERRADO` bloqueia `@lid` e numero normal;
+- router retorna `closed_label_encerrado`, `sendEligible=false` e `llmReplyText=""` antes de RAG/LLM.
+
+Proxima pendencia real:
+1. Monitorar proximas mensagens de contatos encerrados; qualquer novo route_log `claude_direct` para label `ENCERRADO` deve ser tratado como regressao critica.

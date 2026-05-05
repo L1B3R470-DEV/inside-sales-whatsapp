@@ -207,3 +207,31 @@ Pendencia residual:
 - nao executar `VACUUM`/compactacao do `ai_n8n_data` em producao com cerca de 10 GB livres para banco SQLite de ~48.3 GB; exige janela de manutencao, backup novo e espaco livre externo/suficiente;
 - mensagens historicas antigas com status `PENDING`/`ERROR` na Evolution foram preservadas; nao houve edicao manual de status de mensagem;
 - nao foi possivel alterar a tarefa `CRM_CYCLE_N8N` de nivel `SISTEMA` por acesso negado, mas ela ja executa o wrapper que chama o script vigente.
+
+## Bloqueio definitivo de etiqueta ENCERRADO via PostgreSQL Evolution em 2026-05-05 08:54 -03
+
+Incidente:
+- cliente com etiqueta WhatsApp `ENCERRADO` continuava entrando no fluxo automatico, gerando `routeDecision=claude_direct` e risco comercial de interferencia na negociacao.
+
+Causa raiz:
+- o bloqueio anterior dependia da etiqueta chegar no payload ou de `staticData.closedByWhatsappLabel`;
+- a instancia principal opera com webhook focado em `MESSAGES_UPSERT`, entao a associacao de etiqueta nao chega junto no payload da mensagem;
+- no caso reproduzido, a fonte real estava em `public."Chat"."labels"` no PostgreSQL da Evolution: JID `49723356479543@lid` com `labels=["21"]`, label `ENCERRADO`, enquanto as mensagens eram resolvidas para o numero `556974009750`.
+
+Correcao aplicada:
+- `router_service.py` passou a consultar diretamente o PostgreSQL da Evolution antes de RAG/LLM/log de rota;
+- a consulta cruza `remoteJid`, `resolvedJid`, candidatos `@s.whatsapp.net` e LIDs conhecidos em `lid_mappings` para o numero resolvido;
+- quando encontra label id `21` ou nome `ENCERRADO`, retorna `routeDecision=closed_label_encerrado`, `sendEligible=false`, `llmReplyText=""`, `blockReason=closed_label_encerrado`;
+- backup antes da alteracao: `C:\AUTOMACAO\backups\closed_label_guard_fix_20260505_085055`.
+
+Validacao:
+- `python -m py_compile router_service.py` OK;
+- router reconstruido com `docker compose up -d --build router`;
+- router healthy e endpoints `router /health`, `router /metrics`, `n8n /healthz`, Evolution `/` retornaram 200;
+- teste controlado com `remoteJid=49723356479543@lid` retornou `closed_label_encerrado`, `sendEligible=false`, `llmReplyText=""`, origem `evolution_chat_labels`;
+- teste controlado com `remoteJid=556974009750@s.whatsapp.net` tambem bloqueou usando o LID mapeado `49723356479543@lid`;
+- os testes controlados nao criaram novo `route_log`; ultimo route_log comercial permaneceu `id=696`;
+- log do router registrou `closed_label_route_suppressed` com label `ENCERRADO`.
+
+Pendencia residual:
+- nenhuma pendencia tecnica para o bloqueio `ENCERRADO`; ele agora independe de evento de label no webhook.

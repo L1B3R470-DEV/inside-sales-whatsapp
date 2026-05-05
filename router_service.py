@@ -91,6 +91,7 @@ EVOLUTION_PG_DB = os.getenv('ROUTER_EVOLUTION_PG_DB', os.getenv('POSTGRES_DB', '
 EVOLUTION_PG_USER = os.getenv('ROUTER_EVOLUTION_PG_USER', os.getenv('POSTGRES_USER', 'evolution')).strip() or 'evolution'
 EVOLUTION_PG_PASSWORD = os.getenv('ROUTER_EVOLUTION_PG_PASSWORD', os.getenv('POSTGRES_PASSWORD', 'evolution')).strip()
 EVOLUTION_CONTACT_LOOKUP_ENABLED = str(os.getenv('ROUTER_EVOLUTION_CONTACT_LOOKUP_ENABLED', 'true')).strip().lower() in {'1', 'true', 'yes', 'on'}
+EVOLUTION_CLOSED_LABEL_LOOKUP_ENABLED = str(os.getenv('ROUTER_EVOLUTION_CLOSED_LABEL_LOOKUP_ENABLED', 'true')).strip().lower() in {'1', 'true', 'yes', 'on'}
 EVOLUTION_API_KEY = os.getenv('EVOLUTION_API_KEY', '').strip()
 EVOLUTION_API_URL = os.getenv('ROUTER_EVOLUTION_API_URL', 'http://evolution:8080').rstrip('/')
 # Domains that serve ENCRYPTED WhatsApp media (not usable directly for transcription)
@@ -434,6 +435,119 @@ def extract_closed_label_info(payload: Dict) -> Dict:
                     'labelName': entry.get('name') or 'ENCERRADO',
                     'source': 'payload_label',
                 }
+    return {}
+
+
+def lid_jids_for_number(number: str) -> List[str]:
+    digits = digits_only(number)
+    if not digits:
+        return []
+
+    conn = db()
+    try:
+        rows = conn.execute(
+            '''
+            SELECT remote_jid
+            FROM lid_mappings
+            WHERE phone_number = ?
+            ORDER BY updated_at DESC
+            LIMIT 20
+            ''',
+            (digits,),
+        ).fetchall()
+    finally:
+        conn.close()
+
+    out = []
+    for row in rows:
+        jid = normalize_lid_jid(row['remote_jid'] if isinstance(row, sqlite3.Row) else row[0])
+        if jid.endswith('@lid') and jid not in out:
+            out.append(jid)
+    return out
+
+
+def closed_label_lookup_jids(payload: Dict) -> List[str]:
+    merged = dict(payload or {})
+    candidates = set()
+    for key in (
+        'remoteJid',
+        'resolvedJid',
+        'participantJidCandidate',
+        'senderJidCandidate',
+        'senderLidCandidate',
+    ):
+        raw = str(merged.get(key) or '').strip().lower()
+        if not raw:
+            continue
+        normalized = normalize_lid_jid(raw)
+        if normalized.endswith('@lid') or normalized.endswith('@s.whatsapp.net'):
+            candidates.add(normalized)
+
+    number = payload_number_candidate(merged) or digits_only(merged.get('number') or merged.get('customerNumber'))
+    for jid in whatsapp_jid_candidates(number):
+        if jid.endswith('@s.whatsapp.net'):
+            candidates.add(jid)
+    for jid in lid_jids_for_number(number):
+        candidates.add(jid)
+
+    return sorted(candidates)
+
+
+def lookup_closed_label_in_evolution(payload: Dict) -> Dict:
+    if not EVOLUTION_CLOSED_LABEL_LOOKUP_ENABLED:
+        return {}
+    if not HAS_PSYCO_PG or not EVOLUTION_PG_PASSWORD:
+        log.warning('closed_label_db_lookup_unavailable', has_psycopg=HAS_PSYCO_PG, has_password=bool(EVOLUTION_PG_PASSWORD))
+        return {}
+
+    jids = closed_label_lookup_jids(payload)
+    if not jids:
+        return {}
+
+    query = '''
+    SELECT
+      c."remoteJid",
+      c.labels::text AS labels_json,
+      lbl.label_id,
+      COALESCE(l.name, '') AS label_name
+    FROM "Chat" c
+    LEFT JOIN LATERAL jsonb_array_elements_text(COALESCE(c.labels, '[]'::jsonb)) AS lbl(label_id) ON true
+    LEFT JOIN "Label" l
+      ON l."labelId" = lbl.label_id
+     AND l."instanceId" = c."instanceId"
+    WHERE c."remoteJid" = ANY(%s)
+    '''
+    names = closed_whatsapp_label_names()
+    try:
+        with psycopg.connect(evolution_pg_dsn(), connect_timeout=3) as conn:
+            with conn.cursor() as cur:
+                cur.execute(query, (jids,))
+                rows = cur.fetchall()
+    except Exception as exc:
+        log.warning(
+            'closed_label_db_lookup_failed',
+            error_type=type(exc).__name__,
+            error_msg=str(exc)[:200],
+            candidates=len(jids),
+        )
+        return {}
+
+    for remote_jid, labels_json, label_id, label_name in rows:
+        clean_label_id = str(label_id or '').strip()
+        clean_label_name = str(label_name or '').strip()
+        if (clean_label_id and clean_label_id in CLOSED_WHATSAPP_LABEL_IDS) or (
+            clean_label_name and normalize_ascii(clean_label_name) in names
+        ):
+            return {
+                'active': True,
+                'reason': 'closed_label_encerrado',
+                'labelId': clean_label_id,
+                'labelName': clean_label_name or 'ENCERRADO',
+                'source': 'evolution_chat_labels',
+                'remoteJid': str(remote_jid or ''),
+                'labels': str(labels_json or ''),
+            }
+
     return {}
 
 
@@ -2790,6 +2904,8 @@ def route_message(payload: Dict) -> Dict:
     inbound_text = str(resolved_payload.get('inboundText') or '').strip()
     audio_transcription = {'ok': False, 'reason': 'not_needed', 'text': ''}
     closed_label_info = extract_closed_label_info(resolved_payload)
+    if not closed_label_info.get('active'):
+        closed_label_info = lookup_closed_label_in_evolution(resolved_payload)
     if closed_label_info.get('active'):
         log.warning(
             'closed_label_route_suppressed',
