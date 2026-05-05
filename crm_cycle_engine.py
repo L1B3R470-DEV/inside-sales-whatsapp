@@ -6,7 +6,7 @@ import re
 import sqlite3
 import zipfile
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from xml.etree import ElementTree as ET
 from xml.sax.saxutils import escape as xml_escape
 
@@ -1550,9 +1550,20 @@ for number, p in profiles.items():
           lead_stage=excluded.lead_stage,
           last_intent=excluded.last_intent,
           last_confidence=excluded.last_confidence,
-          awaiting_human=excluded.awaiting_human,
-          notes=excluded.notes,
-          next_step=excluded.next_step,
+          awaiting_human=CASE
+            WHEN leads.next_step='follow_up_humano_pendente' THEN 1
+            ELSE excluded.awaiting_human
+          END,
+          notes=CASE
+            WHEN leads.next_step='follow_up_humano_pendente'
+              AND instr(coalesce(leads.notes, ''), '[auto_followup:') > 0
+            THEN leads.notes
+            ELSE excluded.notes
+          END,
+          next_step=CASE
+            WHEN leads.next_step='follow_up_humano_pendente' THEN leads.next_step
+            ELSE excluded.next_step
+          END,
           last_seen_at=excluded.last_seen_at,
           updated_at=excluded.updated_at
         ''',
@@ -1732,6 +1743,185 @@ def auto_triage_learning_backlog(now_value):
 
 
 backlog_triage = auto_triage_learning_backlog(now)
+
+
+def queue_open_learning_backlog_for_review(now_value):
+    queue_hours = int(os.getenv('LEARNING_BACKLOG_AUTO_QUEUE_HOURS', '12'))
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=queue_hours)).isoformat().replace('+00:00', 'Z')
+    reason = f'open_backlog_sla_{queue_hours}h'
+
+    crm.execute(
+        '''
+        CREATE TABLE IF NOT EXISTS learning_backlog_review_audit (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          backlog_id INTEGER NOT NULL,
+          number TEXT,
+          previous_status TEXT NOT NULL,
+          new_status TEXT NOT NULL,
+          reason TEXT NOT NULL,
+          source_created_at TEXT,
+          created_at TEXT NOT NULL
+        )
+        '''
+    )
+    crm.execute(
+        '''
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_learning_backlog_review_audit_once
+        ON learning_backlog_review_audit(backlog_id, reason)
+        '''
+    )
+
+    rows = crm.execute(
+        '''
+        SELECT id, number, status, source_created_at
+        FROM learning_backlog
+        WHERE status='open'
+          AND (
+            coalesce(source_created_at, '') < ?
+            OR trim(coalesce(number, '')) = ''
+          )
+        ORDER BY source_created_at ASC, id ASC
+        ''',
+        (cutoff,),
+    ).fetchall()
+
+    queued = 0
+    for row in rows:
+        crm.execute(
+            '''
+            INSERT OR IGNORE INTO learning_backlog_review_audit
+              (backlog_id, number, previous_status, new_status, reason, source_created_at, created_at)
+            VALUES (?, ?, ?, 'queued_human_review', ?, ?, ?)
+            ''',
+            (
+                int(row['id']),
+                str(row['number'] or ''),
+                str(row['status'] or ''),
+                reason,
+                str(row['source_created_at'] or ''),
+                now_value,
+            ),
+        )
+        cur = crm.execute(
+            '''
+            UPDATE learning_backlog
+            SET status='queued_human_review',
+                updated_at=?
+            WHERE id=? AND status='open'
+            ''',
+            (now_value, int(row['id'])),
+        )
+        queued += cur.rowcount
+
+    return {
+        'queueHours': queue_hours,
+        'cutoff': cutoff,
+        'candidates': len(rows),
+        'queued': queued,
+    }
+
+
+backlog_review_queue = queue_open_learning_backlog_for_review(now)
+
+
+def mark_stale_leads_for_human_followup(now_value):
+    stale_hours = int(os.getenv('CRM_STALE_LEAD_HOURS', '24'))
+    cutoff = (datetime.now(timezone.utc) - timedelta(hours=stale_hours)).isoformat().replace('+00:00', 'Z')
+    reason = f'stale_or_context_missing_{stale_hours}h'
+
+    crm.execute(
+        '''
+        CREATE TABLE IF NOT EXISTS lead_stale_followup_audit (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          number TEXT NOT NULL,
+          previous_stage TEXT,
+          previous_next_step TEXT,
+          previous_awaiting_human INTEGER,
+          reason TEXT NOT NULL,
+          cutoff_at TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        )
+        '''
+    )
+    crm.execute(
+        '''
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_lead_stale_followup_audit_once
+        ON lead_stale_followup_audit(number, reason)
+        '''
+    )
+
+    candidates = crm.execute(
+        '''
+        SELECT number, lead_stage, next_step, awaiting_human, last_seen_at,
+               last_inbound_text, last_reply_text, notes
+        FROM leads
+        WHERE lead_stage IN ('novo', 'qualificando')
+          AND (
+            coalesce(last_seen_at, '') < ?
+            OR trim(coalesce(last_inbound_text, '')) = ''
+            OR trim(coalesce(last_reply_text, '')) = ''
+          )
+        ''',
+        (cutoff,),
+    ).fetchall()
+
+    marked = 0
+    marker = f'[auto_followup:{now_value[:19]}]'
+    for row in candidates:
+        number = str(row['number'] or '').strip()
+        if not number:
+            continue
+
+        crm.execute(
+            '''
+            INSERT OR IGNORE INTO lead_stale_followup_audit
+              (number, previous_stage, previous_next_step, previous_awaiting_human, reason, cutoff_at, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''',
+            (
+                number,
+                str(row['lead_stage'] or ''),
+                str(row['next_step'] or ''),
+                int(row['awaiting_human'] or 0),
+                reason,
+                cutoff,
+                now_value,
+            ),
+        )
+
+        current_notes = str(row['notes'] or '').strip()
+        if '[auto_followup:' not in current_notes:
+            note = f'{marker} Lead em novo/qualificando sem avanço ou com contexto incompleto; revisar atendimento humano.'
+            next_notes = f'{current_notes} | {note}' if current_notes else note
+        else:
+            next_notes = current_notes
+
+        cur = crm.execute(
+            '''
+            UPDATE leads
+            SET awaiting_human = 1,
+                next_step = 'follow_up_humano_pendente',
+                notes = ?,
+                updated_at = ?
+            WHERE number = ?
+              AND (
+                awaiting_human IS NULL OR awaiting_human = 0
+                OR coalesce(next_step, '') <> 'follow_up_humano_pendente'
+              )
+            ''',
+            (next_notes, now_value, number),
+        )
+        marked += cur.rowcount
+
+    return {
+        'staleHours': stale_hours,
+        'cutoff': cutoff,
+        'candidates': len(candidates),
+        'marked': marked,
+    }
+
+
+stale_lead_followup = mark_stale_leads_for_human_followup(now)
 
 # Index/update external machine learning folder
 ml_data = ingest_machine_learning_folder(crm)
@@ -1940,7 +2130,10 @@ crm.execute(
             f'Auto cycle from n8n workflow {WORKFLOW_ID}; '
             f'backlog_triage_empty={backlog_triage["empty"]}; '
             f'backlog_triage_test={backlog_triage["test_artifact"]}; '
-            f'backlog_triage_duplicate={backlog_triage["duplicate"]}'
+            f'backlog_triage_duplicate={backlog_triage["duplicate"]}; '
+            f'backlog_review_queued={backlog_review_queue["queued"]}; '
+            f'stale_followup_candidates={stale_lead_followup["candidates"]}; '
+            f'stale_followup_marked={stale_lead_followup["marked"]}'
         ),
     ),
 )
@@ -2147,6 +2340,9 @@ print(json.dumps({
     'backlogTriagedEmpty': int(backlog_triage['empty']),
     'backlogTriagedTestArtifacts': int(backlog_triage['test_artifact']),
     'backlogTriagedDuplicates': int(backlog_triage['duplicate']),
+    'backlogReviewQueued': int(backlog_review_queue['queued']),
+    'staleLeadFollowupCandidates': int(stale_lead_followup['candidates']),
+    'staleLeadFollowupMarked': int(stale_lead_followup['marked']),
     'exportsDir': EXPORT_DIR,
     'leadsWorkbookPath': LEADS_WORKBOOK_PATH,
 }, ensure_ascii=False))

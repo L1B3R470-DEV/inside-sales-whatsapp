@@ -178,3 +178,32 @@ Execucao operacional apos decisao do usuario:
 Pendencia residual:
 - os containers `*-legacy-20260504_134957` ainda nao devem ser removidos antes de 24-48h de estabilidade;
 - disco C e `n8n database.sqlite` seguem exigindo janela propria de manutencao.
+
+## Saneamento de risco comercial em 2026-05-05 08:40 -03
+
+Execucao operacional:
+- PC atual confirmado como PC CLS `100.113.13.27`; CWD validado em `C:\Users\User\Desktop\CODEX_PROJECTS\PROJETO_ATENDIMENTO_WHATSAPP_INSIDE_SALES`;
+- Git iniciou limpo em `main...origin/main`; backup antes de alteracoes em `C:\AUTOMACAO\backups\risk_commercial_fix_20260505_082016`;
+- `docker-compose.yml` reduziu pressao do n8n/Evolution: `DATABASE_SAVE_DATA_HISTORIC=false`, `DB_SQLITE_POOL_SIZE=1`, `EXECUTIONS_DATA_SAVE_ON_SUCCESS=none` e `EXECUTIONS_DATA_PRUNE_MAX_COUNT=1000`;
+- `auto_heal_n8n.py` passou a curar execucoes presas em `running`, `new` e `crashed`, com `busy_timeout=300000` e auditoria sob demanda;
+- execucoes n8n `8246` (`crashed`) e `8247` (`new`) foram marcadas como `failed`, `finished=1`, com auditoria `status_timeout:*`;
+- `crm_cycle_engine.py` colocou 37 itens `learning_backlog` em `queued_human_review`, marcou 4 leads antigos em `follow_up_humano_pendente` e passou a preservar esse estado contra sobrescrita por `staticData`;
+- criada reconciliacao `evolution_crm_reconcile.py` para importar eventos reais da Evolution PostgreSQL ao CRM apos o ciclo n8n, cobrindo restart/queda sem depender apenas de `workflow.staticData`;
+- corrigido encoding UTF-8 da reconciliacao e removidos, com auditoria, 74 registros malformados e 8 leads internos criados na primeira rodada de ajuste;
+- lead `556974009750` recebeu resposta de recuperacao pelo Evolution apos inbound `Oi` perdido na janela de restart; envio validado no PostgreSQL com status `DELIVERY_ACK`;
+- tarefa agendada duplicada `CRM_CYCLE_N8N_USER` foi parada e desativada para reduzir concorrencia/`SQLITE_BUSY`; `CRM_CYCLE_N8N` continua ativa e aponta para wrapper da pasta antiga que chama o script vigente neste projeto.
+
+Validacao:
+- `python -m py_compile` OK para `auto_heal_n8n.py`, `crm_cycle_engine.py` e `evolution_crm_reconcile.py`;
+- `docker compose config -q` OK;
+- endpoints `router /health`, `router /metrics`, `n8n /healthz` e Evolution `/` retornaram 200;
+- containers principais em execucao; `router` e `n8n` healthy;
+- n8n sem execucoes `running/new/crashed`; auditoria confirmou 2 heals para `8246/8247`;
+- router sem `recipient_unresolved` novo desde o restart; ultimo `route_log` valido com `number=556974009750`;
+- CRM final: `learning_backlog.open=0`, `queued_human_review=37`, `follow_up_humano_pendente=4`, `leads=8`;
+- Evolution apos restart: 0 `failed_to_decrypt`, 0 `Bad MAC`, 0 `SessionError/No matching sessions`, 0 `stream 503`; restou apenas timeout Baileys isolado de keepalive em log.
+
+Pendencia residual:
+- nao executar `VACUUM`/compactacao do `ai_n8n_data` em producao com cerca de 10 GB livres para banco SQLite de ~48.3 GB; exige janela de manutencao, backup novo e espaco livre externo/suficiente;
+- mensagens historicas antigas com status `PENDING`/`ERROR` na Evolution foram preservadas; nao houve edicao manual de status de mensagem;
+- nao foi possivel alterar a tarefa `CRM_CYCLE_N8N` de nivel `SISTEMA` por acesso negado, mas ela ja executa o wrapper que chama o script vigente.

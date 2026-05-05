@@ -47,4 +47,3 @@ if ($ready) {
 } else {
   Write-Host "[crm-cycle-with-sheets] Google Sheets nao configurado para auth_mode=$authMode. Executado somente ciclo CRM."
 }
-\n

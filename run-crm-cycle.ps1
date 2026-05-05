@@ -44,4 +44,24 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host '[crm-cycle] concluido:'
 $output | ForEach-Object { Write-Host $_ }
-\n
+
+$reconcileScript = Join-Path $ProjectDir 'evolution_crm_reconcile.py'
+if (Test-Path -LiteralPath $reconcileScript) {
+  Write-Host '[crm-cycle] reconciliando Evolution -> CRM...'
+  $previousCrmDb = $env:CRM_DB
+  $env:CRM_DB = $RuntimeCrm
+  try {
+    if (Get-Command python -ErrorAction SilentlyContinue) {
+      python $reconcileScript
+    } elseif (Get-Command py -ErrorAction SilentlyContinue) {
+      py -3 $reconcileScript
+    } else {
+      throw 'Python nao encontrado para reconciliacao Evolution -> CRM'
+    }
+    if ($LASTEXITCODE -ne 0) {
+      throw "[crm-cycle] reconciliacao Evolution -> CRM falhou com exit code $LASTEXITCODE"
+    }
+  } finally {
+    $env:CRM_DB = $previousCrmDb
+  }
+}
