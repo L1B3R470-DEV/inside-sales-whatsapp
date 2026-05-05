@@ -1,23 +1,25 @@
 # Radar IA Codex - melhorias encontradas
 
-Execucao: 2026-05-01T03:03:33-03:00
+Execucao: 2026-05-04T19:05:25-03:00
 Projeto: `C:\Users\User\Desktop\CODEX_PROJECTS\PROJETO_ATENDIMENTO_WHATSAPP_INSIDE_SALES`
+Maquina: PC CLS (`100.113.13.27`)
 
-Novidades relevantes encontradas: 6
-Melhorias aplicaveis ao stack: 8
+Novidades relevantes encontradas: 9
+Melhorias aplicaveis ao stack: 11
+
 Relatorio completo: `C:\Users\User\Desktop\CODEX_PROJECTS\PROJETO_ATENDIMENTO_WHATSAPP_INSIDE_SALES\ANALISES\RADAR_IA_CODEX.md`
 
-Top 3 recomendacoes:
+## Top 3 recomendacoes
 
-1. Corrigir MCP/SQLite e paths antigos em `.mcp.json`.
-   Motivo: hoje os MCPs apontam para pasta antiga e podem auditar banco errado.
+1. Testar upgrade n8n em laboratorio antes de producao.
+   Motivo: local esta em `2.11.3`; upstream atual traz MCP mais maduro, redacao e protecao SSRF disponivel desde `2.12.0`.
 
-2. Estabilizar `/metrics` e observabilidade do router.
-   Motivo: houve erro intermitente SQLite em `/metrics`/`/health`, embora o endpoint tenha voltado a responder.
+2. Testar Evolution v2.3.7 em staging e criar alerta de decriptacao.
+   Motivo: local reporta `2.2.3` e logs recentes mostram `SessionError`, `Bad MAC`, decrypt failed e timeout Baileys.
 
-3. Testar n8n MCP oficial em laboratorio.
-   Motivo: pode reduzir drift e copy-paste de workflows, mas precisa isolamento antes de escrita em producao.
+3. Criar benchmark Qdrant hybrid em colecao paralela.
+   Motivo: RAG atual tem baixa superficie ativa e ainda depende de BM25 local custom no router.
 
-Acao humana necessaria: sim. Git estava sujo antes da execucao; proximo passo deve ser branch/backup validado.
+Acao humana necessaria: sim - aprovar janela/branch para backup, laboratorio n8n/Evolution e testes RAG/Responses.
 
-\n
+Classificacao: `novas melhorias relevantes encontradas`
